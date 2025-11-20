@@ -1,0 +1,268 @@
+<!-- User Management Modal -->
+<div id="userManagementModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] hidden" style="left: 60px;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden animation-slide-up flex flex-col">
+        <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700 flex-shrink-0">
+            <div>
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">User Management</h2>
+                <p class="text-sm text-text-secondary dark:text-gray-400 mt-1">Manage system users and permissions</p>
+            </div>
+            <button id="closeUserManagementModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="space-y-4">
+                <!-- Action Bar -->
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <!-- Add User Button -->
+                    <button id="addUserBtnModal" class="btn-primary px-6 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200">
+                        <i class="fas fa-plus"></i>
+                        <span>Add User</span>
+                    </button>
+
+                    <!-- Bulk Actions -->
+                    <div class="flex space-x-2">
+                        <button id="bulkActivateBtnModal" class="px-4 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200 disabled:opacity-50" disabled>
+                            <i class="fas fa-check mr-2"></i>
+                            Activate Selected
+                        </button>
+                        <button id="bulkDeactivateBtnModal" class="px-4 py-3 border border-error-300 text-error-600 hover:bg-error-50 dark:hover:bg-error-900 rounded-xl transition-all duration-200 disabled:opacity-50" disabled>
+                            <i class="fas fa-ban mr-2"></i>
+                            Deactivate Selected
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <!-- Search -->
+                        <div class="flex-1">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-text-tertiary dark:text-gray-500"></i>
+                                </div>
+                                <input type="text" id="userSearchModal" placeholder="Search users by name, email, username..." class="w-full pl-10 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-700 text-text-primary dark:text-gray-100" />
+                            </div>
+                        </div>
+
+                        <!-- Role Filter -->
+                        <div class="min-w-0 lg:w-48">
+                            <select id="roleFilterModal" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-700 text-text-primary dark:text-gray-100">
+                                <option value="">All Roles</option>
+                                <option value="admin">Admin</option>
+                                <option value="manager">Manager</option>
+                                <option value="user">User</option>
+                                <option value="supplier">Supplier</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="min-w-0 lg:w-48">
+                            <select id="statusFilterModal" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-700 text-text-primary dark:text-gray-100">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="offline">Offline</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="locked">Locked</option>
+                            </select>
+                        </div>
+
+                        <!-- Clear Filters -->
+                        <button id="clearFiltersBtnModal" class="px-4 py-3 text-text-secondary dark:text-gray-300 hover:text-text-primary dark:hover:text-gray-100 hover:bg-surface-hover dark:hover:bg-gray-700 rounded-xl transition-all duration-200 flex items-center space-x-2">
+                            <i class="fas fa-times"></i>
+                            <span>Clear</span>
+                        </button>
+                    </div>
+
+                    <!-- Results Count -->
+                    <div class="mt-4 flex items-center justify-between">
+                        <div class="text-sm text-text-secondary dark:text-gray-400">
+                            Showing <span id="resultsCountModal" class="font-medium text-text-primary dark:text-gray-100">0</span> of <span id="totalCountModal" class="font-medium text-text-primary dark:text-gray-100">0</span> users
+                        </div>
+                        <div class="text-sm text-text-secondary dark:text-gray-400">
+                            <span id="selectedCountModal" class="font-medium text-text-primary dark:text-gray-100">0</span> selected
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-border-light dark:border-gray-700 overflow-hidden">
+                    <div class="p-6 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">All Users</h3>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="loadUsersModal()" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-all duration-200">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-surface-hover dark:bg-gray-700 border-b border-border-light dark:border-gray-600">
+                                <tr>
+                                    <th class="px-6 py-4 text-left">
+                                        <input type="checkbox" id="selectAllModal" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" />
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Full Name</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Username</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Employee ID</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-4 text-center text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-4 text-center text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBodyModal" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr>
+                                    <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                        <div class="flex flex-col items-center space-y-3">
+                                            <i class="fas fa-users text-4xl opacity-50"></i>
+                                            <p class="text-lg font-medium">No users found</p>
+                                            <p class="text-sm">Loading users...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal (inside User Management Modal) -->
+<div id="addUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] hidden" style="left: 60px;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
+        <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Add New User</h2>
+            <button id="closeAddUserModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <form id="createUserForm" class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Full Name -->
+                <div class="md:col-span-2">
+                    <label for="full_name" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Full Name *
+                    </label>
+                    <input type="text" id="full_name" name="full_name" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter full name" />
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Email *
+                    </label>
+                    <input type="email" id="email" name="email" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter email address" />
+                </div>
+
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Username *
+                    </label>
+                    <input type="text" id="username" name="username" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter username" />
+                </div>
+
+                <!-- Password Info Note -->
+                <div class="md:col-span-2">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5"></i>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-blue-900 dark:text-blue-200 mb-1">Default Password</p>
+                                <p class="text-xs text-blue-700 dark:text-blue-300">The system will automatically assign the default password: <strong>user123</strong>. Users will be required to change their password on first login.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role -->
+                <div>
+                    <label for="user_role" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Role
+                    </label>
+                    <select id="user_role" name="user_role" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                        <option value="supplier">Supplier</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Form Message -->
+            <div id="formMessage" class="hidden"></div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-4 border-t border-border-light dark:border-gray-700">
+                <button type="button" id="cancelAddUser" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="submit" class="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-600 transition-all duration-200">
+                    Create User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal (inside User Management Modal) -->
+<div id="editUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] hidden" style="left: 60px;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
+        <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Edit User</h2>
+            <button id="closeEditUserModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <form id="updateUserForm" class="p-6 space-y-6">
+            <input type="hidden" id="edit_user_id" name="edit_user_id" />
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Full Name -->
+                <div class="md:col-span-2">
+                    <label for="edit_full_name" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Full Name *
+                    </label>
+                    <input type="text" id="edit_full_name" name="edit_full_name" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter full name" />
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="edit_email" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Email *
+                    </label>
+                    <input type="email" id="edit_email" name="edit_email" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter email address" />
+                </div>
+
+                <!-- Username -->
+                <div>
+                    <label for="edit_username" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                        Username *
+                    </label>
+                    <input type="text" id="edit_username" name="edit_username" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter username" />
+                </div>
+            </div>
+
+            <!-- Form Message -->
+            <div id="editFormMessage" class="hidden"></div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-4 border-t border-border-light dark:border-gray-700">
+                <button type="button" id="cancelEditUser" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="submit" class="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-600 transition-all duration-200">
+                    Update User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+

@@ -1,0 +1,38 @@
+<header id="topbar" class="bg-white dark:bg-gray-900 border-b border-border-light dark:border-gray-700 px-6 py-4">
+    <div class="flex items-center justify-between">
+        <!-- Mobile Menu Button -->
+        <button id="openSidebar" class="lg:hidden text-text-secondary hover:text-text-primary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+
+        <!-- Page Title -->
+        <div class="hidden lg:block">
+            <h1 id="topbarTitle" class="text-2xl font-semibold text-text-primary dark:text-gray-100">Pharmacy Dashboard</h1>
+            <p id="topbarDescription" class="text-sm text-text-secondary dark:text-gray-400">Welcome back! Monitor your medicine inventory and operations.</p>
+        </div>
+
+        <!-- Search Bar & Clock -->
+        <div class="flex items-center space-x-4">
+            <!-- Search Bar -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-text-tertiary text-sm"></i>
+                </div>
+                <input type="text" id="globalSearch" placeholder="Search medicines..." class="w-64 pl-10 pr-4 py-2 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-surface text-text-primary dark:text-gray-100" />
+            </div>
+
+            <!-- Theme Toggle -->
+            <button id="headerThemeToggle" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                <i class="fas fa-moon dark:hidden text-lg"></i>
+                <i class="fas fa-sun hidden dark:block text-lg"></i>
+            </button>
+
+            <!-- Live Clock -->
+            <div class="hidden md:flex items-center space-x-2 px-4 py-2 bg-surface-hover dark:bg-gray-800 rounded-xl">
+                <i class="fas fa-clock text-primary-600 dark:text-primary-400 text-sm"></i>
+                <span id="liveClock" class="text-sm font-medium text-text-primary dark:text-gray-100">--:--:--</span>
+            </div>
+        </div>
+    </div>
+</header>
+

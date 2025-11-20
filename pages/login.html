@@ -1,0 +1,925 @@
+<?php
+session_start();
+
+// Redirect if already logged in
+if (isset($_SESSION['user_id'])) {
+    header('Location: dashboard.php');
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - INVENTORY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Remove or comment out the problematic script -->
+    <!--<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=..."></script>-->
+</head>
+<body class="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-100 flex items-center justify-center p-4">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-10">
+        <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" stroke-width="0.5"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" class="text-primary-300"/>
+        </svg>
+    </div>
+
+    <!-- Main Login Container -->
+    <div class="relative w-full max-w-md">
+        <!-- Security Badge -->
+        <div class="flex justify-center mb-6">
+            <div class="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-border-light">
+                <i class="fas fa-shield-alt text-success-600 text-sm"></i>
+                <span class="text-xs font-medium text-text-secondary">SSL Secured</span>
+            </div>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 animation-slide-up">
+            <!-- Logo and Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-2xl mb-4">
+                    <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-semibold text-text-primary mb-2">Welcome Back</h1>
+                <p class="text-text-secondary">Sign in to your inventory account</p>
+            </div>
+
+            <!-- Password Reset Success Message -->
+            <?php if (isset($_GET['reset']) && $_GET['reset'] === 'success'): ?>
+                <div class="mb-6 p-4 bg-success-50 border border-success-200 rounded-xl">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-success-600 mr-2"></i>
+                        <span class="text-sm text-success-700">Password reset successful! Please log in with your new password.</span>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="space-y-6">
+                <!-- Email/Username Field -->
+                <div class="space-y-2">
+                    <label for="email" class="block text-sm font-medium text-text-primary">
+                        Email or Username
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-text-tertiary text-sm"></i>
+                        </div>
+                        <input type="text" id="email" name="email" required class="w-full pl-10 pr-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white/50" placeholder="Enter your email or username" aria-describedby="email-error" />
+                    </div>
+                    <div id="email-error" class="text-sm text-error-600 hidden" role="alert"></div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="space-y-2">
+                    <label for="password" class="block text-sm font-medium text-text-primary">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-text-tertiary text-sm"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required class="w-full pl-10 pr-12 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white/50" placeholder="Enter your password" aria-describedby="password-error" />
+                        <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye text-text-tertiary text-sm hover:text-text-secondary transition-colors duration-200"></i>
+                        </button>
+                    </div>
+                    <div id="password-error" class="text-sm text-error-600 hidden" role="alert"></div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" />
+                        <label for="remember" class="ml-2 block text-sm text-text-secondary">
+                            Remember me
+                        </label>
+                    </div>
+                    <button type="button" id="forgotPasswordBtn" class="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">
+                        Forgot password?
+                    </button>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit" class="w-full bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-primary-200 focus:ring-offset-2 shadow-lg">
+                    <span class="flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Sign In
+                    </span>
+                </button>
+
+                <!-- Sign Up Link -->
+                <div class="text-center pt-4 border-t border-border-light">
+                    <p class="text-text-secondary text-sm">
+                        
+                        <button type="button" id="signUpBtn" class="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">
+                            
+                        </button>
+                    </p>
+                </div>
+            </form>
+
+
+        <!-- Footer -->
+        <div class="text-center mt-8">
+            <p class="text-xs text-text-tertiary">
+                © 2025 INVENTORY Management System. All Rights Reserved.
+            </p>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary" id="modalTitle">Reset Password</h2>
+                <button id="closeForgotModal" class="text-text-tertiary hover:text-text-secondary transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Stage 1: Email Input -->
+            <div id="stageEmail" class="space-y-4">
+                <p class="text-sm text-text-secondary mb-4">Enter your email address to receive an OTP code</p>
+                <form id="forgotPasswordForm" class="space-y-4">
+                    <div>
+                        <label for="resetEmail" class="block text-sm font-medium text-text-primary mb-2">
+                            Email Address
+                        </label>
+                        <input type="email" id="resetEmail" name="resetEmail" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter your email address" />
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                        <span id="sendOtpBtnText">Send OTP Code</span>
+                    </button>
+                </form>
+                
+                <div id="resetError" class="hidden mt-4 p-4 bg-error-50 rounded-xl border border-error-200">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-error-600 mr-2"></i>
+                        <span class="text-sm text-error-700" id="resetErrorText"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 2: OTP Verification -->
+            <div id="stageOTP" class="space-y-4 hidden">
+                <p class="text-sm text-text-secondary mb-4">Enter the 6-digit OTP code sent to <span id="otpEmailDisplay" class="font-medium"></span></p>
+                <form id="verifyOtpForm" class="space-y-4">
+                    <div>
+                        <label for="otpCode" class="block text-sm font-medium text-text-primary mb-2">
+                            OTP Code
+                        </label>
+                        <input type="text" id="otpCode" name="otpCode" required maxlength="6" pattern="[0-9]{6}" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 text-center text-2xl tracking-widest font-mono" placeholder="000000" autocomplete="off" />
+                        <p class="text-xs text-text-tertiary mt-2 text-center">Enter the 6-digit code from your email</p>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                        Verify OTP
+                    </button>
+                </form>
+                
+                <div class="text-center">
+                    <button type="button" id="resendOtpBtn" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                        <i class="fas fa-redo mr-1"></i>
+                        Resend OTP Code
+                    </button>
+                </div>
+                
+                <div id="otpError" class="hidden mt-4 p-4 bg-error-50 rounded-xl border border-error-200">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-error-600 mr-2"></i>
+                        <span class="text-sm text-error-700" id="otpErrorText"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 3: Password Reset -->
+            <div id="stagePassword" class="space-y-4 hidden">
+                <p class="text-sm text-text-secondary mb-4">Enter your new password</p>
+                <form id="resetPasswordForm" class="space-y-4">
+                    <div>
+                        <label for="newPassword" class="block text-sm font-medium text-text-primary mb-2">
+                            New Password
+                        </label>
+                        <input type="password" id="newPassword" name="newPassword" required minlength="8" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter new password" />
+                        <p class="text-xs text-text-tertiary mt-1">Must be at least 8 characters long</p>
+                    </div>
+                    
+                    <div>
+                        <label for="confirmNewPassword" class="block text-sm font-medium text-text-primary mb-2">
+                            Confirm Password
+                        </label>
+                        <input type="password" id="confirmNewPassword" name="confirmNewPassword" required minlength="8" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Confirm new password" />
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                        Reset Password
+                    </button>
+                </form>
+                
+                <div id="passwordError" class="hidden mt-4 p-4 bg-error-50 rounded-xl border border-error-200">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-error-600 mr-2"></i>
+                        <span class="text-sm text-error-700" id="passwordErrorText"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign Up Modal -->
+    <div id="signUpModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary">Create Account</h2>
+                <button id="closeSignUpModal" class="text-text-tertiary hover:text-text-secondary transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="signUpForm" class="space-y-4">
+                <!-- Full Name -->
+                <div>
+                    <label for="fullName" class="block text-sm font-medium text-text-primary mb-2">
+                        Full Name
+                    </label>
+                    <input type="text" id="fullName" name="fullName" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter your full name" />
+                    <div id="fullName-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                </div>
+
+                <!-- Employee ID -->
+                <div>
+                    <label for="employeeId" class="block text-sm font-medium text-text-primary mb-2">
+                        Employee ID
+                    </label>
+                    <input type="text" id="employeeId" name="employeeId" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter your employee ID" />
+                    <div id="employeeId-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="signUpEmail" class="block text-sm font-medium text-text-primary mb-2">
+                        Email Address
+                    </label>
+                    <input type="email" id="signUpEmail" name="signUpEmail" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter your email address" />
+                    <div id="signUpEmail-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="signUpPassword" class="block text-sm font-medium text-text-primary mb-2">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="signUpPassword" name="signUpPassword" required class="w-full px-4 pr-12 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Create a password" />
+                        <button type="button" id="toggleSignUpPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye text-text-tertiary text-sm hover:text-text-secondary transition-colors duration-200"></i>
+                        </button>
+                    </div>
+                    <div id="signUpPassword-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                    
+                    <!-- Password Strength Indicator -->
+                    <div class="mt-2">
+                        <div class="flex space-x-1">
+                            <div id="strength-1" class="h-1 w-full bg-border-light rounded-full transition-colors duration-200"></div>
+                            <div id="strength-2" class="h-1 w-full bg-border-light rounded-full transition-colors duration-200"></div>
+                            <div id="strength-3" class="h-1 w-full bg-border-light rounded-full transition-colors duration-200"></div>
+                            <div id="strength-4" class="h-1 w-full bg-border-light rounded-full transition-colors duration-200"></div>
+                        </div>
+                        <p id="strength-text" class="text-xs text-text-tertiary mt-1">Password strength</p>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-text-primary mb-2">
+                        Confirm Password
+                    </label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Confirm your password" />
+                    <div id="confirmPassword-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                </div>
+
+                <!-- Terms and Conditions -->
+                <div class="flex items-start">
+                    <input id="terms" name="terms" type="checkbox" required class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded mt-1" />
+                    <label for="terms" class="ml-2 block text-sm text-text-secondary">
+                        I agree to the <a href="javascript:void(0)" class="text-primary-600 hover:text-primary-700">Terms of Service</a> and <a href="javascript:void(0)" class="text-primary-600 hover:text-primary-700">Privacy Policy</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                    Create Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check for password reset success parameter and show message
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('reset') === 'success') {
+            // Remove the parameter from URL for cleaner address bar
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Password toggle functionality
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Sign up password toggle
+        document.getElementById('toggleSignUpPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('signUpPassword');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Modal functionality
+        const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        const signUpModal = document.getElementById('signUpModal');
+        
+        // Modal state management (declared early for use in event listeners)
+        let resetEmail = '';
+        let resetUserId = null;
+
+        // Function to show a specific stage
+        function showStage(stage) {
+            document.getElementById('stageEmail').classList.add('hidden');
+            document.getElementById('stageOTP').classList.add('hidden');
+            document.getElementById('stagePassword').classList.add('hidden');
+            
+            if (stage === 'email') {
+                document.getElementById('stageEmail').classList.remove('hidden');
+                document.getElementById('modalTitle').textContent = 'Reset Password';
+            } else if (stage === 'otp') {
+                document.getElementById('stageOTP').classList.remove('hidden');
+                document.getElementById('modalTitle').textContent = 'Verify OTP';
+                document.getElementById('otpEmailDisplay').textContent = resetEmail;
+                document.getElementById('otpCode').focus();
+            } else if (stage === 'password') {
+                document.getElementById('stagePassword').classList.remove('hidden');
+                document.getElementById('modalTitle').textContent = 'Set New Password';
+            }
+        }
+        
+        document.getElementById('forgotPasswordBtn').addEventListener('click', () => {
+            // Reset modal state
+            resetEmail = '';
+            resetUserId = null;
+            document.getElementById('resetEmail').value = '';
+            document.getElementById('otpCode').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+            document.getElementById('resetError').classList.add('hidden');
+            document.getElementById('otpError').classList.add('hidden');
+            document.getElementById('passwordError').classList.add('hidden');
+            showStage('email');
+            forgotPasswordModal.classList.remove('hidden');
+        });
+        
+        document.getElementById('signUpBtn').addEventListener('click', () => {
+            signUpModal.classList.remove('hidden');
+        });
+        
+        document.getElementById('closeForgotModal').addEventListener('click', () => {
+            forgotPasswordModal.classList.add('hidden');
+        });
+        
+        document.getElementById('closeSignUpModal').addEventListener('click', () => {
+            signUpModal.classList.add('hidden');
+        });
+
+        // Close modals on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                forgotPasswordModal.classList.add('hidden');
+                signUpModal.classList.add('hidden');
+            }
+        });
+
+        // Close modals on backdrop click
+        [forgotPasswordModal, signUpModal].forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const submitButton = this.querySelector('button[type="submit"]');
+            const errorDiv = document.getElementById('email-error');
+            
+            // Hide previous errors
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+            
+            // Validate input
+            if (!email || !password) {
+                errorDiv.textContent = 'Please enter both email and password';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Disable button and show loading state
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="flex items-center justify-center"><i class="fas fa-spinner fa-spin mr-2"></i>Signing in...</span>';
+            
+            try {
+                // Send login request to backend
+                const response = await fetch('../php/login.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store user session in localStorage
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userEmail', data.user.email || email);
+                    if (data.user.full_name) {
+                        localStorage.setItem('userFullName', data.user.full_name);
+                    }
+                    if (data.user.role) {
+                        localStorage.setItem('userRole', data.user.role);
+                    }
+                    if (data.user.user_id) {
+                        localStorage.setItem('userId', data.user.user_id);
+                    }
+                    // Store must_change_password flag
+                    if (data.user.must_change_password !== undefined) {
+                        localStorage.setItem('mustChangePassword', data.user.must_change_password ? 'true' : 'false');
+                    }
+                    
+                    // Show success message briefly
+                    errorDiv.textContent = 'Login successful! Redirecting...';
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.remove('text-error-600');
+                    errorDiv.classList.add('text-success-600');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 500);
+                } else {
+                    // Show error message
+                    errorDiv.textContent = data.message || 'Invalid credentials. Please try again.';
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.remove('text-success-600');
+                    errorDiv.classList.add('text-error-600');
+                    
+                    // Re-enable button
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'An error occurred. Please try again later.';
+                errorDiv.classList.remove('hidden');
+                errorDiv.classList.remove('text-success-600');
+                errorDiv.classList.add('text-error-600');
+                
+                // Re-enable button
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            }
+        });
+
+        // Stage 1: Send OTP
+        document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('resetEmail');
+            const email = emailInput.value.trim();
+            const btn = this.querySelector('button[type="submit"]');
+            const errorDiv = document.getElementById('resetError');
+            const errorText = document.getElementById('resetErrorText');
+            
+            // Hide previous messages
+            if (errorDiv) errorDiv.classList.add('hidden');
+
+            // Validate email
+            if (!email || !email.includes('@')) {
+                errorText.textContent = 'Please enter a valid email address.';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            document.getElementById('sendOtpBtnText').textContent = 'Sending...';
+
+            try {
+                const resp = await fetch('send_otp.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ email: email })
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`HTTP error! status: ${resp.status}`);
+                }
+
+                const data = await resp.json();
+
+                if (data && data.success) {
+                    // Store email and transition to OTP stage
+                    resetEmail = email;
+                    showStage('otp');
+                } else {
+                    // Show error
+                    errorText.textContent = data.error || 'Failed to send OTP. Please try again.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Fetch failed:', err);
+                errorText.textContent = 'Network error. Please check your internet connection and try again.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                document.getElementById('sendOtpBtnText').textContent = 'Send OTP Code';
+            }
+        });
+
+        // Stage 2: Verify OTP
+        document.getElementById('verifyOtpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const otpInput = document.getElementById('otpCode');
+            const otp = otpInput.value.trim();
+            const btn = this.querySelector('button[type="submit"]');
+            const errorDiv = document.getElementById('otpError');
+            const errorText = document.getElementById('otpErrorText');
+            
+            // Hide previous messages
+            if (errorDiv) errorDiv.classList.add('hidden');
+
+            // Validate OTP
+            if (!otp || !/^\d{6}$/.test(otp)) {
+                errorText.textContent = 'Please enter a valid 6-digit OTP code.';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
+            try {
+                const resp = await fetch('verify_otp.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ 
+                        email: resetEmail,
+                        otp: otp 
+                    })
+                });
+
+                // Get response text first to handle both success and error cases
+                const responseText = await resp.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('JSON parse error:', parseError, 'Response:', responseText);
+                    errorText.textContent = 'Invalid response from server. Please try again.';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (data && data.success) {
+                    // Store user ID and transition to password reset stage
+                    resetUserId = data.user_id;
+                    showStage('password');
+                } else {
+                    // Show error message from server
+                    const errorMessage = data.error || data.message || 'Invalid OTP code. Please try again.';
+                    errorText.textContent = errorMessage;
+                    errorDiv.classList.remove('hidden');
+                    otpInput.value = '';
+                    otpInput.focus();
+                }
+            } catch (err) {
+                console.error('Fetch failed:', err);
+                errorText.textContent = 'Network error. Please check your internet connection and try again.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verify OTP';
+            }
+        });
+
+        // Resend OTP button
+        document.getElementById('resendOtpBtn').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sending...';
+
+            try {
+                const resp = await fetch('send_otp.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ email: resetEmail })
+                });
+
+                const data = await resp.json();
+
+                if (data && data.success) {
+                    // Show success message briefly
+                    const errorDiv = document.getElementById('otpError');
+                    const errorText = document.getElementById('otpErrorText');
+                    errorText.textContent = 'New OTP code has been sent to your email.';
+                    errorDiv.classList.remove('hidden');
+                    // Reset classes
+                    errorDiv.className = 'mt-4 p-4 bg-success-50 rounded-xl border border-success-200';
+                    errorText.className = 'text-sm text-success-700';
+                    
+                    setTimeout(() => {
+                        errorDiv.classList.add('hidden');
+                    }, 3000);
+                } else {
+                    // Show error
+                    const errorDiv = document.getElementById('otpError');
+                    const errorText = document.getElementById('otpErrorText');
+                    errorText.textContent = data.error || 'Failed to resend OTP. Please try again.';
+                    errorDiv.className = 'mt-4 p-4 bg-error-50 rounded-xl border border-error-200';
+                    errorText.className = 'text-sm text-error-700';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Resend OTP failed:', err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        // Stage 3: Reset Password
+        document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const passwordInput = document.getElementById('newPassword');
+            const confirmPasswordInput = document.getElementById('confirmNewPassword');
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const btn = this.querySelector('button[type="submit"]');
+            const errorDiv = document.getElementById('passwordError');
+            const errorText = document.getElementById('passwordErrorText');
+            
+            // Hide previous messages
+            if (errorDiv) errorDiv.classList.add('hidden');
+
+            // Validate passwords
+            if (password.length < 8) {
+                errorText.textContent = 'Password must be at least 8 characters long.';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorText.textContent = 'Passwords do not match.';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Resetting...';
+
+            try {
+                const resp = await fetch('reset_password.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ 
+                        user_id: resetUserId,
+                        password: password 
+                    })
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`HTTP error! status: ${resp.status}`);
+                }
+
+                const data = await resp.json();
+
+                if (data && data.success) {
+                    // Show success and close modal
+                    alert('Password reset successfully! You can now login with your new password.');
+                    document.getElementById('forgotPasswordModal').classList.add('hidden');
+                    
+                    // Reset form
+                    resetEmail = '';
+                    resetUserId = null;
+                    passwordInput.value = '';
+                    confirmPasswordInput.value = '';
+                    document.getElementById('resetEmail').value = '';
+                    document.getElementById('otpCode').value = '';
+                    showStage('email');
+                } else {
+                    // Show error
+                    errorText.textContent = data.error || 'Failed to reset password. Please try again.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Fetch failed:', err);
+                errorText.textContent = 'Network error. Please check your internet connection and try again.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Reset Password';
+            }
+        });
+
+        // OTP input formatting - only numbers, max 6 digits
+        const otpInput = document.getElementById('otpCode');
+        if (otpInput) {
+            otpInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
+            });
+        }
+
+        // Password match validation
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmNewPassword');
+        if (newPasswordInput && confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', function() {
+                if (this.value && newPasswordInput.value !== this.value) {
+                    this.setCustomValidity('Passwords do not match');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+
+        // Reset modal when closed
+        document.getElementById('closeForgotModal').addEventListener('click', function() {
+            resetEmail = '';
+            resetUserId = null;
+            document.getElementById('resetEmail').value = '';
+            document.getElementById('otpCode').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+            document.getElementById('resetError').classList.add('hidden');
+            document.getElementById('otpError').classList.add('hidden');
+            document.getElementById('passwordError').classList.add('hidden');
+            showStage('email');
+        });
+
+        // Also reset when clicking backdrop
+        document.getElementById('forgotPasswordModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                resetEmail = '';
+                resetUserId = null;
+                document.getElementById('resetEmail').value = '';
+                document.getElementById('otpCode').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+                document.getElementById('resetError').classList.add('hidden');
+                document.getElementById('otpError').classList.add('hidden');
+                document.getElementById('passwordError').classList.add('hidden');
+                showStage('email');
+            }
+        });
+
+        // Password strength checker
+        document.getElementById('signUpPassword').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBars = [
+                document.getElementById('strength-1'),
+                document.getElementById('strength-2'),
+                document.getElementById('strength-3'),
+                document.getElementById('strength-4')
+            ];
+            const strengthText = document.getElementById('strength-text');
+            
+            let strength = 0;
+            
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            
+            // Reset all bars
+            strengthBars.forEach(bar => {
+                bar.className = 'h-1 w-full bg-border-light rounded-full transition-colors duration-200';
+            });
+            
+            // Color bars based on strength
+            const colors = ['bg-error-500', 'bg-warning-500', 'bg-accent-500', 'bg-success-500'];
+            const texts = ['Weak', 'Fair', 'Good', 'Strong'];
+            
+            for (let i = 0; i < strength; i++) {
+                strengthBars[i].className = `h-1 w-full ${colors[strength - 1]} rounded-full transition-colors duration-200`;
+            }
+            
+            strengthText.textContent = password.length > 0 ? texts[strength - 1] || 'Very Weak' : 'Password strength';
+        });
+
+        // Sign up form validation
+        document.getElementById('signUpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const password = formData.get('signUpPassword');
+            const confirmPassword = formData.get('confirmPassword');
+            
+            // Clear previous errors
+            document.querySelectorAll('[id$="-error"]').forEach(el => {
+                el.classList.add('hidden');
+                el.textContent = '';
+            });
+            
+            let isValid = true;
+            
+            // Validate password match
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPassword-error').textContent = 'Passwords do not match';
+                document.getElementById('confirmPassword-error').classList.remove('hidden');
+                isValid = false;
+            }
+            
+            // Validate password strength
+            if (password.length < 8) {
+                document.getElementById('signUpPassword-error').textContent = 'Password must be at least 8 characters';
+                document.getElementById('signUpPassword-error').classList.remove('hidden');
+                isValid = false;
+            }
+            
+            if (isValid) {
+                // Mock successful registration
+                alert('Account created successfully! Please log in with your credentials.');
+                signUpModal.classList.add('hidden');
+                this.reset();
+            }
+        });
+
+        // Real-time validation
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('signUpPassword').value;
+            const confirmPassword = this.value;
+            const errorEl = document.getElementById('confirmPassword-error');
+            
+            if (confirmPassword && password !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.classList.remove('hidden');
+            } else {
+                errorEl.classList.add('hidden');
+            }
+        });
+    </script>
+
+
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Archive - PHARMACY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 shadow-xl border-r border-border-light dark:border-gray-700 z-50 transform -translate-x-full lg:translate-x-0 transition-all duration-300">
+        <!-- Sidebar Header -->
+        <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-pills text-primary-600 dark:text-primary-400 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100">PHARMACY</h2>
+                    <p class="text-xs text-text-tertiary dark:text-gray-400">Inventory System</p>
+                </div>
+            </div>
+            <button id="closeSidebar" class="lg:hidden text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- User Profile Section -->
+        <div class="p-6 border-b border-border-light dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="User Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-primary-200 dark:border-primary-700" onerror="this.src='https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'; this.onerror=null;" />
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-text-primary dark:text-gray-100 truncate" id="userDisplayName">User</p>
+                    <p class="text-xs text-text-tertiary dark:text-gray-400 truncate" id="userDisplayEmail">user@example.com</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+       
+
+        <!-- Theme Toggle & Settings -->
+        <div class="p-4 border-t border-border-light dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-sm font-medium text-text-secondary dark:text-gray-300">Dark Mode</span>
+                <button id="themeToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-border-light dark:bg-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200">
+                    <span id="themeToggleButton" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1 dark:translate-x-6"></span>
+                </button>
+            </div>
+            <button id="logoutBtn" class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-error-600 hover:bg-error-50 dark:hover:bg-error-900 rounded-xl transition-all duration-200">
+                <i class="fas fa-sign-out-alt w-5"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen bg-background dark:bg-gray-900">
+        <!-- Top Bar will be loaded here -->
+        <script src="../js/load-topbar.js" data-title="Archive" data-description="View expired items, cancelled orders, and deleted items"></script>
+
+        <!-- Archive Content -->
+        <div class="p-6 space-y-6">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Expired Items</p>
+                            <p class="text-3xl font-bold text-error-600 dark:text-error-400" id="expiredCount">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-error-100 dark:bg-error-900 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-error-600 dark:text-error-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Cancelled Orders</p>
+                            <p class="text-3xl font-bold text-warning-600 dark:text-warning-400" id="cancelledCount">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-ban text-warning-600 dark:text-warning-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Deleted Items</p>
+                            <p class="text-3xl font-bold text-text-secondary dark:text-gray-400" id="deletedCount">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-trash text-text-secondary dark:text-gray-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700">
+                <div class="border-b border-border-light dark:border-gray-700">
+                    <nav class="flex -mb-px">
+                        <button id="tabExpired" class="tab-button active px-6 py-4 text-sm font-medium border-b-2 border-primary text-primary dark:text-primary-400">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Expired Items
+                        </button>
+                        <button id="tabCancelled" class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200">
+                            <i class="fas fa-ban mr-2"></i>
+                            Cancelled Orders
+                        </button>
+                        <button id="tabDeleted" class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200">
+                            <i class="fas fa-trash mr-2"></i>
+                            Deleted Items
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="p-6">
+                    <!-- Expired Items Tab -->
+                    <div id="contentExpired" class="tab-content">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-border-light dark:border-gray-700">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Medicine</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Batch</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Quantity</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Expiration Date</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Days Expired</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Expired At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expiredItemsTable">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Cancelled Orders Tab -->
+                    <div id="contentCancelled" class="tab-content hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-border-light dark:border-gray-700">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Order ID</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Supplier</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Order Date</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Total Amount</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Items</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Cancelled At</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cancelledOrdersTable">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Deleted Items Tab -->
+                    <div id="contentDeleted" class="tab-content hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-border-light dark:border-gray-700">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Medicine Name</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">NDC</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Manufacturer</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Category</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Quantity</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Deleted At</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deletedItemsTable">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+            document.documentElement.classList.toggle('dark', isDark);
+            
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', isDark);
+                toggle.classList.toggle('bg-border-light', !isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', isDark);
+                button.classList.toggle('translate-x-1', !isDark);
+            });
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+            
+            const toggles = document.querySelectorAll('#themeToggle, #headerThemeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', !isDark);
+                toggle.classList.toggle('bg-border-light', isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', !isDark);
+                button.classList.toggle('translate-x-1', isDark);
+            });
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+                btn.classList.add('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`content${tabName}`).classList.remove('hidden');
+            
+            // Add active class to selected tab
+            const activeTab = document.getElementById(`tab${tabName}`);
+            activeTab.classList.add('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+            activeTab.classList.remove('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+        }
+
+        // API Base URL
+        const ARCHIVE_API = '../php/get_archives.php';
+
+        // Load archive data
+        async function loadArchives() {
+            try {
+                const response = await fetch(`${ARCHIVE_API}?type=all`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    // Update counts
+                    document.getElementById('expiredCount').textContent = result.data.counts.expired || 0;
+                    document.getElementById('cancelledCount').textContent = result.data.counts.cancelled || 0;
+                    document.getElementById('deletedCount').textContent = result.data.counts.deleted || 0;
+
+                    // Render expired items
+                    renderExpiredItems(result.data.items.expired || []);
+                    
+                    // Render cancelled orders
+                    renderCancelledOrders(result.data.items.cancelled || []);
+                    
+                    // Render deleted items
+                    renderDeletedItems(result.data.items.deleted || []);
+                }
+            } catch (error) {
+                console.error('Error loading archives:', error);
+            }
+        }
+
+        // Render expired items
+        function renderExpiredItems(items) {
+            const tbody = document.getElementById('expiredItemsTable');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4">
+                        <div>
+                            <div class="font-medium text-text-primary dark:text-gray-100">${item.medicine_name || 'N/A'}</div>
+                            <div class="text-xs text-text-tertiary dark:text-gray-500">${item.medicine_ndc || ''}</div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.batch_number || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.expiration_date || 'N/A'}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300 rounded-full text-xs font-medium">
+                            ${item.days_expired || 0} days
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.expired_at ? new Date(item.expired_at).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render cancelled orders
+        function renderCancelledOrders(orders) {
+            const tbody = document.getElementById('cancelledOrdersTable');
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map(order => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.supplier_name || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.item_count || 0} items</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancelled_at ? new Date(order.cancelled_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancellation_reason || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render deleted items
+        function renderDeletedItems(items) {
+            const tbody = document.getElementById('deletedItemsTable');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No deleted items found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${item.name || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.ndc || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.manufacturer || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.category || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.deleted_at ? new Date(item.deleted_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.reason || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update user display from localStorage
+            const userFullName = localStorage.getItem('userFullName') || 'User';
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            
+            if (userDisplayNameEl) {
+                userDisplayNameEl.textContent = userFullName;
+            }
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+
+            // Initialize theme
+            initializeTheme();
+
+            // Sidebar functionality
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const openSidebarBtn = document.getElementById('openSidebar');
+            const closeSidebarBtn = document.getElementById('closeSidebar');
+
+            function openSidebar() {
+                sidebar.classList.remove('-translate-x-full');
+                sidebarOverlay.classList.remove('hidden');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            }
+
+            openSidebarBtn.addEventListener('click', openSidebar);
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            // Theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            const headerThemeToggle = document.getElementById('headerThemeToggle');
+            
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+            
+            // Theme toggle is now initialized by load-topbar.js
+
+            // Tab switching
+            document.getElementById('tabExpired').addEventListener('click', () => switchTab('Expired'));
+            document.getElementById('tabCancelled').addEventListener('click', () => switchTab('Cancelled'));
+            document.getElementById('tabDeleted').addEventListener('click', () => switchTab('Deleted'));
+
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to logout?')) {
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html';
+                }
+            });
+
+            // Settings
+            window.openSettings = function() {
+                alert('Settings functionality coming soon');
+            };
+
+            // Load archive data
+            loadArchives();
+        });
+    </script>
+</body>
+</html>
+

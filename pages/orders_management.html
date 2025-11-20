@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orders Management - INVENTORY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar will be loaded here -->
+    <script src="../js/load-sidebar.js" defer></script>
+    <!-- Archive Modal will be loaded here -->
+    <script src="../js/load-archive-modal.js" defer></script>
+    <!-- User Management Modal will be loaded here -->
+    <script src="../js/load-user-management-modal.js" defer></script>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-900 shadow-sm border-b border-border-light dark:border-gray-700">
+            <div class="flex items-center justify-between h-16 px-6">
+                <div class="flex items-center space-x-4">
+                    <button id="openSidebar" class="lg:hidden text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-xl font-semibold text-text-primary dark:text-gray-100">Orders Management</h1>
+                        <p class="text-sm text-text-tertiary dark:text-gray-400">Track and manage all orders</p>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-text-tertiary dark:text-gray-400 text-sm"></i>
+                        </div>
+                        <input type="text" id="globalSearch" placeholder="Search orders..." class="w-80 pl-10 pr-4 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button id="headerThemeToggle" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                        <i class="fas fa-moon dark:hidden text-lg"></i>
+                        <i class="fas fa-sun hidden dark:block text-lg"></i>
+                    </button>
+                    
+                    <!-- Live Clock -->
+                    <div class="hidden md:flex items-center space-x-2 text-text-secondary dark:text-gray-400">
+                        <i class="fas fa-clock text-sm"></i>
+                        <span id="liveClock" class="text-sm font-mono">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="p-6">
+            <!-- Page Header with Actions -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+                <div>
+                    <h2 class="text-2xl font-semibold text-text-primary">Orders Overview</h2>
+                    <p class="text-text-secondary mt-1">Manage and track all inventory orders</p>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button id="bulkActionsBtn" class="hidden px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200">
+                        <i class="fas fa-tasks mr-2"></i>
+                        Bulk Actions
+                    </button>
+                    <button id="createOrderBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-700 transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters and Controls -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6 mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    <!-- Filter Controls -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center space-x-2">
+                            <label for="statusFilter" class="text-sm font-medium text-text-secondary dark:text-gray-400">Status:</label>
+                            <select id="statusFilter" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="shipping">Shipping</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <label for="dateFrom" class="text-sm font-medium text-text-secondary dark:text-gray-400">From:</label>
+                            <input type="date" id="dateFrom" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <label for="dateTo" class="text-sm font-medium text-text-secondary dark:text-gray-400">To:</label>
+                            <input type="date" id="dateTo" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                        </div>
+
+                        <button id="resetFilters" class="px-3 py-2 text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 border border-border-light dark:border-gray-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200">
+                            <i class="fas fa-undo mr-1"></i>
+                            Reset
+                        </button>
+                    </div>
+
+                    <!-- Results Info -->
+                    <div class="flex items-center space-x-4">
+                        <span id="resultsCount" class="text-sm text-text-secondary dark:text-gray-400">Showing 12 of 12 orders</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-text-secondary dark:text-gray-400">Show:</span>
+                            <select id="pageSize" class="px-2 py-1 border border-border-light dark:border-gray-600 rounded text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-500 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 overflow-hidden">
+                <!-- Table Header -->
+                <div class="px-6 py-4 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-800">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" id="selectAll" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" />
+                            <span class="text-sm font-medium text-text-secondary dark:text-gray-300">Select All</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="exportBtn" class="px-3 py-1.5 text-sm text-text-secondary dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 border border-border-light dark:border-gray-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200">
+                                <i class="fas fa-download mr-1"></i>
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-surface-hover dark:bg-gray-800">
+                            <tr>
+                                <th class="px-6 py-3 text-left">
+                                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded opacity-0" />
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="id">
+                                    Order ID
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="supplier">
+                                    Supplier
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="date">
+                                    Order Date
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="total">
+                                    Total Amount
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="status">
+                                    Status
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div id="mobileOrdersView" class="md:hidden divide-y divide-border-light">
+                    <!-- Mobile cards will be populated by JavaScript -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <div class="w-24 h-24 mx-auto mb-4 bg-surface-hover rounded-full flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-3xl text-text-tertiary"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-text-primary mb-2">No orders found</h3>
+                    <p class="text-text-secondary mb-6">Get started by creating your first order</p>
+                    <button id="createOrderBtnEmpty" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6">
+                <div class="text-sm text-text-secondary">
+                    Showing <span id="showingFrom">1</span> to <span id="showingTo">12</span> of <span id="totalOrders">12</span> orders
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="prevPage" class="px-3 py-2 text-text-secondary hover:text-primary border border-border-light rounded-lg hover:border-primary-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div id="pageNumbers" class="flex items-center space-x-1">
+                        <!-- Page numbers will be populated by JavaScript -->
+                    </div>
+                    <button id="nextPage" class="px-3 py-2 text-text-secondary hover:text-primary border border-border-light rounded-lg hover:border-primary-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Order Modal -->
+    <div id="createOrderModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col animation-slide-up">
+            <!-- Modal Header (Fixed) -->
+            <div class="flex items-center justify-between p-6 border-b border-border-light flex-shrink-0">
+                <h2 class="text-xl font-semibold text-text-primary">Create New Order</h2>
+                <button id="closeCreateModal" class="text-text-tertiary hover:text-text-secondary transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body (Scrollable) -->
+            <div class="overflow-y-auto flex-1 px-6 py-4">
+                <form id="createOrderForm" class="space-y-4">
+                <!-- Supplier Selection -->
+                <div>
+                    <label for="orderSupplier" class="block text-sm font-medium text-text-primary mb-2">
+                        Supplier <span class="text-error">*</span>
+                    </label>
+                    <select id="orderSupplier" name="supplier_id" required 
+                            onchange="handleSupplierChange(this.value)"
+                            class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200">
+                        <option value="">Select a supplier</option>
+                    </select>
+                    <div id="orderSupplier-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                </div>
+
+                    <!-- Medicines Container (shown when supplier is selected) -->
+                    <div id="orderMedicinesContainer" class="hidden max-h-[300px] overflow-y-auto">
+                        <!-- Medicines will be loaded here dynamically -->
+                    </div>
+
+                    <!-- Order Items List -->
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">
+                            Order Items
+                        </label>
+                        <div id="orderItemsList" class="border border-border-light rounded-xl p-4 min-h-[100px] max-h-[200px] overflow-y-auto">
+                            <div class="text-center py-4 text-text-secondary">No items added yet. Select a supplier and add medicines.</div>
+                        </div>
+                    </div>
+
+                <!-- Order Date -->
+                <div>
+                    <label for="orderDate" class="block text-sm font-medium text-text-primary mb-2">
+                        Order Date <span class="text-error">*</span>
+                    </label>
+                    <input type="date" id="orderDate" name="orderDate" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    <div id="orderDate-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                </div>
+
+                <!-- Status -->
+
+                <!-- Notes -->
+                <div>
+                    <label for="orderNotes" class="block text-sm font-medium text-text-primary mb-2">
+                        Notes (Optional)
+                    </label>
+                    <textarea id="orderNotes" name="notes" rows="3" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 resize-none" placeholder="Add any additional notes..."></textarea>
+                </div>
+                
+                    <div class="flex space-x-3 pt-4">
+                        <button type="button" id="cancelCreateOrder" class="flex-1 px-4 py-3 text-text-secondary border border-border-light rounded-xl hover:bg-surface-hover transition-all duration-200">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                            Create Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Order Details</h2>
+                <button id="closeDetailsModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="orderDetailsContent">
+                <!-- Order details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100" id="confirmationTitle">Confirm Action</h3>
+                <button id="closeConfirmationModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <p class="text-text-primary dark:text-gray-100" id="confirmationMessage">
+                    <!-- Confirmation message will be populated by JavaScript -->
+                </p>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3">
+                <button id="confirmationCancel" class="px-4 py-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 border border-border-light dark:border-gray-600 rounded-lg hover:bg-surface-hover dark:hover:bg-gray-800 transition-all duration-200">
+                    Cancel
+                </button>
+                <button id="confirmationConfirm" class="px-4 py-2 bg-primary hover:bg-primary-700 text-white rounded-lg transition-all duration-200">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div id="editOrderModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Edit Order</h2>
+                <button id="closeEditOrderModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="editOrderContent" class="space-y-6">
+                <!-- Order info and actions will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Confirmation Modal -->
+    <div id="receiptConfirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Confirm Receipt</h2>
+                <button id="closeReceiptModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="receiptConfirmationContent" class="space-y-6">
+                <p class="text-text-secondary dark:text-gray-400">Please verify that you received the correct quantities for each item:</p>
+                
+                <div id="receiptItemsList" class="space-y-4">
+                    <!-- Order items with quantity verification will be populated by JavaScript -->
+                </div>
+                
+                <div class="flex space-x-3 pt-4 border-t border-border-light dark:border-gray-700">
+                    <button id="cancelReceipt" class="flex-1 px-4 py-3 text-text-secondary dark:text-gray-400 border border-border-light dark:border-gray-600 rounded-xl hover:bg-surface-hover dark:hover:bg-gray-800 transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button id="confirmReceipt" class="flex-1 bg-primary hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                        <i class="fas fa-check mr-2"></i>
+                        Confirm Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Modal -->
+    <div id="bulkActionsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary">Bulk Actions</h2>
+                <button id="closeBulkModal" class="text-text-tertiary hover:text-text-secondary transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <p class="text-text-secondary">
+                    <span id="selectedCount">0</span> orders selected
+                </p>
+                
+                <div class="space-y-3">
+                    <button id="bulkMarkCompleted" class="w-full px-4 py-3 text-left text-text-secondary hover:text-primary hover:bg-primary-50 rounded-lg transition-all duration-200">
+                        <i class="fas fa-check-circle mr-3 text-success"></i>
+                        Mark as Completed
+                    </button>
+                    <button id="bulkMarkShipped" class="w-full px-4 py-3 text-left text-text-secondary hover:text-primary hover:bg-primary-50 rounded-lg transition-all duration-200">
+                        <i class="fas fa-shipping-fast mr-3 text-accent"></i>
+                        Mark as Shipped
+                    </button>
+                    <button id="bulkCancelOrders" class="w-full px-4 py-3 text-left text-text-secondary hover:text-error hover:bg-error-50 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times-circle mr-3 text-error"></i>
+                        Cancel Orders
+                    </button>
+                    <button id="bulkExportSelected" class="w-full px-4 py-3 text-left text-text-secondary hover:text-primary hover:bg-primary-50 rounded-lg transition-all duration-200">
+                        <i class="fas fa-download mr-3 text-primary"></i>
+                        Export Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Orders data - will be loaded from database
+        let ordersData = [];
+        let filteredOrders = [];
+        let suppliersData = [];
+        let selectedOrders = new Set();
+        let currentPage = 1;
+        let pageSize = 25;
+        let sortField = '';
+        let sortDirection = 'asc';
+        let currentOrderItems = []; // For order creation
+        let totalOrdersCount = 0; // Total orders from server (for pagination)
+        
+        // API Base URL
+        function getApiBaseUrl() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/pages/')) {
+                return '../php';
+            }
+            return 'php';
+        }
+        
+        // Fetch orders from database
+        async function fetchOrders(page = 1, search = '', status = '', supplier_id = 0, dateFrom = '', dateTo = '') {
+            try {
+                const baseUrl = getApiBaseUrl();
+                let url = `${baseUrl}/get_orders.php?page=${page}&pageSize=${pageSize}`;
+                
+                if (search) {
+                    url += `&search=${encodeURIComponent(search)}`;
+                }
+                if (status) {
+                    url += `&status=${encodeURIComponent(status)}`;
+                }
+                if (supplier_id > 0) {
+                    url += `&supplier_id=${supplier_id}`;
+                }
+                if (dateFrom) {
+                    url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+                }
+                if (dateTo) {
+                    url += `&dateTo=${encodeURIComponent(dateTo)}`;
+                }
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to fetch orders');
+                }
+                
+                // Transform database data to match frontend format
+                ordersData = (data.data || []).map(order => ({
+                    id: order.id,
+                    supplier_id: order.supplier_id,
+                    supplier_name: order.supplier_name || 'Unknown Supplier',
+                    order_date: order.order_date,
+                    date: order.order_date, // For compatibility
+                    status: (order.status || '').toLowerCase().trim() || 'pending', // Normalize status to lowercase
+                    total_amount: parseFloat(order.total_amount || 0),
+                    notes: order.notes || '',
+                    item_count: order.item_count || 0,
+                    created_at: order.created_at,
+                    updated_at: order.updated_at
+                }));
+                
+                filteredOrders = [...ordersData];
+                totalOrdersCount = data.total || 0; // Store total from server
+                currentPage = data.page || 1;
+                renderOrders();
+                updatePagination();
+                
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                ordersData = [];
+                filteredOrders = [];
+                renderOrders();
+                showError('Failed to load orders: ' + error.message);
+            }
+        }
+        
+        // Fetch suppliers
+        async function fetchSuppliers() {
+            try {
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/get_suppliers.php?page=1&pageSize=1000`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    suppliersData = data.data;
+                    populateSupplierDropdown();
+                }
+            } catch (error) {
+                console.error('Error fetching suppliers:', error);
+            }
+        }
+        
+        // Fetch medicines by supplier using supplier_medicines junction table
+        async function fetchMedicinesBySupplier(supplierId) {
+            try {
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/get_supplier_medicines.php?supplier_id=${supplierId}`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    return data.data;
+                }
+                return [];
+            } catch (error) {
+                console.error('Error fetching medicines:', error);
+                return [];
+            }
+        }
+        
+        // Populate supplier dropdown
+        function populateSupplierDropdown() {
+            const supplierSelect = document.getElementById('orderSupplier');
+            if (!supplierSelect) return;
+            
+            supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
+            suppliersData.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.id;
+                option.textContent = supplier.name;
+                supplierSelect.appendChild(option);
+            });
+        }
+        
+        // Handle supplier selection change
+        async function handleSupplierChange(supplierId) {
+            const medicinesContainer = document.getElementById('orderMedicinesContainer');
+            if (!medicinesContainer) return;
+            
+            if (!supplierId || supplierId <= 0) {
+                medicinesContainer.innerHTML = '';
+                medicinesContainer.classList.add('hidden');
+                currentOrderItems = [];
+                renderOrderItems();
+                return;
+            }
+            
+            medicinesContainer.classList.remove('hidden');
+            medicinesContainer.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading medicines...</div>';
+            
+            const medicines = await fetchMedicinesBySupplier(supplierId);
+            
+            if (medicines.length === 0) {
+                medicinesContainer.innerHTML = '<div class="text-center py-4 text-text-secondary">No medicines available for this supplier.</div>';
+                return;
+            }
+            
+            // Create medicines dropdown with animation
+            let html = '<div class="space-y-3 max-h-64 overflow-y-auto">';
+            medicines.forEach(medicine => {
+                html += `
+                    <div class="border border-border-light rounded-lg p-3 hover:bg-surface-hover transition-all duration-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex-1">
+                                <div class="font-medium text-text-primary">${escapeHtml(medicine.name || 'N/A')}</div>
+                                <div class="text-sm text-text-secondary">NDC: ${medicine.ndc || 'N/A'} | Qty: ${medicine.quantity || 0}</div>
+                            </div>
+                            <button type="button" onclick="addMedicineToOrder(${medicine.id}, '${escapeHtml(medicine.name)}', ${medicine.price || 0}, ${medicine.quantity || 0})" 
+                                    class="px-3 py-1 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors text-sm">
+                                <i class="fas fa-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            medicinesContainer.innerHTML = html;
+        }
+        
+        // Add medicine to order
+        function addMedicineToOrder(medicineId, medicineName, price, availableQty) {
+            // Check if already added
+            const existing = currentOrderItems.find(item => item.medicine_id === medicineId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                currentOrderItems.push({
+                    medicine_id: medicineId,
+                    medicine_name: medicineName,
+                    quantity: 1,
+                    price: price,
+                    available_qty: availableQty
+                });
+            }
+            
+            renderOrderItems();
+        }
+        
+        // Remove medicine from order
+        function removeMedicineFromOrder(medicineId) {
+            currentOrderItems = currentOrderItems.filter(item => item.medicine_id !== medicineId);
+            renderOrderItems();
+        }
+        
+        // Render order items list
+        function renderOrderItems() {
+            const itemsList = document.getElementById('orderItemsList');
+            if (!itemsList) return;
+            
+            if (currentOrderItems.length === 0) {
+                itemsList.innerHTML = '<div class="text-center py-4 text-text-secondary">No items added yet. Select a supplier and add medicines.</div>';
+                return;
+            }
+            
+            let html = '<div class="space-y-2">';
+            let total = 0;
+            
+            currentOrderItems.forEach(item => {
+                const itemTotal = item.quantity * item.price;
+                total += itemTotal;
+                
+                html += `
+                    <div class="flex items-center justify-between border border-border-light rounded-lg p-3">
+                        <div class="flex-1">
+                            <div class="font-medium text-text-primary">${escapeHtml(item.medicine_name)}</div>
+                            <div class="text-sm text-text-secondary">
+                                Qty: <input type="number" min="0" value="${item.quantity}" 
+                                    onchange="updateOrderItemQuantity(${item.medicine_id}, this.value)" 
+                                    class="w-16 px-2 py-1 border border-border-light rounded text-center">
+                                × $${item.price.toFixed(2)} = $${itemTotal.toFixed(2)}
+                            </div>
+                        </div>
+                        <button type="button" onclick="removeMedicineFromOrder(${item.medicine_id})" 
+                                class="text-error-600 hover:text-error-700 ml-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="border-t border-border-light pt-2 mt-2">
+                    <div class="flex justify-between font-semibold text-lg">
+                        <span>Total:</span>
+                        <span>$${total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+            html += '</div>';
+            
+            itemsList.innerHTML = html;
+        }
+        
+        // Update order item quantity
+        function updateOrderItemQuantity(medicineId, quantity) {
+            const item = currentOrderItems.find(item => item.medicine_id === medicineId);
+            if (item) {
+                const qty = parseInt(quantity) || 0;
+                item.quantity = Math.max(0, qty);
+                renderOrderItems();
+            }
+        }
+        
+        // Helper function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Helper function for notifications
+        function showError(message) {
+            alert('✗ ' + message);
+        }
+        
+        function showSuccess(message) {
+            alert('✓ ' + message);
+        }
+
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+            
+            document.documentElement.classList.toggle('dark', isDark);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', isDark);
+                toggle.classList.toggle('bg-border-light', !isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', isDark);
+                button.classList.toggle('translate-x-1', !isDark);
+            });
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', !isDark);
+                toggle.classList.toggle('bg-border-light', isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', !isDark);
+                button.classList.toggle('translate-x-1', isDark);
+            });
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initializeTheme();
+
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update user display from localStorage
+            const userFullName = localStorage.getItem('userFullName') || 'User';
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            
+            if (userDisplayNameEl) {
+                userDisplayNameEl.textContent = userFullName;
+            }
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+
+            initializePage();
+            fetchSuppliers(); // Load suppliers for dropdown
+            fetchOrders(currentPage); // Load orders from database
+            startClock();
+        });
+
+        function initializePage() {
+            // Set today's date as default for order date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('orderDate').value = today;
+
+            // Sidebar is handled by centralized sidebar.js - no need to initialize here
+
+            // Modal functionality
+            setupModals();
+            
+            // Event listeners
+            setupEventListeners();
+        }
+
+        /**
+         * Custom Confirmation Modal Function
+         * Replaces browser confirm() with a custom modal
+         * @param {string} message - The confirmation message to display
+         * @param {string} title - Optional title for the modal (default: "Confirm Action")
+         * @returns {Promise<boolean>} - Promise that resolves to true if confirmed, false if cancelled
+         */
+        function showConfirmation(message, title = 'Confirm Action') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmationModal');
+                const titleEl = document.getElementById('confirmationTitle');
+                const messageEl = document.getElementById('confirmationMessage');
+                const confirmBtn = document.getElementById('confirmationConfirm');
+                const cancelBtn = document.getElementById('confirmationCancel');
+                const closeBtn = document.getElementById('closeConfirmationModal');
+
+                // Check if all elements exist
+                if (!modal || !titleEl || !messageEl || !confirmBtn || !cancelBtn || !closeBtn) {
+                    console.error('Confirmation modal elements not found');
+                    // Fallback to browser confirm if modal elements are missing
+                    const confirmed = confirm(`${title}\n\n${message}`);
+                    resolve(confirmed);
+                    return;
+                }
+
+                // Set content
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+
+                // Handle confirmation
+                const handleConfirm = () => {
+                    cleanup();
+                    modal.classList.add('hidden');
+                    resolve(true);
+                };
+
+                // Handle cancellation
+                const handleCancel = () => {
+                    cleanup();
+                    modal.classList.add('hidden');
+                    resolve(false);
+                };
+
+                // Close on backdrop click
+                const handleBackdropClick = (e) => {
+                    if (e.target === modal) {
+                        handleCancel();
+                    }
+                };
+
+                // Cleanup function to remove event listeners
+                const cleanup = () => {
+                    if (confirmBtn) confirmBtn.removeEventListener('click', handleConfirm);
+                    if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+                    if (closeBtn) closeBtn.removeEventListener('click', handleCancel);
+                    if (modal) modal.removeEventListener('click', handleBackdropClick);
+                };
+
+                // Add event listeners (one-time use)
+                confirmBtn.addEventListener('click', handleConfirm, { once: true });
+                cancelBtn.addEventListener('click', handleCancel, { once: true });
+                closeBtn.addEventListener('click', handleCancel, { once: true });
+                modal.addEventListener('click', handleBackdropClick, { once: true });
+
+                // Show modal - ensure it's visible
+                modal.classList.remove('hidden');
+                
+                // Force a reflow to ensure the modal is displayed
+                void modal.offsetHeight;
+                
+                // Ensure modal is on top (z-index)
+                modal.style.zIndex = '9999';
+            });
+        }
+
+        function setupModals() {
+            const modals = [
+                { modal: 'createOrderModal', openBtn: 'createOrderBtn', closeBtn: 'closeCreateModal', cancelBtn: 'cancelCreateOrder' },
+                { modal: 'orderDetailsModal', closeBtn: 'closeDetailsModal' },
+                { modal: 'editOrderModal', closeBtn: 'closeEditOrderModal' },
+                { modal: 'receiptConfirmationModal', closeBtn: 'closeReceiptModal', cancelBtn: 'cancelReceipt' },
+                { modal: 'bulkActionsModal', openBtn: 'bulkActionsBtn', closeBtn: 'closeBulkModal' }
+            ];
+
+            modals.forEach(({ modal, openBtn, closeBtn, cancelBtn }) => {
+                const modalEl = document.getElementById(modal);
+                const openBtnEl = document.getElementById(openBtn);
+                const closeBtnEl = document.getElementById(closeBtn);
+                const cancelBtnEl = document.getElementById(cancelBtn);
+
+                openBtnEl?.addEventListener('click', () => {
+                    modalEl.classList.remove('hidden');
+                    // Update selected count when bulk actions modal opens
+                    if (modal === 'bulkActionsModal') {
+                        document.getElementById('selectedCount').textContent = selectedOrders.size;
+                    }
+                });
+                closeBtnEl?.addEventListener('click', () => modalEl.classList.add('hidden'));
+                cancelBtnEl?.addEventListener('click', () => modalEl.classList.add('hidden'));
+
+                modalEl?.addEventListener('click', (e) => {
+                    if (e.target === modalEl) modalEl.classList.add('hidden');
+                });
+            });
+
+            // ESC key to close modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('[id$="Modal"]').forEach(modal => {
+                        modal.classList.add('hidden');
+                    });
+                }
+            });
+
+            // Empty state create order button
+            const createOrderBtnEmpty = document.getElementById('createOrderBtnEmpty');
+            const createOrderModal = document.getElementById('createOrderModal');
+            if (createOrderBtnEmpty && createOrderModal) {
+                createOrderBtnEmpty.addEventListener('click', () => {
+                    createOrderModal.classList.remove('hidden');
+                });
+            }
+        }
+
+        // Make functions globally accessible for onclick handlers
+        window.viewOrderDetails = viewOrderDetails;
+        window.editOrder = editOrder;
+        window.markOrderAsDelivered = markOrderAsDelivered;
+        window.cancelOrder = cancelOrder;
+
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('globalSearch').addEventListener('input', handleSearch);
+            
+            // Filter functionality
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('dateFrom').addEventListener('change', applyFilters);
+            document.getElementById('dateTo').addEventListener('change', applyFilters);
+            document.getElementById('resetFilters').addEventListener('click', resetFilters);
+            
+            // Page size change
+            document.getElementById('pageSize').addEventListener('change', async (e) => {
+                pageSize = parseInt(e.target.value);
+                currentPage = 1;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+                const searchTerm = document.getElementById('globalSearch')?.value || '';
+                await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+            });
+
+            // Select all functionality
+            document.getElementById('selectAll').addEventListener('change', handleSelectAll);
+
+            // Form submission
+            document.getElementById('createOrderForm').addEventListener('submit', handleCreateOrder);
+
+            // Table sorting
+            document.querySelectorAll('[data-sort]').forEach(header => {
+                header.addEventListener('click', () => handleSort(header.dataset.sort));
+            });
+
+            // Export functionality
+            document.getElementById('exportBtn').addEventListener('click', exportOrders);
+
+            // Bulk actions
+            document.getElementById('bulkMarkCompleted').addEventListener('click', () => bulkUpdateStatus('completed'));
+            document.getElementById('bulkMarkShipped').addEventListener('click', () => bulkUpdateStatus('shipping'));
+            document.getElementById('bulkCancelOrders').addEventListener('click', () => bulkUpdateStatus('cancelled'));
+            document.getElementById('bulkExportSelected').addEventListener('click', bulkExportSelected);
+        }
+
+        async function handleSearch(e) {
+            const searchTerm = e.target.value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            // Refetch orders from server with search and filters
+            currentPage = 1;
+            await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+        }
+
+        async function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const searchTerm = document.getElementById('globalSearch')?.value || '';
+
+            // Refetch orders from server with filters
+            currentPage = 1;
+            await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+        }
+
+        async function resetFilters() {
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            if (document.getElementById('globalSearch')) {
+                document.getElementById('globalSearch').value = '';
+            }
+            
+            // Refetch all orders without filters
+            currentPage = 1;
+            await fetchOrders(currentPage, '', '', 0, '', '');
+        }
+
+        function handleSort(field) {
+            if (sortField === field) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
+
+            filteredOrders.sort((a, b) => {
+                let aVal = a[field];
+                let bVal = b[field];
+
+                if (field === 'quantity') {
+                    aVal = parseInt(aVal);
+                    bVal = parseInt(bVal);
+                }
+
+                if (sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+
+            renderOrders();
+            updateSortIcons();
+        }
+
+        function updateSortIcons() {
+            document.querySelectorAll('[data-sort] i').forEach(icon => {
+                icon.className = 'fas fa-sort ml-1';
+            });
+
+            if (sortField) {
+                const activeHeader = document.querySelector(`[data-sort="${sortField}"] i`);
+                if (activeHeader) {
+                    activeHeader.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'} ml-1`;
+                }
+            }
+        }
+
+        function renderOrders() {
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+            // Desktop table view
+            const tableBody = document.getElementById('ordersTableBody');
+            tableBody.innerHTML = '';
+
+            // Mobile view
+            const mobileView = document.getElementById('mobileOrdersView');
+            mobileView.innerHTML = '';
+
+            if (paginatedOrders.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('emptyState').classList.add('hidden');
+            }
+
+            paginatedOrders.forEach(order => {
+                // Desktop row
+                const row = createDesktopOrderRow(order);
+                tableBody.appendChild(row);
+
+                // Mobile card
+                const card = createMobileOrderCard(order);
+                mobileView.appendChild(card);
+            });
+
+            updateResultsCount();
+        }
+
+        function createDesktopOrderRow(order) {
+            const row = document.createElement('tr');
+            row.className = 'table-row-hover';
+            row.innerHTML = `
+                <td class="px-6 py-4">
+                    <input type="checkbox" class="order-checkbox h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" data-order-id="${order.id}">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-text-primary dark:text-gray-100">${order.id}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-text-primary dark:text-gray-100">${order.supplier_name || 'Unknown Supplier'}</div>
+                    <div class="text-xs text-text-secondary dark:text-gray-400">${order.item_count || 0} item(s)</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-text-secondary dark:text-gray-400">${formatDate(order.date || order.order_date)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-text-primary dark:text-gray-100">$${(order.total_amount || 0).toFixed(2)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="status-badge ${getStatusClass(order.status)}">
+                        ${getStatusIcon(order.status)}
+                        ${formatStatusText(order.status)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="viewOrderDetails('${order.id}')" class="text-primary dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors duration-200" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="editOrder('${order.id}')" class="text-accent dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 transition-colors duration-200" title="Edit Order">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            // Add checkbox event listener
+            const checkbox = row.querySelector('.order-checkbox');
+            checkbox.addEventListener('change', handleOrderSelection);
+
+            return row;
+        }
+
+        function createMobileOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'p-4 space-y-3';
+            card.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" class="order-checkbox h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" data-order-id="${order.id}">
+                        <div class="text-sm font-medium text-text-primary">${order.id}</div>
+                    </div>  
+                    <span class="status-badge ${getStatusClass(order.status)}">
+                        ${getStatusIcon(order.status)}
+                        ${formatStatusText(order.status)}
+                    </span>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-text-primary">${order.supplier_name || 'Unknown Supplier'}</div>
+                    <div class="text-xs text-text-secondary mt-1">${order.item_count || 0} item(s) • Total: $${(order.total_amount || 0).toFixed(2)} • Date: ${formatDate(order.date || order.order_date)}</div>
+                </div>
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-border-light">
+                    <button onclick="viewOrderDetails('${order.id}')" class="text-primary hover:text-primary-700 transition-colors duration-200 p-2" title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="editOrder('${order.id}')" class="text-accent hover:text-accent-700 transition-colors duration-200 p-2" title="Edit Order">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            `;
+
+            // Add checkbox event listener
+            const checkbox = card.querySelector('.order-checkbox');
+            checkbox.addEventListener('change', handleOrderSelection);
+
+            return card;
+        }
+
+        function getStatusClass(status) {
+            // Normalize status to lowercase for consistent matching
+            const normalizedStatus = (status || '').toLowerCase().trim();
+            
+            const statusClasses = {
+                'pending': 'bg-warning-100 dark:bg-warning-900 text-warning-700 dark:text-warning-300',
+                'completed': 'status-success bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300',
+                'shipping': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'shipped': 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300',
+                'cancelled': 'bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300',
+                'canceled': 'bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300'
+            };
+            return statusClasses[normalizedStatus] || 'bg-surface-hover dark:bg-gray-800 text-text-secondary dark:text-gray-400';
+        }
+
+        function getStatusIcon(status) {
+            // Normalize status to lowercase for consistent matching
+            const normalizedStatus = (status || '').toLowerCase().trim();
+            
+            const statusIcons = {
+                'pending': '<i class="fas fa-clock mr-1"></i>',
+                'completed': '<i class="fas fa-check mr-1"></i>',
+                'shipped': '<i class="fas fa-shipping-fast mr-1"></i>',
+                'shipping': '<i class="fas fa-shipping-fast mr-1"></i>',
+                'cancelled': '<i class="fas fa-times mr-1"></i>',
+                'canceled': '<i class="fas fa-times mr-1"></i>'
+            };
+            return statusIcons[normalizedStatus] || '';
+        }
+
+        function formatStatusText(status) {
+            // Safely format status text with proper capitalization
+            if (!status) return 'Unknown';
+            return status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function handleOrderSelection(e) {
+            const orderId = e.target.dataset.orderId;
+            if (e.target.checked) {
+                selectedOrders.add(orderId);
+            } else {
+                selectedOrders.delete(orderId);
+            }
+
+            updateBulkActionsVisibility();
+            updateSelectAllState();
+        }
+
+        function handleSelectAll(e) {
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+                const orderId = checkbox.dataset.orderId;
+                if (e.target.checked) {
+                    selectedOrders.add(orderId);
+                } else {
+                    selectedOrders.delete(orderId);
+                }
+            });
+
+            updateBulkActionsVisibility();
+        }
+
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+
+            if (checkedCheckboxes.length === 0) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+            } else if (checkedCheckboxes.length === checkboxes.length) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = true;
+            } else {
+                selectAllCheckbox.indeterminate = true;
+                selectAllCheckbox.checked = false;
+            }
+        }
+
+        function updateBulkActionsVisibility() {
+            const bulkActionsBtn = document.getElementById('bulkActionsBtn');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedOrders.size > 0) {
+                bulkActionsBtn.classList.remove('hidden');
+                selectedCount.textContent = selectedOrders.size;
+            } else {
+                bulkActionsBtn.classList.add('hidden');
+            }
+        }
+
+        function updateResultsCount() {
+            document.getElementById('resultsCount').textContent = `Showing ${filteredOrders.length} of ${ordersData.length} orders`;
+        }
+
+        function updatePagination() {
+            // Use server total for pagination when filtering, otherwise use filteredOrders length
+            const totalForPagination = totalOrdersCount > 0 ? totalOrdersCount : filteredOrders.length;
+            const totalPages = Math.ceil(totalForPagination / pageSize);
+            const startIndex = filteredOrders.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+            const endIndex = Math.min(currentPage * pageSize, totalForPagination);
+
+            document.getElementById('showingFrom').textContent = startIndex;
+            document.getElementById('showingTo').textContent = endIndex;
+            document.getElementById('totalOrders').textContent = totalForPagination;
+
+            // Update pagination buttons
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+
+            // Update page numbers
+            const pageNumbers = document.getElementById('pageNumbers');
+            pageNumbers.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
+                        i === currentPage 
+                            ? 'bg-primary text-white' 
+                            : 'text-text-secondary hover:text-primary border border-border-light hover:border-primary-300'
+                    }`;
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', async () => {
+                        currentPage = i;
+                        const statusFilter = document.getElementById('statusFilter').value;
+                        const dateFrom = document.getElementById('dateFrom').value;
+                        const dateTo = document.getElementById('dateTo').value;
+                        const searchTerm = document.getElementById('globalSearch')?.value || '';
+                        await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+                    });
+                    pageNumbers.appendChild(pageBtn);
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'px-2 text-text-tertiary';
+                    ellipsis.textContent = '...';
+                    pageNumbers.appendChild(ellipsis);
+                }
+            }
+
+            // Pagination navigation
+            document.getElementById('prevPage').onclick = async () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    const statusFilter = document.getElementById('statusFilter').value;
+                    const dateFrom = document.getElementById('dateFrom').value;
+                    const dateTo = document.getElementById('dateTo').value;
+                    const searchTerm = document.getElementById('globalSearch')?.value || '';
+                    await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+                }
+            };
+
+            document.getElementById('nextPage').onclick = async () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    const statusFilter = document.getElementById('statusFilter').value;
+                    const dateFrom = document.getElementById('dateFrom').value;
+                    const dateTo = document.getElementById('dateTo').value;
+                    const searchTerm = document.getElementById('globalSearch')?.value || '';
+                    await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+                }
+            };
+        }
+
+        async function handleCreateOrder(e) {
+            e.preventDefault();
+            
+            if (currentOrderItems.length === 0) {
+                showError('Please add at least one medicine to the order');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const supplier_id = formData.get('supplier_id');
+            const order_date = formData.get('orderDate');
+            const status = formData.get('status');
+            const notes = formData.get('notes') || '';
+            
+            if (!supplier_id || !order_date) {
+                showError('Please fill in all required fields');
+                return;
+            }
+            
+            // Prepare order items
+            const items = currentOrderItems.map(item => ({
+                medicine_id: item.medicine_id,
+                quantity: item.quantity,
+                price: item.price
+            }));
+            
+            // Submit to API
+            try {
+                const baseUrl = getApiBaseUrl();
+                const submitData = new FormData();
+                submitData.append('supplier_id', supplier_id);
+                submitData.append('order_date', order_date);
+                submitData.append('status', status);
+                submitData.append('notes', notes);
+                submitData.append('items', JSON.stringify(items));
+                
+                const response = await fetch(`${baseUrl}/add_order.php`, {
+                    method: 'POST',
+                    body: submitData,
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('Order created successfully!');
+                    e.target.reset();
+                    document.getElementById('orderDate').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('createOrderModal').classList.add('hidden');
+                    currentOrderItems = [];
+                    document.getElementById('orderMedicinesContainer').innerHTML = '';
+                    document.getElementById('orderMedicinesContainer').classList.add('hidden');
+                    document.getElementById('orderItemsList').innerHTML = '<div class="text-center py-4 text-text-secondary">No items added yet. Select a supplier and add medicines.</div>';
+                    
+                    // Refresh orders list
+                    await fetchOrders(currentPage);
+                } else {
+                    showError(result.message || 'Failed to create order');
+                }
+            } catch (error) {
+                console.error('Error creating order:', error);
+                showError('Server error: ' + error.message);
+            }
+        }
+
+        async function viewOrderDetails(orderId) {
+            const order = ordersData.find(o => o.id === orderId);
+            if (!order) {
+                showError('Order not found');
+                return;
+            }
+
+            const detailsContent = document.getElementById('orderDetailsContent');
+            detailsContent.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-text-secondary">Loading order details...</p></div>';
+
+            document.getElementById('orderDetailsModal').classList.remove('hidden');
+
+            // Fetch order items
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_order_items.php?order_id=${orderId}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                const orderItems = data.success ? (data.data || []) : [];
+
+                detailsContent.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Order Header Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order ID</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">#${order.id}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Status</label>
+                                <span class="status-badge ${getStatusClass(order.status)}">
+                                    ${getStatusIcon(order.status)}
+                                    ${formatStatusText(order.status)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(order.supplier_name || 'Unknown')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order Date</label>
+                                <p class="text-text-primary dark:text-gray-100">${formatDate(order.order_date || order.date)}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Amount</label>
+                                <p class="text-text-primary dark:text-gray-100 font-semibold">$${(order.total_amount || 0).toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Items Count</label>
+                                <p class="text-text-primary dark:text-gray-100">${orderItems.length} item(s)</p>
+                            </div>
+                        </div>
+
+                        ${order.notes ? `
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Notes</label>
+                                <p class="text-text-primary dark:text-gray-100 bg-surface-hover dark:bg-gray-800 p-3 rounded-lg">${escapeHtml(order.notes)}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Order Items Table -->
+                        <div class="pt-4 border-t border-border-light dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-4">Order Items</h3>
+                            ${orderItems.length > 0 ? `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-border-light dark:divide-gray-700">
+                                        <thead class="bg-surface-hover dark:bg-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Medicine</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">NDC</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Quantity</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Price</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                                            ${orderItems.map(item => {
+                                                // Ensure price and quantity are numbers
+                                                const price = parseFloat(item.price) || 0;
+                                                const quantity = parseInt(item.quantity) || 0;
+                                                const itemTotal = price * quantity;
+                                                return `
+                                                    <tr>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-medium">${quantity}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">$${price.toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">$${itemTotal.toFixed(2)}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p class="text-text-secondary dark:text-gray-400 text-center py-4">No items found for this order.</p>'}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching order items:', error);
+                detailsContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl text-error mb-2"></i>
+                        <p class="text-text-secondary dark:text-gray-400">Failed to load order items. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function editOrder(orderId) {
+            const order = ordersData.find(o => o.id === orderId);
+            if (!order) {
+                showError('Order not found');
+                return;
+            }
+
+            // Store current order ID for actions
+            window.currentEditOrderId = orderId;
+
+            const editContent = document.getElementById('editOrderContent');
+            editContent.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Order Info -->
+                    <div class="bg-surface-hover dark:bg-gray-800 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order ID</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">#${order.id}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Current Status</label>
+                                <span class="status-badge ${getStatusClass(order.status)}">
+                                    ${getStatusIcon(order.status)}
+                                    ${formatStatusText(order.status)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(order.supplier_name || 'Unknown')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Amount</label>
+                                <p class="text-text-primary dark:text-gray-100 font-semibold">$${(order.total_amount || 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-medium text-text-primary dark:text-gray-100">Order Actions</h3>
+                        
+                        ${order.status !== 'cancelled' && order.status !== 'completed' ? `
+                            <button onclick="markOrderAsDelivered(${orderId})" 
+                                    class="w-full px-4 py-3 bg-success hover:bg-success-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Mark as Delivered</span>
+                            </button>
+                        ` : ''}
+                        
+                        ${order.status !== 'cancelled' && order.status !== 'completed' ? `
+                            <button onclick="cancelOrder(${orderId})" 
+                                    class="w-full px-4 py-3 bg-error hover:bg-error-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                                <i class="fas fa-times-circle"></i>
+                                <span>Cancel Order</span>
+                            </button>
+                        ` : ''}
+                        
+                        ${order.status === 'cancelled' ? `
+                            <div class="p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-lg">
+                                <p class="text-error-700 dark:text-error-300 text-sm">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    This order has been cancelled and cannot be modified.
+                                </p>
+                            </div>
+                        ` : ''}
+                        
+                        ${order.status === 'completed' ? `
+                            <div class="p-4 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
+                                <p class="text-success-700 dark:text-success-300 text-sm">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    This order has been completed.
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('editOrderModal').classList.remove('hidden');
+        }
+
+        async function markOrderAsDelivered(orderId) {
+            // Close edit modal
+            document.getElementById('editOrderModal').classList.add('hidden');
+            
+            // Fetch order items for receipt confirmation
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_order_items.php?order_id=${orderId}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                const orderItems = data.success ? (data.data || []) : [];
+
+                if (orderItems.length === 0) {
+                    showError('No items found for this order');
+                    return;
+                }
+
+                // Store order ID for confirmation
+                window.currentReceiptOrderId = orderId;
+
+                // Populate receipt confirmation modal
+                const receiptContent = document.getElementById('receiptItemsList');
+                receiptContent.innerHTML = orderItems.map(item => `
+                    <div class="border border-border-light dark:border-gray-700 rounded-lg p-4">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</h4>
+                                <p class="text-sm text-text-secondary dark:text-gray-400">NDC: ${escapeHtml(item.ndc || 'N/A')} | Batch: ${item.batch_number || 'N/A'}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-text-secondary dark:text-gray-400">Ordered Quantity</p>
+                                <p class="text-lg font-semibold text-text-primary dark:text-gray-100">${item.quantity || 0}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <label class="text-sm font-medium text-text-secondary dark:text-gray-400 flex-1">
+                                Received Quantity:
+                            </label>
+                            <input type="number" 
+                                   min="0" 
+                                   max="${item.quantity || 0}" 
+                                   value="${item.quantity || 0}"
+                                   data-item-id="${item.id}"
+                                   data-medicine-id="${item.medicine_id}"
+                                   data-ordered-qty="${item.quantity || 0}"
+                                   class="received-qty-input w-24 px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 text-center font-medium text-text-primary dark:text-gray-100 bg-white dark:bg-gray-800">
+                        </div>
+                        <div class="mt-2">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" 
+                                       data-item-id="${item.id}"
+                                       class="quantity-match-checkbox rounded border-border-medium text-primary-600 focus:ring-primary-200">
+                                <span class="text-sm text-text-secondary dark:text-gray-400">Quantity matches order</span>
+                            </label>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Show receipt confirmation modal
+                document.getElementById('receiptConfirmationModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error fetching order items:', error);
+                showError('Failed to load order items for confirmation');
+            }
+        }
+
+        /**
+         * Cancel Order Function
+         * Cancels a pending order, changes status to "Cancelled", and archives it
+         * @param {number|string} orderId - The ID of the order to cancel
+         */
+        async function cancelOrder(orderId) {
+            const confirmed = await showConfirmation(
+                'Are you sure you want to cancel this order? This action cannot be undone. The order will be archived and removed from the active list.',
+                'Cancel Order'
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const baseUrl = getApiBaseUrl();
+                const formData = new FormData();
+                formData.append('id', orderId);
+                formData.append('status', 'cancelled');
+
+                const response = await fetch(`${baseUrl}/edit_order.php`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Order cancelled successfully');
+                    document.getElementById('editOrderModal').classList.add('hidden');
+                    
+                    // Clear selections
+                    selectedOrders.delete(String(orderId));
+                    selectedOrders.delete(orderId);
+                    updateBulkActionsVisibility();
+                    
+                    // Refetch orders from server to get updated status
+                    const statusFilter = document.getElementById('statusFilter').value;
+                    const dateFrom = document.getElementById('dateFrom').value;
+                    const dateTo = document.getElementById('dateTo').value;
+                    const searchTerm = document.getElementById('globalSearch')?.value || '';
+                    await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+                } else {
+                    showError(result.message || 'Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                showError('Failed to cancel order: ' + error.message);
+            }
+        }
+
+
+        async function exportOrders() {
+            try {
+                let dataToExport;
+                
+                if (selectedOrders.size > 0) {
+                    // Export only selected orders - get from all available data
+                    const allAvailableOrders = [...filteredOrders, ...ordersData].filter((order, index, self) => 
+                        index === self.findIndex(o => o.id === order.id)
+                    );
+                    dataToExport = allAvailableOrders.filter(order => 
+                        selectedOrders.has(String(order.id)) || selectedOrders.has(order.id.toString())
+                    );
+                    console.log('Selected orders export:', selectedOrders.size, 'found:', dataToExport.length);
+                } else {
+                    // Export all filtered orders - fetch all pages with current filters
+                    const statusFilter = document.getElementById('statusFilter').value;
+                    const dateFrom = document.getElementById('dateFrom').value;
+                    const dateTo = document.getElementById('dateTo').value;
+                    const searchTerm = document.getElementById('globalSearch')?.value || '';
+                    
+                    // Fetch all orders with current filters (use large page size to get all)
+                    const baseUrl = getApiBaseUrl();
+                    let url = `${baseUrl}/get_orders.php?page=1&pageSize=10000`;
+                    
+                    if (searchTerm) {
+                        url += `&search=${encodeURIComponent(searchTerm)}`;
+                    }
+                    if (statusFilter) {
+                        url += `&status=${encodeURIComponent(statusFilter)}`;
+                    }
+                    if (dateFrom) {
+                        url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+                    }
+                    if (dateTo) {
+                        url += `&dateTo=${encodeURIComponent(dateTo)}`;
+                    }
+                    
+                    showNotification('Fetching orders for export...', 'info');
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.message || 'Failed to fetch orders for export');
+                    }
+                    
+                    // Transform the fetched data
+                    dataToExport = (data.data || []).map(order => ({
+                        id: order.id,
+                        supplier_name: order.supplier_name || 'Unknown Supplier',
+                        order_date: order.order_date,
+                        date: order.order_date,
+                        total_amount: parseFloat(order.total_amount || 0),
+                        status: order.status,
+                        item_count: order.item_count || 0,
+                        notes: order.notes || ''
+                    }));
+                }
+
+                if (!dataToExport || dataToExport.length === 0) {
+                    showError('No orders to export');
+                    return;
+                }
+
+                console.log('Exporting orders:', dataToExport.length, dataToExport);
+
+                // Prepare CSV content with actual table columns
+                const csvRows = [
+                    ['Order ID', 'Supplier', 'Order Date', 'Total Amount', 'Status', 'Item Count', 'Notes']
+                ];
+
+                // Add data rows
+                dataToExport.forEach(order => {
+                    // Ensure all fields are properly formatted
+                    const orderId = order.id ? String(order.id) : '';
+                    const supplier = order.supplier_name ? String(order.supplier_name) : 'Unknown Supplier';
+                    const orderDate = order.order_date || order.date || '';
+                    const totalAmount = order.total_amount ? parseFloat(order.total_amount).toFixed(2) : '0.00';
+                    const status = order.status ? String(order.status).charAt(0).toUpperCase() + String(order.status).slice(1) : '';
+                    const itemCount = order.item_count ? String(order.item_count) : '0';
+                    const notes = order.notes ? String(order.notes) : '';
+                    
+                    const row = [
+                        orderId,
+                        supplier,
+                        orderDate,
+                        totalAmount,
+                        status,
+                        itemCount,
+                        notes
+                    ];
+                    csvRows.push(row);
+                });
+
+                // Convert to CSV format
+                const csvContent = csvRows.map(row => {
+                    return row.map(field => {
+                        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+                        const fieldStr = String(field || '');
+                        if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+                            return `"${fieldStr.replace(/"/g, '""')}"`;
+                        }
+                        return fieldStr;
+                    }).join(',');
+                }).join('\r\n'); // Use \r\n for Excel compatibility
+
+                // Add UTF-8 BOM for Excel compatibility
+                const BOM = '\uFEFF';
+                const csvWithBOM = BOM + csvContent;
+
+                // Create and download file
+                const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+
+                const exportCount = dataToExport.length;
+                const message = selectedOrders.size > 0 
+                    ? `Exported ${exportCount} selected order(s) successfully!`
+                    : `Exported ${exportCount} order(s) successfully!`;
+                showNotification(message, 'success');
+            } catch (error) {
+                console.error('Error exporting orders:', error);
+                showError('Failed to export orders: ' + error.message);
+            }
+        }
+
+        // Bulk Actions Functions
+        async function bulkUpdateStatus(newStatus) {
+            if (selectedOrders.size === 0) {
+                showError('No orders selected');
+                return;
+            }
+
+            const statusLabels = {
+                'completed': 'Completed',
+                'shipping': 'Shipped',
+                'cancelled': 'Cancelled'
+            };
+
+            const statusLabel = statusLabels[newStatus] || newStatus;
+            const confirmMessage = `Are you sure you want to mark ${selectedOrders.size} order(s) as ${statusLabel}?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            const baseUrl = getApiBaseUrl();
+            const orderIds = Array.from(selectedOrders);
+            let successCount = 0;
+            let failCount = 0;
+
+            // Close modal
+            document.getElementById('bulkActionsModal').classList.add('hidden');
+
+            // Show loading notification
+            showNotification(`Updating ${orderIds.length} order(s)...`, 'info');
+
+            // Update each order
+            for (const orderId of orderIds) {
+                try {
+                    const formData = new FormData();
+                    formData.append('id', String(orderId)); // Ensure it's a string
+                    formData.append('status', newStatus);
+
+                    const response = await fetch(`${baseUrl}/edit_order.php`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        console.error(`Failed to update order ${orderId}:`, result.message);
+                    }
+                } catch (error) {
+                    failCount++;
+                    console.error(`Error updating order ${orderId}:`, error);
+                }
+            }
+
+            // Clear selections
+            selectedOrders.clear();
+            document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateBulkActionsVisibility();
+
+            // Refresh orders list
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const searchTerm = document.getElementById('globalSearch')?.value || '';
+            await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
+
+            // Show result notification
+            if (failCount === 0) {
+                showNotification(`Successfully updated ${successCount} order(s) to ${statusLabel}`, 'success');
+            } else {
+                showNotification(`Updated ${successCount} order(s), ${failCount} failed`, 'warning');
+            }
+        }
+
+        function bulkExportSelected() {
+            if (selectedOrders.size === 0) {
+                showError('No orders selected');
+                return;
+            }
+
+            // Get selected orders (convert IDs to strings for comparison)
+            const selectedOrdersArray = ordersData.filter(order => 
+                selectedOrders.has(String(order.id))
+            );
+
+            if (selectedOrdersArray.length === 0) {
+                showError('Selected orders not found in current data');
+                return;
+            }
+
+            // Prepare CSV content
+            const csvContent = [
+                ['Order ID', 'Supplier', 'Order Date', 'Status', 'Total Amount', 'Items', 'Notes'],
+                ...selectedOrdersArray.map(order => [
+                    order.id,
+                    order.supplier_name || 'Unknown',
+                    order.order_date || order.date,
+                    order.status,
+                    `$${parseFloat(order.total_amount || 0).toFixed(2)}`,
+                    order.item_count || 0,
+                    (order.notes || '').replace(/"/g, '""') // Escape quotes
+                ])
+            ].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `selected_orders_export_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            // Close modal
+            document.getElementById('bulkActionsModal').classList.add('hidden');
+
+            showNotification(`Exported ${selectedOrders.size} order(s) successfully!`, 'success');
+        }
+
+        // Modal close handlers
+        const modals = [
+            { modal: 'createOrderModal', closeBtn: 'closeCreateModal', cancelBtn: 'cancelCreateOrder' },
+            { modal: 'orderDetailsModal', closeBtn: 'closeDetailsModal' },
+            { modal: 'editOrderModal', closeBtn: 'closeEditOrderModal' },
+            { modal: 'receiptConfirmationModal', closeBtn: 'closeReceiptModal', cancelBtn: 'cancelReceipt' },
+            { modal: 'bulkActionsModal', closeBtn: 'closeBulkModal' }
+        ];
+
+        modals.forEach(({ modal, closeBtn, cancelBtn }) => {
+            const modalEl = document.getElementById(modal);
+            const closeBtnEl = document.getElementById(closeBtn);
+            const cancelBtnEl = cancelBtn ? document.getElementById(cancelBtn) : null;
+
+            if (closeBtnEl) {
+                closeBtnEl.addEventListener('click', () => {
+                    modalEl.classList.add('hidden');
+                });
+            }
+
+            if (cancelBtnEl) {
+                cancelBtnEl.addEventListener('click', () => {
+                    modalEl.classList.add('hidden');
+                });
+            }
+
+            // Close on backdrop click
+            if (modalEl) {
+                modalEl.addEventListener('click', (e) => {
+                    if (e.target === modalEl) {
+                        modalEl.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        // Confirm Receipt Handler
+        document.getElementById('confirmReceipt')?.addEventListener('click', async function() {
+            const orderId = window.currentReceiptOrderId;
+            if (!orderId) {
+                showError('Order ID not found');
+                return;
+            }
+
+            // Collect received quantities
+            const receivedQuantities = {};
+            const quantityInputs = document.querySelectorAll('.received-qty-input');
+            let allQuantitiesValid = true;
+            let hasMismatch = false;
+
+            quantityInputs.forEach(input => {
+                const itemId = input.dataset.itemId;
+                const medicineId = input.dataset.medicineId;
+                const orderedQty = parseInt(input.dataset.orderedQty) || 0;
+                const receivedQty = parseInt(input.value) || 0;
+
+                if (receivedQty < 0 || receivedQty > orderedQty) {
+                    allQuantitiesValid = false;
+                    return;
+                }
+
+                if (receivedQty !== orderedQty) {
+                    hasMismatch = true;
+                }
+
+                receivedQuantities[itemId] = {
+                    medicine_id: medicineId,
+                    ordered_qty: orderedQty,
+                    received_qty: receivedQty
+                };
+            });
+
+            if (!allQuantitiesValid) {
+                showError('Please enter valid quantities (0 to ordered quantity)');
+                return;
+            }
+
+            // Warn if quantities don't match
+            if (hasMismatch) {
+                if (!confirm('Some received quantities do not match the ordered quantities. Do you want to proceed?')) {
+                    return;
+                }
+            }
+
+            // Disable button and show loading
+            this.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Confirming...';
+
+            try {
+                const baseUrl = getApiBaseUrl();
+                const formData = new FormData();
+                formData.append('id', orderId);
+                formData.append('status', 'completed');
+                formData.append('received_quantities', JSON.stringify(receivedQuantities));
+
+                const response = await fetch(`${baseUrl}/edit_order.php`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Order marked as delivered successfully!');
+                    document.getElementById('receiptConfirmationModal').classList.add('hidden');
+                    await fetchOrders(currentPage);
+                } else {
+                    showError(result.message || 'Failed to confirm receipt');
+                    this.disabled = false;
+                    this.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error confirming receipt:', error);
+                showError('Failed to confirm receipt: ' + error.message);
+                this.disabled = false;
+                this.innerHTML = originalText;
+            }
+        });
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white animation-slide-up ${
+                type === 'success' ? 'bg-success' : 
+                type === 'error' ? 'bg-error' : 
+                type === 'warning' ? 'bg-warning' : 'bg-primary'
+            }`;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function startClock() {
+            function updateClock() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                document.getElementById('liveClock').textContent = timeString;
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+        startClock();
+
+        // Theme toggle functionality
+        document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+        document.getElementById('headerThemeToggle')?.addEventListener('click', toggleTheme);
+
+        // Logout functionality
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Call logout endpoint to update status to inactive
+                fetch('../php/logout.php', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                }).then(() => {
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html';
+                }).catch(() => {
+                    // Even if logout endpoint fails, still clear and redirect
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html';
+                });
+            }
+        });
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js">    </script>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Settings</h2>
+                <button id="closeSettingsModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
+                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+                <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
+                        <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">Archive</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">View archived items, orders, and medicines</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Settings Modal
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+        window.openSettings = openSettings;
+
+        document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.add('hidden');
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                document.getElementById('settingsModal').classList.add('hidden');
+            }
+        });
+
+
+    </script>
+</body>
+</html>

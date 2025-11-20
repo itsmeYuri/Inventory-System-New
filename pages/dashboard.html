@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - INVENTORY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar will be loaded here -->
+    <script src="../js/load-sidebar.js"></script>
+    <!-- Top Bar will be loaded here -->
+    <script src="../js/load-topbar.js" data-title="Pharmacy Dashboard" data-description="Welcome back! Monitor your medicine inventory and operations."></script>
+    <!-- Archive Modal will be loaded here -->
+    <script src="../js/load-archive-modal.js" defer></script>
+    <!-- User Management Modal will be loaded here -->
+    <script src="../js/load-user-management-modal.js" defer></script>
+
+    <!-- Main Content -->
+    <main class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+
+        <!-- Dashboard Content -->
+        <div class="p-6 space-y-6">
+            <!-- Quick Actions Section -->
+            <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-4 flex items-center">
+                    <i class="fas fa-bolt text-primary-600 dark:text-primary-400 mr-2"></i>
+                    Quick Actions
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <button onclick="window.location.href='inventory_management.html'" class="flex flex-col items-center justify-center p-6 bg-primary-50 dark:bg-primary-900 hover:bg-primary-100 dark:hover:bg-primary-800 border-2 border-primary-200 dark:border-primary-700 hover:border-primary-300 dark:hover:border-primary-600 rounded-xl transition-all duration-200 group">
+                        <div class="w-12 h-12 bg-primary-600 dark:bg-primary-500 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <i class="fas fa-plus text-white"></i>
+                        </div>
+                        <span class="text-sm font-medium text-primary-700 dark:text-primary-300">Add Medicine</span>
+                    </button>
+
+                    <button onclick="window.location.href='orders_management.html'" class="flex flex-col items-center justify-center p-6 bg-secondary-50 dark:bg-secondary-900 hover:bg-secondary-100 dark:hover:bg-secondary-800 border-2 border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600 rounded-xl transition-all duration-200 group">
+                        <div class="w-12 h-12 bg-secondary-600 dark:bg-secondary-500 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <i class="fas fa-prescription-bottle text-white"></i>
+                        </div>
+                        <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Create Order</span>
+                    </button>
+
+                    <button onclick="window.location.href='suppliers_management.html'" class="flex flex-col items-center justify-center p-6 bg-accent-50 dark:bg-accent-900 hover:bg-accent-100 dark:hover:bg-accent-800 border-2 border-accent-200 dark:border-accent-700 hover:border-accent-300 dark:hover:border-accent-600 rounded-xl transition-all duration-200 group">
+                        <div class="w-12 h-12 bg-accent-600 dark:bg-accent-500 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <i class="fas fa-truck-medical text-white"></i>
+                        </div>
+                        <span class="text-sm font-medium text-accent-700 dark:text-accent-300">Add Supplier</span>
+                    </button>
+
+                    <button onclick="window.location.href='reports_analytics.html'" class="flex flex-col items-center justify-center p-6 bg-success-50 dark:bg-success-900 hover:bg-success-100 dark:hover:bg-success-800 border-2 border-success-200 dark:border-success-700 hover:border-success-300 dark:hover:border-success-600 rounded-xl transition-all duration-200 group">
+                        <div class="w-12 h-12 bg-success-600 dark:bg-success-500 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                            <i class="fas fa-chart-bar text-white"></i>
+                        </div>
+                        <span class="text-sm font-medium text-success-700 dark:text-success-300">Generate Report</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Metrics & Activities Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Totals & Metrics Panel -->
+                <section class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-6 flex items-center">
+                        <i class="fas fa-chart-line text-primary-600 dark:text-primary-400 mr-2"></i>
+                        Key Metrics
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                        <!-- Total Products -->
+                        <button onclick="window.location.href='inventory_management.html'" class="text-center p-4 bg-primary-50 dark:bg-primary-900 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-800 transition-all duration-200 cursor-pointer">
+                            <div class="w-12 h-12 bg-primary-600 dark:bg-primary-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-capsules text-white"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-primary-700 dark:text-primary-300 mb-1" id="totalMedicines">--</div>
+                            <div class="text-sm text-primary-600 dark:text-primary-400">Total Medicines</div>
+                        </button>
+
+                        <!-- Pending Orders -->
+                        <button onclick="window.location.href='orders_management.html'" class="text-center p-4 bg-warning-50 dark:bg-warning-900 rounded-xl hover:bg-warning-100 dark:hover:bg-warning-800 transition-all duration-200 cursor-pointer">
+                            <div class="w-12 h-12 bg-warning-600 dark:bg-warning-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-warning-700 dark:text-warning-300 mb-1" id="pendingOrders">--</div>
+                            <div class="text-sm text-warning-600 dark:text-warning-400">Pending Orders</div>
+                        </button>
+
+                        <!-- Inventory Value -->
+                        <button onclick="window.location.href='reports_analytics.html'" class="text-center p-4 bg-success-50 dark:bg-success-900 rounded-xl hover:bg-success-100 dark:hover:bg-success-800 transition-all duration-200 cursor-pointer">
+                            <div class="w-12 h-12 bg-success-600 dark:bg-success-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-dollar-sign text-white"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-success-700 dark:text-success-300 mb-1" id="totalValue">--</div>
+                            <div class="text-sm text-success-600 dark:text-success-400">Total Value</div>
+                        </button>
+                    </div>
+
+                    <!-- Low Stock Warning -->
+                    <button onclick="filterLowStock()" class="w-full bg-error-50 dark:bg-error-900 border border-error-200 dark:border-error-700 rounded-xl p-4 hover:bg-error-100 dark:hover:bg-error-800 transition-all duration-200 cursor-pointer mb-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-medium text-error-700 dark:text-error-300">Low Stock Alert</h3>
+                            <span class="text-xs text-error-600 dark:text-error-400" id="lowStockCount">-- items</span>
+                        </div>
+                        <div class="flex items-center justify-center">
+                            <div class="relative w-24 h-24">
+                                <canvas id="lowStockChart" width="96" height="96"></canvas>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center">
+                                        <div class="text-lg font-bold text-error-700 dark:text-error-300" id="lowStockPercentage">--%</div>
+                                        <div class="text-xs text-error-600 dark:text-error-400">Critical</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- Expiration Alerts -->
+                    <button onclick="filterExpired()" class="w-full bg-warning-50 dark:bg-warning-900 border border-warning-200 dark:border-warning-700 rounded-xl p-4 hover:bg-warning-100 dark:hover:bg-warning-800 transition-all duration-200 cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-warning-700 dark:text-warning-300">Expiration Alerts</h3>
+                            <span class="text-xs text-warning-600 dark:text-warning-400" id="expirationAlertsCount">-- items</span>
+                        </div>
+                        <div class="text-left space-y-1">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-warning-600 dark:text-warning-400">Expired:</span>
+                                <span class="font-semibold text-warning-700 dark:text-warning-300" id="expiredCount">0</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-warning-600 dark:text-warning-400">Expiring Soon:</span>
+                                <span class="font-semibold text-warning-700 dark:text-warning-300" id="expiringSoonCount">0</span>
+                            </div>
+                        </div>
+                    </button>
+                </section>
+
+                <!-- Recent Activities -->
+                <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-4 flex items-center">
+                        <i class="fas fa-history text-primary-600 dark:text-primary-400 mr-2"></i>
+                        Recent Activities
+                    </h2>
+                    
+                    <div class="space-y-4" id="recentActivitiesList">
+                        <!-- Activities will be populated from database -->
+                        <div class="flex items-start space-x-3 p-3 bg-surface-hover dark:bg-gray-800 rounded-xl">
+                            <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-database text-gray-600 dark:text-gray-400 text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-text-primary dark:text-gray-100">No recent activities</p>
+                                <p class="text-xs text-text-tertiary dark:text-gray-400">Connect to database to view activities</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="viewAllActivities()" class="w-full mt-4 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors duration-200">
+                        View All Activities
+                    </button>
+                </section>
+            </div>
+
+            <!-- Orders Overview Section -->
+            <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 flex items-center">
+                        <i class="fas fa-shopping-cart text-primary-600 dark:text-primary-400 mr-2"></i>
+                        Orders Overview
+                    </h2>
+                    <a href="orders_management.html" class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors duration-200">
+                        View All
+                    </a>
+                </div>
+                <div id="ordersOverviewList" class="space-y-3">
+                    <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>Loading orders...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar Section -->
+            <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-4 flex items-center">
+                    <i class="fas fa-calendar-alt text-primary-600 dark:text-primary-400 mr-2"></i>
+                    Medicine Schedule & Expiry Calendar
+                </h2>
+                <div id="calendar" class="min-h-[400px]"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Order Details</h2>
+                <button id="closeDetailsModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="orderDetailsContent">
+                <!-- Order details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Modal will be loaded by load-user-management-modal.js -->
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Settings</h2>
+                <button id="closeSettingsModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
+                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+                <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
+                        <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">Archive</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">View archived items, orders, and medicines</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Settings Modal - Simplified (no tabs needed for basic settings)
+</script>
+
+    <script>
+
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+            
+            console.log('Initializing theme:', savedTheme, 'isDark:', isDark);
+            
+            // Ensure we start with light mode if no theme is saved
+            if (!localStorage.getItem('theme')) {
+                localStorage.setItem('theme', 'light');
+            }
+            
+            document.documentElement.classList.toggle('dark', isDark);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle, #settingsThemeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            console.log('Found toggles:', toggles.length);
+            console.log('Found toggle buttons:', toggleButtons.length);
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', isDark);
+                toggle.classList.toggle('bg-border-light', !isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', isDark);
+                button.classList.toggle('translate-x-1', !isDark);
+            });
+            
+            console.log('Theme initialization completed');
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            console.log('Current theme:', isDark ? 'dark' : 'light');
+            console.log('Switching to:', newTheme);
+            
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle, #settingsThemeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            console.log('Found toggles:', toggles.length);
+            console.log('Found toggle buttons:', toggleButtons.length);
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', !isDark);
+                toggle.classList.toggle('bg-border-light', isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', !isDark);
+                button.classList.toggle('translate-x-1', isDark);
+            });
+            
+            console.log('Theme toggle completed');
+        }
+
+        // Navigation functions
+        function filterLowStock() {
+            window.location.href = 'inventory_management.html?filter=low-stock';
+        }
+
+        function viewAllActivities() {
+            // Navigate to inventory management with activities filter
+            window.location.href = 'inventory_management.html?filter=recent';
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        // Initialize dashboard functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initializeTheme();
+
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set user display info (sidebar elements may not be loaded yet)
+            const userEmail = localStorage.getItem('userEmail') || 'admin@pharmacy.com';
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+            
+            // Set display name based on email
+            if (userDisplayNameEl) {
+                const displayNames = {
+                    'admin@pharmacy.com': 'Pharmacy Admin',
+                    'manager@pharmacy.com': 'Pharmacy Manager',
+                    'pharmacist@pharmacy.com': 'Lead Pharmacist'
+                };
+                userDisplayNameEl.textContent = displayNames[userEmail] || 'Pharmacist';
+            }
+
+            // Clock is now initialized by load-topbar.js
+
+            // Initialize FullCalendar
+            const calendarEl = document.getElementById('calendar');
+            if (calendarEl) {
+                window.calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek'
+                    },
+                    events: [],
+                    height: 'auto',
+                    eventDisplay: 'block',
+                    eventClick: function(info) {
+                        const props = info.event.extendedProps;
+                        const eventType = props.type || 'unknown';
+                        let message = '';
+                        
+                        if (eventType === 'expiration') {
+                            const isExpired = props.isExpired || false;
+                            const status = props.status || 'unknown';
+                            const quantity = props.quantity || 0;
+                            const batchNumber = props.batchNumber ? `Batch #${props.batchNumber}` : 'No batch';
+                            const medicineName = info.event.title.replace(' (Expires)', '');
+                            
+                            message = `📦 Medicine Expiration\n\n` +
+                                `Medicine: ${medicineName}\n` +
+                                `Expiry Date: ${info.event.startStr}\n` +
+                                `Quantity: ${quantity}\n` +
+                                `Batch: ${batchNumber}\n` +
+                                `Stock Status: ${status}\n` +
+                                `Expiration Status: ${isExpired ? '⚠️ EXPIRED' : '✅ Active'}`;
+                        } else if (eventType === 'order') {
+                            const orderId = props.orderId || 'N/A';
+                            const status = props.status || 'unknown';
+                            const supplierName = props.supplierName || 'Unknown Supplier';
+                            const itemCount = props.itemCount || 0;
+                            
+                            message = `🛒 Order\n\n` +
+                                `Order ID: #${orderId}\n` +
+                                `Order Date: ${info.event.startStr}\n` +
+                                `Supplier: ${supplierName}\n` +
+                                `Status: ${status.toUpperCase()}\n` +
+                                `Items: ${itemCount}`;
+                        } else if (eventType === 'batch_expiration') {
+                            const batchNumber = props.batchNumber ? `#${props.batchNumber}` : 'N/A';
+                            const quantity = props.quantity || 0;
+                            const isExpired = props.isExpired || false;
+                            const medicineName = props.medicineName || 'Unknown Medicine';
+                            
+                            message = `📋 Batch Expiration\n\n` +
+                                `Medicine: ${medicineName}\n` +
+                                `Batch Number: ${batchNumber}\n` +
+                                `Expiry Date: ${info.event.startStr}\n` +
+                                `Quantity: ${quantity}\n` +
+                                `Status: ${isExpired ? '⚠️ EXPIRED' : '✅ Active'}`;
+                        } else {
+                            message = `Event: ${info.event.title}\nDate: ${info.event.startStr}`;
+                        }
+                        
+                        alert(message);
+                    },
+                    dayHeaderContent: function(arg) {
+                        return arg.text;
+                    },
+                    eventContent: function(arg) {
+                        const title = arg.event.title || 'Event';
+                        return {
+                            html: `<div class="fc-event-main-frame">
+                                <div class="fc-event-title-container">
+                                    <div class="fc-event-title fc-sticky">${title}</div>
+                                </div>
+                            </div>`
+                        };
+                    },
+                    loading: function(isLoading) {
+                        if (isLoading) {
+                            console.log('Calendar is loading...');
+                        } else {
+                            console.log('Calendar finished loading');
+                        }
+                    }
+                });
+                window.calendar.render();
+                console.log('Calendar initialized successfully');
+            } else {
+                console.error('Calendar element not found');
+            }
+
+            // Low stock chart will be initialized in loadLowStockChart()
+
+            // Theme toggle is now initialized by load-topbar.js
+
+
+            // Settings modal
+            const closeSettingsModal = document.getElementById('closeSettingsModal');
+            if (closeSettingsModal) {
+                closeSettingsModal.addEventListener('click', () => {
+                    const settingsModal = document.getElementById('settingsModal');
+                    if (settingsModal) settingsModal.classList.add('hidden');
+                });
+            }
+
+
+
+
+            // Logout functionality (sidebar handles this, but keep for compatibility)
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to logout?')) {
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('userEmail');
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
+
+            // Global search functionality
+            const searchInput = document.getElementById('globalSearch');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.trim();
+                
+                clearTimeout(searchTimeout);
+                
+                    if (searchTerm.length > 2) {
+                        searchTimeout = setTimeout(() => {
+                            // Navigate to inventory with search filter
+                            window.location.href = `inventory_management.html?search=${encodeURIComponent(searchTerm)}`;
+                        }, 500);
+                    }
+                });
+                
+                // Allow Enter key to search immediately
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const searchTerm = e.target.value.trim();
+                        if (searchTerm.length > 0) {
+                            window.location.href = `inventory_management.html?search=${encodeURIComponent(searchTerm)}`;
+                        }
+                    }
+                });
+            }
+
+            // ESC key to close modals
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.getElementById('settingsModal').classList.add('hidden');
+                }
+            });
+
+            // Setup order details modal
+            const orderDetailsModal = document.getElementById('orderDetailsModal');
+            const closeDetailsModal = document.getElementById('closeDetailsModal');
+            if (closeDetailsModal) {
+                closeDetailsModal.addEventListener('click', () => {
+                    orderDetailsModal.classList.add('hidden');
+                });
+            }
+            if (orderDetailsModal) {
+                orderDetailsModal.addEventListener('click', (e) => {
+                    if (e.target === orderDetailsModal) {
+                        orderDetailsModal.classList.add('hidden');
+                    }
+                });
+            }
+
+            // ESC key to close modals
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.getElementById('settingsModal').classList.add('hidden');
+                    if (orderDetailsModal) {
+                        orderDetailsModal.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Load dashboard data (with delay to ensure DOM is ready)
+            setTimeout(() => {
+                try {
+                    console.log('Loading dashboard data...');
+                    loadDashboardData();
+                } catch (error) {
+                    console.error('Error initializing dashboard:', error);
+                }
+            }, 200);
+        });
+
+        // Get API Base URL helper
+        function getApiBaseUrl() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/pages/')) {
+                return '../php';
+            }
+            return 'php';
+        }
+        
+        // Dashboard API URL
+        function getDashboardApiUrl() {
+            return `${getApiBaseUrl()}/get_dashboard.php`;
+        }
+
+        // Load Dashboard Data
+        async function loadDashboardData() {
+            try {
+                console.log('Starting dashboard data load...');
+                await Promise.all([
+                    loadMetrics(),
+                    loadLowStockChart(),
+                    loadExpirationAlerts(),
+                    loadRecentActivities(),
+                    loadCalendarEvents(),
+                    loadOrdersOverview()
+                ]);
+                console.log('Dashboard data loaded successfully');
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load Metrics
+        async function loadMetrics() {
+            try {
+                const apiUrl = `${getDashboardApiUrl()}?action=metrics`;
+                console.log('Loading metrics from:', apiUrl);
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Metrics result:', result);
+
+                if (result.success && result.data) {
+                    const totalMedicinesEl = document.getElementById('totalMedicines');
+                    const pendingOrdersEl = document.getElementById('pendingOrders');
+                    const totalValueEl = document.getElementById('totalValue');
+                    const lowStockCountEl = document.getElementById('lowStockCount');
+                    const lowStockPercentageEl = document.getElementById('lowStockPercentage');
+                    
+                    if (totalMedicinesEl) totalMedicinesEl.textContent = result.data.totalMedicines || '0';
+                    if (pendingOrdersEl) pendingOrdersEl.textContent = result.data.pendingOrders || '0';
+                    if (totalValueEl) totalValueEl.textContent = `$${result.data.totalValue || '0.00'}`;
+                    if (lowStockCountEl) lowStockCountEl.textContent = `${result.data.lowStockCount || 0} items`;
+                    if (lowStockPercentageEl) lowStockPercentageEl.textContent = `${result.data.lowStockPercentage || 0}%`;
+                } else {
+                    console.error('Metrics API returned error:', result.message);
+                }
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+
+        // Load Expiration Alerts
+        async function loadExpirationAlerts() {
+            try {
+                const apiUrl = `${getDashboardApiUrl()}?action=expiration-alerts`;
+                console.log('Loading expiration alerts from:', apiUrl);
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Expiration alerts result:', result);
+
+                if (result.success && result.data) {
+                    const expiredCount = result.data.expiredCount || 0;
+                    const expiringSoonCount = result.data.expiringSoonCount || 0;
+                    const totalAlerts = expiredCount + expiringSoonCount;
+
+                    const expiredCountEl = document.getElementById('expiredCount');
+                    const expiringSoonCountEl = document.getElementById('expiringSoonCount');
+                    const expirationAlertsCountEl = document.getElementById('expirationAlertsCount');
+                    
+                    if (expiredCountEl) expiredCountEl.textContent = expiredCount;
+                    if (expiringSoonCountEl) expiringSoonCountEl.textContent = expiringSoonCount;
+                    if (expirationAlertsCountEl) expirationAlertsCountEl.textContent = `${totalAlerts} items`;
+
+                    // Show notification if there are expired medicines
+                    if (expiredCount > 0 && typeof showExpirationNotification === 'function') {
+                        showExpirationNotification(expiredCount, expiringSoonCount);
+                    }
+                } else {
+                    console.error('Expiration alerts API returned error:', result.message);
+                }
+            } catch (error) {
+                console.error('Error loading expiration alerts:', error);
+            }
+        }
+
+        // Show expiration notification
+        function showExpirationNotification(expiredCount, expiringSoonCount) {
+            // Check if notification already shown in this session
+            const notificationKey = 'expiration_notification_shown';
+            const lastShown = sessionStorage.getItem(notificationKey);
+            const now = Date.now();
+            
+            // Show notification if not shown in last 5 minutes
+            if (!lastShown || (now - parseInt(lastShown)) > 300000) {
+                const message = expiredCount > 0 
+                    ? `⚠️ Alert: ${expiredCount} medicine(s) have expired${expiringSoonCount > 0 ? ` and ${expiringSoonCount} are expiring soon` : ''}!`
+                    : `${expiringSoonCount} medicine(s) are expiring within 30 days!`;
+                
+                // Show visual notification
+                showNotification(message, 'warning');
+                
+                sessionStorage.setItem(notificationKey, now.toString());
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Remove any existing notifications
+            const existing = document.querySelector('.expiration-notification');
+            if (existing) existing.remove();
+
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `expiration-notification fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ${
+                type === 'success' ? 'bg-success-600' : 
+                type === 'error' ? 'bg-error-600' : 
+                type === 'warning' ? 'bg-warning-600' : 
+                'bg-primary-600'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i class="fas ${type === 'warning' ? 'fa-exclamation-triangle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Filter expired medicines
+        function filterExpired() {
+            window.location.href = 'inventory_management.html?filter=expired';
+        }
+
+        // Load Low Stock Chart
+        let lowStockChart = null;
+        async function loadLowStockChart() {
+            try {
+                const response = await fetch(`${getDashboardApiUrl()}?action=low-stock`);
+                const result = await response.json();
+
+                const ctx = document.getElementById('lowStockChart');
+                if (!ctx) return;
+
+                if (result.success && result.data) {
+                    const lowStockCount = result.data.length;
+                    const totalMedicines = parseInt(document.getElementById('totalMedicines').textContent) || 1;
+                    const lowStockPercentage = Math.round((lowStockCount / totalMedicines) * 100);
+
+                    if (lowStockChart) {
+                        lowStockChart.destroy();
+                    }
+
+                    lowStockChart = new Chart(ctx.getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            datasets: [{
+                                data: [lowStockPercentage, 100 - lowStockPercentage],
+                                backgroundColor: ['#F44336', '#E0E0E0'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: false,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    enabled: false
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading low stock chart:', error);
+            }
+        }
+
+        // Load Recent Activities
+        async function loadRecentActivities() {
+            try {
+                const response = await fetch(`${getDashboardApiUrl()}?action=activities`);
+                const result = await response.json();
+
+                const activitiesList = document.getElementById('recentActivitiesList');
+                if (!activitiesList) return;
+
+                if (result.success && result.data && result.data.length > 0) {
+                    activitiesList.innerHTML = '';
+                    result.data.forEach(activity => {
+                        const activityEl = document.createElement('div');
+                        activityEl.className = 'flex items-start space-x-3 p-3 bg-surface-hover dark:bg-gray-800 rounded-xl';
+                        
+                        const iconClass = activity.type === 'medicine_added' ? 'fa-plus-circle text-green-600' : 'fa-edit text-blue-600';
+                        const iconBg = activity.type === 'medicine_added' ? 'bg-green-100 dark:bg-green-900' : 'bg-blue-100 dark:bg-blue-900';
+                        
+                        const date = new Date(activity.date);
+                        const timeAgo = getTimeAgo(date);
+                        
+                        activityEl.innerHTML = `
+                            <div class="w-8 h-8 ${iconBg} rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas ${iconClass} text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-text-primary dark:text-gray-100">${activity.description}</p>
+                                <p class="text-xs text-text-tertiary dark:text-gray-400">${activity.name} • ${timeAgo}</p>
+                            </div>
+                        `;
+                        activitiesList.appendChild(activityEl);
+                    });
+                } else {
+                    activitiesList.innerHTML = `
+                        <div class="flex items-start space-x-3 p-3 bg-surface-hover dark:bg-gray-800 rounded-xl">
+                            <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-database text-gray-600 dark:text-gray-400 text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-text-primary dark:text-gray-100">No recent activities</p>
+                                <p class="text-xs text-text-tertiary dark:text-gray-400">Activities will appear here</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading recent activities:', error);
+            }
+        }
+
+        // Load Calendar Events
+        async function loadCalendarEvents() {
+            try {
+                const apiUrl = `${getDashboardApiUrl()}?action=calendar`;
+                console.log('Loading calendar events from:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Calendar events API response:', result);
+
+                if (result.success && result.data && Array.isArray(result.data)) {
+                    const calendarEl = document.getElementById('calendar');
+                    if (calendarEl && window.calendar) {
+                        // Remove all existing events
+                        window.calendar.removeAllEvents();
+                        
+                        // Add new events
+                        const eventsAdded = [];
+                        result.data.forEach(event => {
+                            try {
+                                // Ensure the event has required properties
+                                if (event.start && event.title) {
+                                    const calendarEvent = {
+                                        id: event.id || `event_${Date.now()}_${Math.random()}`,
+                                        title: event.title,
+                                        start: event.start,
+                                        color: event.color || '#3B82F6',
+                                        extendedProps: event.extendedProps || {}
+                                    };
+                                    
+                                    window.calendar.addEvent(calendarEvent);
+                                    eventsAdded.push(calendarEvent);
+                                } else {
+                                    console.warn('Invalid event data:', event);
+                                }
+                            } catch (eventError) {
+                                console.error('Error adding event to calendar:', eventError, event);
+                            }
+                        });
+                        
+                        // Refresh the calendar to ensure events are displayed
+                        window.calendar.render();
+                        
+                        console.log(`Successfully loaded ${eventsAdded.length} calendar events`);
+                        
+                        // Show a message if no events were found
+                        if (eventsAdded.length === 0) {
+                            console.info('No calendar events found. Make sure medicines have expiration dates set.');
+                        }
+                    } else {
+                        console.error('Calendar element or calendar instance not found');
+                    }
+                } else {
+                    console.warn('Calendar events API returned unsuccessful response:', result);
+                    if (result.message) {
+                        console.error('API Error:', result.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading calendar events:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
+        }
+
+        // Helper function for time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Load Orders Overview
+        async function loadOrdersOverview() {
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_orders.php?page=1&pageSize=5`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                const ordersList = document.getElementById('ordersOverviewList');
+                if (!ordersList) return;
+
+                if (data.success && data.data && data.data.length > 0) {
+                    // Store orders data for quick access
+                    ordersOverviewData = data.data;
+                    
+                    ordersList.innerHTML = '';
+                    data.data.forEach(order => {
+                        const orderEl = document.createElement('div');
+                        orderEl.className = 'flex items-center justify-between p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200';
+                        
+                        const statusClass = getStatusClass(order.status);
+                        const statusIcon = getStatusIcon(order.status);
+                        const orderId = order.id;
+                        
+                        orderEl.innerHTML = `
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-text-primary dark:text-gray-100">Order #${orderId}</p>
+                                        <p class="text-xs text-text-secondary dark:text-gray-400 mt-1">${order.supplier_name || 'Unknown Supplier'} • ${formatDate(order.order_date)}</p>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <div class="text-right mr-3">
+                                            <p class="text-sm font-semibold text-text-primary dark:text-gray-100">$${parseFloat(order.total_amount || 0).toFixed(2)}</p>
+                                            <span class="status-badge ${statusClass} text-xs mt-1 inline-block">
+                                                ${statusIcon}
+                                                ${(order.status || '').charAt(0).toUpperCase() + (order.status || '').slice(1)}
+                                            </span>
+                                        </div>
+                                        <button onclick="event.stopPropagation(); viewOrderDetails('${orderId}'); return false;" class="text-primary dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors duration-200 p-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        ordersList.appendChild(orderEl);
+                    });
+                } else {
+                    ordersList.innerHTML = `
+                        <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                            <i class="fas fa-shopping-cart text-3xl mb-2 opacity-50"></i>
+                            <p>No orders found</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading orders overview:', error);
+                const ordersList = document.getElementById('ordersOverviewList');
+                if (ordersList) {
+                    ordersList.innerHTML = `
+                        <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                            <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                            <p>Failed to load orders</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Helper functions for status
+        function getStatusClass(status) {
+            const normalizedStatus = (status || '').toLowerCase().trim();
+            const statusClasses = {
+                'pending': 'bg-warning-100 dark:bg-warning-900 text-warning-700 dark:text-warning-300',
+                'completed': 'status-success bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300',
+                'shipping': 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                'shipped': 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300',
+                'cancelled': 'bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300',
+                'canceled': 'bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300'
+            };
+            return statusClasses[normalizedStatus] || 'bg-surface-hover dark:bg-gray-800 text-text-secondary dark:text-gray-400';
+        }
+
+        function getStatusIcon(status) {
+            const normalizedStatus = (status || '').toLowerCase().trim();
+            const statusIcons = {
+                'pending': '<i class="fas fa-clock mr-1"></i>',
+                'completed': '<i class="fas fa-check mr-1"></i>',
+                'shipping': '<i class="fas fa-shipping-fast mr-1"></i>',
+                'shipped': '<i class="fas fa-truck mr-1"></i>',
+                'cancelled': '<i class="fas fa-times mr-1"></i>',
+                'canceled': '<i class="fas fa-times mr-1"></i>'
+            };
+            return statusIcons[normalizedStatus] || '';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric',
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Store orders data for quick access
+        let ordersOverviewData = [];
+
+        // View Order Details Function
+        async function viewOrderDetails(orderId) {
+            // Normalize orderId to number for consistent comparison
+            const normalizedOrderId = typeof orderId === 'string' ? parseInt(orderId, 10) : orderId;
+            
+            const detailsContent = document.getElementById('orderDetailsContent');
+            if (!detailsContent) {
+                console.error('Order details content element not found');
+                return;
+            }
+
+            detailsContent.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-text-secondary">Loading order details...</p></div>';
+
+            const orderDetailsModal = document.getElementById('orderDetailsModal');
+            if (orderDetailsModal) {
+                orderDetailsModal.classList.remove('hidden');
+            }
+
+            let order = null;
+            let orderItems = [];
+
+            try {
+                const baseUrl = getApiBaseUrl();
+                console.log('Fetching order details for ID:', normalizedOrderId, 'Base URL:', baseUrl);
+                
+                // Try to find order in cached data first
+                order = ordersOverviewData.find(o => {
+                    const oId = typeof o.id === 'string' ? parseInt(o.id, 10) : o.id;
+                    return oId === normalizedOrderId;
+                });
+                
+                // If not found in cache, fetch from API
+                if (!order) {
+                    console.log('Order not in cache, fetching from API...');
+                    const orderResponse = await fetch(`${baseUrl}/get_orders.php?page=1&pageSize=1000`, {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    if (!orderResponse.ok) {
+                        throw new Error(`HTTP error! status: ${orderResponse.status}`);
+                    }
+                    
+                    const orderData = await orderResponse.json();
+                    console.log('Order API response:', orderData);
+                    
+                    if (!orderData.success) {
+                        throw new Error(orderData.message || 'Failed to fetch order');
+                    }
+                    
+                    if (orderData.data && Array.isArray(orderData.data)) {
+                        order = orderData.data.find(o => {
+                            const oId = typeof o.id === 'string' ? parseInt(o.id, 10) : o.id;
+                            return oId === normalizedOrderId;
+                        });
+                    }
+                }
+
+                if (!order) {
+                    detailsContent.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-2xl text-error mb-2"></i>
+                            <p class="text-text-secondary dark:text-gray-400">Order not found.</p>
+                            <p class="text-xs text-text-tertiary dark:text-gray-500 mt-2">Order ID: ${normalizedOrderId}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                console.log('Order found:', order);
+
+                // Fetch order items
+                try {
+                    const itemsUrl = `${baseUrl}/get_order_items.php?order_id=${normalizedOrderId}`;
+                    console.log('Fetching items from:', itemsUrl);
+                    
+                    const itemsResponse = await fetch(itemsUrl, {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+
+                    console.log('Items response status:', itemsResponse.status, itemsResponse.ok);
+
+                    if (!itemsResponse.ok) {
+                        const errorText = await itemsResponse.text();
+                        console.warn(`Failed to fetch items: HTTP ${itemsResponse.status}`, errorText);
+                        orderItems = [];
+                    } else {
+                        const itemsData = await itemsResponse.json();
+                        console.log('Items API response:', itemsData);
+                        console.log('Items data array:', itemsData.data);
+                        console.log('Items count:', itemsData.data ? itemsData.data.length : 0);
+                        
+                        if (itemsData.success && itemsData.data && Array.isArray(itemsData.data)) {
+                            orderItems = itemsData.data;
+                            console.log('Order items set:', orderItems.length, 'items');
+                        } else {
+                            console.warn('Items fetch returned unsuccessful or invalid data:', itemsData);
+                            orderItems = [];
+                        }
+                    }
+                } catch (itemsError) {
+                    console.error('Error fetching order items:', itemsError);
+                    console.error('Error stack:', itemsError.stack);
+                    orderItems = []; // Continue with empty items array
+                }
+                
+                console.log('Final orderItems before rendering:', orderItems);
+
+                detailsContent.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Order Header Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order ID</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">#${order.id}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Status</label>
+                                <span class="status-badge ${getStatusClass(order.status)}">
+                                    ${getStatusIcon(order.status)}
+                                    ${(order.status || '').charAt(0).toUpperCase() + (order.status || '').slice(1)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(order.supplier_name || 'Unknown')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order Date</label>
+                                <p class="text-text-primary dark:text-gray-100">${formatDate(order.order_date || order.date)}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Amount</label>
+                                <p class="text-text-primary dark:text-gray-100 font-semibold text-lg">$${(order.total_amount || 0).toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Items Count</label>
+                                <p class="text-text-primary dark:text-gray-100">${orderItems.length} item(s)</p>
+                            </div>
+                        </div>
+
+                        ${order.notes ? `
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Notes</label>
+                                <p class="text-text-primary dark:text-gray-100 bg-surface-hover dark:bg-gray-800 p-3 rounded-lg">${escapeHtml(order.notes)}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Order Items Table -->
+                        <div class="pt-4 border-t border-border-light dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-4">Order Items</h3>
+                            ${orderItems && orderItems.length > 0 ? `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-border-light dark:divide-gray-700">
+                                        <thead class="bg-surface-hover dark:bg-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Medicine</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">NDC</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Quantity</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Unit Price</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:border-gray-700">
+                                            ${orderItems.map(item => {
+                                                const itemTotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
+                                                const medicineName = item.medicine_name || item.name || 'N/A';
+                                                const ndc = item.ndc || 'N/A';
+                                                const quantity = item.quantity || 0;
+                                                const price = parseFloat(item.price) || 0;
+                                                return `
+                                                    <tr>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(medicineName)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(ndc)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-medium">${quantity}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">$${price.toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">$${itemTotal.toFixed(2)}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : `
+                                <div class="text-center py-8">
+                                    <i class="fas fa-box-open text-3xl text-text-tertiary dark:text-gray-500 mb-2 opacity-50"></i>
+                                    <p class="text-text-secondary dark:text-gray-400">No items found for this order.</p>
+                                    <p class="text-xs text-text-tertiary dark:text-gray-500 mt-2">Items count: ${orderItems ? orderItems.length : 0}</p>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching order details:', error);
+                console.error('Order ID:', orderId);
+                console.error('API Base URL:', getApiBaseUrl());
+                detailsContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl text-error mb-2"></i>
+                        <p class="text-text-secondary dark:text-gray-400">Failed to load order details.</p>
+                        <p class="text-xs text-text-tertiary dark:text-gray-500 mt-2">${error.message || 'Unknown error'}</p>
+                        <button onclick="viewOrderDetails('${orderId}')" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm">
+                            <i class="fas fa-redo mr-2"></i>Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Global functions
+        window.openSettings = openSettings;
+        window.filterLowStock = filterLowStock;
+        window.viewAllActivities = viewAllActivities;
+        window.viewOrderDetails = viewOrderDetails;
+    </script>
+<!-- dhws-data-injector.js removed - file not found -->
+</body>
+</html>

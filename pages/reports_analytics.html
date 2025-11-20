@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports & Analytics - PHARMACY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar will be loaded here -->
+    <script src="../js/load-sidebar.js"></script>
+    <!-- Top Bar will be loaded here -->
+    <script src="../js/load-topbar.js" data-title="Pharmacy Reports & Analytics" data-description="Business intelligence and performance insights" data-search-placeholder="Search reports..."></script>
+    <!-- Archive Modal will be loaded here -->
+    <script src="../js/load-archive-modal.js" defer></script>
+    <!-- User Management Modal will be loaded here -->
+    <script src="../js/load-user-management-modal.js" defer></script>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+
+        <!-- Main Content Area -->
+        <main class="p-6 space-y-6">
+            <!-- Filter Controls -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <!-- Date Range -->
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm font-medium text-text-primary dark:text-gray-100">Date Range:</label>
+                            <select id="dateRangeFilter" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value="monthly">Monthly</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="daily">Daily</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+
+                        <!-- Product Category -->
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm font-medium text-text-primary dark:text-gray-100">Category:</label>
+                            <select id="categoryFilter" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value>All Categories</option>
+                                <option value="antibiotics">Antibiotics</option>
+                                <option value="analgesics">Analgesics</option>
+                                <option value="cardiovascular">Cardiovascular</option>
+                                <option value="diabetes">Diabetes</option>
+                                <option value="respiratory">Respiratory</option>
+                                <option value="vitamins">Vitamins & Supplements</option>
+                            </select>
+                        </div>
+
+                        <!-- Report Type -->
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm font-medium text-text-primary dark:text-gray-100">Report Type:</label>
+                            <select id="reportTypeSelect" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value="sales">Sales Performance</option>
+                                <option value="inventory">Inventory Levels</option>
+                                <option value="turnover">Medicine Turnover</option>
+                                <option value="profit">Profit Analysis</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <button id="refreshBtn" class="flex items-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Performance Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Total Revenue -->
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Total Revenue</p>
+                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="totalRevenue">--</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-dollar-sign text-primary-600 dark:text-primary-400 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medicine Turnover -->
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Medicine Turnover</p>
+                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="medicineTurnover">--</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 bg-accent-100 dark:bg-accent-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-sync-alt text-accent-600 dark:text-accent-400 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profit Margin -->
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Profit Margin</p>
+                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="profitMargin">--</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 bg-success-100 dark:bg-success-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-percentage text-success-600 dark:text-success-400 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Selling Medicines -->
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Top Selling Items</p>
+                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="topSellingItems">--</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 bg-secondary-100 dark:bg-secondary-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-secondary-600 dark:text-secondary-400 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Medicines Section -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100">Low Stock Medicines</h2>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Medicines that require restocking soon</p>
+                    </div>
+                    <button onclick="window.location.href='inventory_management.html?filter=low-stock'" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium">View All</button>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="lowStockLoading" class="hidden flex items-center justify-center py-12">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-primary-600 rounded-full animate-pulse"></div>
+                        <div class="w-4 h-4 bg-primary-600 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                        <div class="w-4 h-4 bg-primary-600 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                        <span class="text-text-secondary dark:text-gray-400 ml-2">Loading low stock data...</span>
+                    </div>
+                </div>
+
+                <!-- Low Stock Table -->
+                <div id="lowStockTableContainer" class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-border-light dark:border-gray-700">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Medicine Name</th>
+                                <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Current Quantity</th>
+                                <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Minimum Required</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lowStockTableBody" class="divide-y divide-border-light dark:divide-gray-700">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Empty State -->
+                    <div id="lowStockEmpty" class="hidden text-center py-12">
+                        <i class="fas fa-check-circle text-4xl text-success-600 dark:text-success-400 mb-3"></i>
+                        <p class="text-text-secondary dark:text-gray-400">All medicines are well stocked!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Availability Progress Bars -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100">Medicine Stock Availability</h2>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Current inventory levels by medicine category</p>
+                    </div>
+                    <button id="viewAllStockBtn" onclick="window.location.href='inventory_management.html'" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium">View All</button>
+                </div>
+
+                <div class="space-y-6" id="stockAvailabilityContainer">
+                    <!-- Categories will be dynamically generated here -->
+                    <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>Loading stock availability...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seasonal Trends -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Seasonal Performance -->
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">Seasonal Trends</h3>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Coming Soon</p>
+                        </div>
+                        <i class="fas fa-calendar-alt text-text-tertiary dark:text-gray-500"></i>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line text-4xl text-text-tertiary dark:text-gray-500 mb-3"></i>
+                                <p class="text-text-secondary dark:text-gray-400">Seasonal trends analysis</p>
+                                <p class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Medicines -->
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">Top Medicines</h3>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Coming Soon</p>
+                        </div>
+                        <i class="fas fa-trophy text-text-tertiary dark:text-gray-500"></i>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
+                            <div class="text-center">
+                                <i class="fas fa-pills text-4xl text-text-tertiary dark:text-gray-500 mb-3"></i>
+                                <p class="text-text-secondary dark:text-gray-400">Top performing medicines</p>
+                                <p class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Export Report</h2>
+                <button id="closeExportModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="exportForm" class="space-y-4">
+                <!-- Export Format -->
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Export Format</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center p-3 border border-border-light dark:border-gray-600 rounded-lg cursor-pointer hover:bg-surface-hover dark:hover:bg-gray-800">
+                            <input type="radio" name="format" value="pdf" class="mr-2" checked />
+                            <i class="fas fa-file-pdf text-error-600 mr-2"></i>
+                            <span class="text-sm">PDF Report</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-border-light dark:border-gray-600 rounded-lg cursor-pointer hover:bg-surface-hover dark:hover:bg-gray-800">
+                            <input type="radio" name="format" value="csv" class="mr-2" />
+                            <i class="fas fa-file-csv text-success-600 mr-2"></i>
+                            <span class="text-sm">CSV Data</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Date Range</label>
+                    <select class="w-full px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                        <option>Monthly</option>
+                        <option>Weekly</option>
+                        <option>Daily</option>
+                        <option>Custom Range</option>
+                    </select>
+                </div>
+
+                <!-- Include Options -->
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Include</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" checked />
+                            <span class="text-sm">Sales Performance</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" checked />
+                            <span class="text-sm">Stock Levels</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" />
+                            <span class="text-sm">Supplier Information</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" />
+                            <span class="text-sm">Financial Summary</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancelExport" class="flex-1 px-4 py-2 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 rounded-lg hover:bg-surface-hover dark:hover:bg-gray-800 transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
+                        <i class="fas fa-download mr-2"></i>
+                        Export
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = '../php/get_reports.php';
+
+        // Global state
+        let currentFilters = {
+            dateRange: 'monthly',
+            category: '',
+            reportType: 'sales'
+        };
+
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+            
+            document.documentElement.classList.toggle('dark', isDark);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', isDark);
+                toggle.classList.toggle('bg-border-light', !isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', isDark);
+                button.classList.toggle('translate-x-1', !isDark);
+            });
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', !isDark);
+                toggle.classList.toggle('bg-border-light', isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', !isDark);
+                button.classList.toggle('translate-x-1', isDark);
+            });
+        }
+
+        // Sidebar is loaded dynamically via load-sidebar.js
+
+        // Theme toggle functionality
+        document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+        // Theme toggle is now initialized by load-topbar.js
+
+        // Logout functionality
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Call logout endpoint to update status to inactive
+                fetch('../php/logout.php', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                }).then(() => {
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html';
+                }).catch(() => {
+                    // Even if logout endpoint fails, still clear and redirect
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html';
+                });
+            }
+        });
+
+        // API Functions
+        async function fetchDashboardData() {
+            try {
+                const params = new URLSearchParams({
+                    action: 'dashboard',
+                    dateRange: currentFilters.dateRange,
+                    category: currentFilters.category,
+                    reportType: currentFilters.reportType
+                });
+
+                const response = await fetch(`${API_BASE}?${params}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    updateKPIMetrics(result.data);
+                } else {
+                    console.error('Failed to fetch dashboard data:', result.message);
+                    showError('Failed to load dashboard data');
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                showError('Error loading dashboard data');
+            }
+        }
+
+        async function fetchLowStockMedicines() {
+            try {
+                const response = await fetch(`${API_BASE}?action=low-stock`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    updateLowStockTable(result.data);
+                } else {
+                    console.error('Failed to fetch low stock data:', result.message);
+                    showError('Failed to load low stock data');
+                }
+            } catch (error) {
+                console.error('Error fetching low stock data:', error);
+                showError('Error loading low stock data');
+            }
+        }
+
+        async function fetchStockAvailability() {
+            try {
+                const response = await fetch(`${API_BASE}?action=stock-availability`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    updateStockBars(result.data);
+                } else {
+                    console.error('Failed to fetch stock availability:', result.message);
+                }
+            } catch (error) {
+                console.error('Error fetching stock availability:', error);
+            }
+        }
+
+        // Update KPI Metrics
+        function updateKPIMetrics(data) {
+            const revenueEl = document.getElementById('totalRevenue');
+            const turnoverEl = document.getElementById('medicineTurnover');
+            const profitEl = document.getElementById('profitMargin');
+            const topSellingEl = document.getElementById('topSellingItems');
+
+            if (revenueEl) {
+                revenueEl.textContent = `$${data.totalRevenue || '0.00'}`;
+                revenueEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Total inventory value';
+            }
+
+            if (turnoverEl) {
+                turnoverEl.textContent = data.medicineTurnover || '0';
+                turnoverEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Total units in stock';
+            }
+
+            if (profitEl) {
+                profitEl.textContent = `${data.profitMarginPercent || '0'}%`;
+                profitEl.parentElement.querySelector('.text-text-tertiary').textContent = `Est. profit: $${data.profitMargin || '0.00'}`;
+            }
+
+            if (topSellingEl) {
+                topSellingEl.textContent = data.topSellingItems || '0';
+                topSellingEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Active medicines';
+            }
+        }
+
+        // Update Low Stock Table
+        function updateLowStockTable(medicines) {
+            const tableBody = document.getElementById('lowStockTableBody');
+            const emptyState = document.getElementById('lowStockEmpty');
+            const loadingIndicator = document.getElementById('lowStockLoading');
+            const tableContainer = document.getElementById('lowStockTableContainer');
+
+            // Hide loading indicator
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+
+            if (!medicines || medicines.length === 0) {
+                if (tableBody) tableBody.innerHTML = '';
+                if (tableContainer) tableContainer.classList.add('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            // Show table and hide empty state
+            if (tableContainer) tableContainer.classList.remove('hidden');
+            if (emptyState) emptyState.classList.add('hidden');
+
+            // Clear existing rows
+            if (tableBody) {
+                tableBody.innerHTML = '';
+
+                medicines.forEach(medicine => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-surface-hover dark:hover:bg-gray-800 transition-colors duration-200';
+
+                    // Determine row color based on quantity
+                    let rowClass = '';
+                    let quantityClass = '';
+                    if (medicine.quantity <= 2) {
+                        // Critical - Red
+                        rowClass = 'bg-error-50 dark:bg-error-900/20';
+                        quantityClass = 'text-error-600 dark:text-error-400 font-semibold';
+                    } else if (medicine.quantity < medicine.reorderLevel) {
+                        // Below minimum - Orange
+                        rowClass = 'bg-warning-50 dark:bg-warning-900/20';
+                        quantityClass = 'text-warning-600 dark:text-warning-400 font-semibold';
+                    }
+
+                    row.className += ` ${rowClass}`;
+
+                    row.innerHTML = `
+                        <td class="py-3 px-4 text-sm text-text-primary dark:text-gray-100">
+                            ${medicine.name}
+                        </td>
+                        <td class="py-3 px-4 text-sm text-right ${quantityClass}">
+                            ${medicine.quantity.toLocaleString()}
+                        </td>
+                        <td class="py-3 px-4 text-sm text-right text-text-secondary dark:text-gray-400">
+                            ${medicine.reorderLevel.toLocaleString()}
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        // Update Stock Availability Bars
+        // Color mapping for categories (cycling through colors)
+        const categoryColors = [
+            { bg: 'bg-primary-600', text: 'text-primary-600', darkText: 'dark:text-primary-400' },
+            { bg: 'bg-accent-600', text: 'text-accent-600', darkText: 'dark:text-accent-400' },
+            { bg: 'bg-secondary-600', text: 'text-secondary-600', darkText: 'dark:text-secondary-400' },
+            { bg: 'bg-warning-600', text: 'text-warning-600', darkText: 'dark:text-warning-400' },
+            { bg: 'bg-error-600', text: 'text-error-600', darkText: 'dark:text-error-400' },
+            { bg: 'bg-success-600', text: 'text-success-600', darkText: 'dark:text-success-400' },
+            { bg: 'bg-purple-600', text: 'text-purple-600', darkText: 'dark:text-purple-400' },
+            { bg: 'bg-indigo-600', text: 'text-indigo-600', darkText: 'dark:text-indigo-400' }
+        ];
+
+        function updateStockBars(stockData) {
+            const container = document.getElementById('stockAvailabilityContainer');
+            if (!container) return;
+
+            // Clear loading state
+            container.innerHTML = '';
+
+            if (!stockData || stockData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                        <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
+                        <p>No categories found in inventory</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Generate category display name (capitalize first letter of each word)
+            function formatCategoryName(category) {
+                return category
+                    .split(/[\s_-]+/)
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+            }
+
+            // Render each category
+            stockData.forEach((item, index) => {
+                const colorIndex = index % categoryColors.length;
+                const color = categoryColors[colorIndex];
+                const categoryDisplayName = formatCategoryName(item.category);
+                const categorySlug = item.category.toLowerCase().replace(/\s+/g, '-');
+
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'space-y-2 category-stock-item';
+                categoryDiv.dataset.category = item.category;
+                categoryDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onclick="filterInventoryByCategory('${item.category}')">
+                            <div class="w-3 h-3 ${color.bg} rounded-full"></div>
+                            <span class="text-sm font-medium text-text-primary dark:text-gray-100">${categoryDisplayName}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-text-secondary dark:text-gray-400 stock-count-${categorySlug}">${item.inStockItems} / ${item.totalItems}</span>
+                            <span class="text-sm font-medium ${color.text} ${color.darkText} stock-percent-${categorySlug}">${item.percentage}%</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-border-light dark:bg-gray-700 rounded-full h-2">
+                        <div class="${color.bg} h-2 rounded-full transition-all duration-500 stock-bar-${categorySlug}" style="width: ${item.percentage}%"></div>
+                    </div>
+                `;
+                container.appendChild(categoryDiv);
+            });
+        }
+
+        // Function to filter inventory by category
+        function filterInventoryByCategory(category) {
+            // Navigate to inventory management page with category filter
+            window.location.href = `inventory_management.html?category=${encodeURIComponent(category)}`;
+        }
+
+        // Refresh Data
+        async function refreshAllData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const icon = refreshBtn?.querySelector('i');
+            
+            if (icon) icon.classList.add('fa-spin');
+            
+            // Show loading indicator
+            document.getElementById('lowStockLoading')?.classList.remove('hidden');
+
+            try {
+                await Promise.all([
+                    fetchDashboardData(),
+                    fetchLowStockMedicines(),
+                    fetchStockAvailability()
+                ]);
+
+                // Hide loading indicator
+                document.getElementById('lowStockLoading')?.classList.add('hidden');
+
+                showNotification('Data refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                showError('Error refreshing data');
+            } finally {
+                if (icon) icon.classList.remove('fa-spin');
+            }
+        }
+
+        // Notification System
+        function showNotification(message, type = 'info') {
+            // Simple notification - you can enhance this with a toast library
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                'bg-blue-500'
+            } text-white`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        // Filter Handlers
+        function handleFilterChange() {
+            currentFilters.dateRange = document.getElementById('dateRangeFilter')?.value || 'monthly';
+            currentFilters.category = document.getElementById('categoryFilter')?.value || '';
+            currentFilters.reportType = document.getElementById('reportTypeSelect')?.value || 'sales';
+
+            refreshAllData();
+        }
+
+
+        // Export modal functionality
+        const exportModal = document.getElementById('exportModal');
+        const exportBtn = document.getElementById('exportBtn');
+        const closeExportModal = document.getElementById('closeExportModal');
+        const cancelExport = document.getElementById('cancelExport');
+
+        exportBtn?.addEventListener('click', () => {
+            exportModal?.classList.remove('hidden');
+        });
+
+        closeExportModal?.addEventListener('click', () => {
+            exportModal?.classList.add('hidden');
+        });
+
+        cancelExport?.addEventListener('click', () => {
+            exportModal?.classList.add('hidden');
+        });
+
+        // Export form submission
+        document.getElementById('exportForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const format = formData.get('format');
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+            submitBtn.disabled = true;
+            
+            // Simulate export process (in real implementation, this would call an export API)
+            setTimeout(() => {
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                // Show success message
+                showNotification(`Report exported successfully as ${format.toUpperCase()}!`, 'success');
+                
+                // Close modal
+                exportModal?.classList.add('hidden');
+                
+                // Reset form
+                this.reset();
+                this.querySelector('input[value="pdf"]').checked = true;
+            }, 2000);
+        });
+
+        // Event Listeners
+        document.getElementById('refreshBtn')?.addEventListener('click', refreshAllData);
+
+        document.getElementById('reportTypeSelect')?.addEventListener('change', handleFilterChange);
+        document.getElementById('dateRangeFilter')?.addEventListener('change', handleFilterChange);
+        document.getElementById('categoryFilter')?.addEventListener('change', handleFilterChange);
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initializeTheme();
+
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update user display from localStorage
+            const userFullName = localStorage.getItem('userFullName') || 'User';
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            
+            if (userDisplayNameEl) {
+                userDisplayNameEl.textContent = userFullName;
+            }
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+            
+            // Load initial data
+            refreshAllData();
+            
+            // Close modals on ESC key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    exportModal?.classList.add('hidden');
+                    closeSidebar();
+                }
+            });
+            
+            // Close modal on backdrop click
+            exportModal?.addEventListener('click', (e) => {
+                if (e.target === exportModal) {
+                    exportModal.classList.add('hidden');
+                }
+            });
+        });
+
+        // Global functions
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        window.openSettings = openSettings;
+    </script>
+
+    <!-- User Management Modal will be loaded by load-user-management-modal.js -->
+
+    <!-- Archive Modal will be loaded by load-archive-modal.js -->
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Settings</h2>
+                <button id="closeSettingsModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
+                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+                <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
+                        <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">Archive</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">View archived items, orders, and medicines</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Settings Modal handlers
+        document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.add('hidden');
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                document.getElementById('settingsModal').classList.add('hidden');
+            }
+        });
+
+        // User Management Modal - Full Functionality
+        const currentUserEmail = localStorage.getItem('userEmail') || 'admin@inventory.com';
+        let allUsersModal = [];
+        let filteredUsersModal = [];
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load users
+        async function loadUsersModal() {
+            const tbody = document.getElementById('usersTableBodyModal');
+            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading users...</p></td></tr>';
+            
+            try {
+                const response = await fetch('../api/user_management.php?action=get_all');
+                const data = await response.json();
+                
+                if (data.success && data.users) {
+                    allUsersModal = data.users.filter(user => user.email !== currentUserEmail);
+                    applyFiltersModal();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+            }
+        }
+        
+        // Render users table
+        function renderUsersModal(users) {
+            const tbody = document.getElementById('usersTableBodyModal');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-users text-4xl opacity-50 mb-2"></i><p>No users found</p></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="user-checkbox-modal h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" data-user-id="${user.user_id}" onchange="updateSelectedCountModal()">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(user.full_name || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.email || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.username || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.employee_id || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'user').toUpperCase())}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        ${user.status !== undefined ? `
+                        ${user.status === 'locked' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                <i class="fas fa-lock mr-1"></i> Locked
+                            </span>
+                        ` : user.status === 'active' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <i class="fas fa-circle text-xs mr-1"></i> Active
+                            </span>
+                        ` : user.status === 'offline' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                <i class="fas fa-circle text-xs mr-1 opacity-50"></i> Offline
+                            </span>
+                        ` : `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                <i class="fas fa-circle text-xs mr-1"></i> ${escapeHtml(user.status || 'inactive')}
+                            </span>
+                        `}
+                        ` : `<span class="text-sm text-gray-500 dark:text-gray-400">N/A</span>`}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="editUserModal(${user.user_id})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Edit User" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="changeUserRoleModal(${user.user_id}, '${user.role || 'user'}')" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Change Role" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-user-tag"></i>
+                            </button>
+                            ${user.status === 'locked' ? `
+                                <button onclick="unlockUserAccountModal(${user.user_id})" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900 rounded-lg transition-colors" title="Unlock Account">
+                                    <i class="fas fa-unlock"></i>
+                                </button>
+                            ` : `
+                                <button onclick="lockUserAccountModal(${user.user_id}, '${escapeHtml(user.full_name || user.email)}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors" title="Lock Account">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                            `}
+                            <button onclick="resetUserPasswordModal(${user.user_id})" class="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Reset Password" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button onclick="deleteUserModal(${user.user_id}, '${escapeHtml(user.full_name || user.email)}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Delete User" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Apply filters
+        function applyFiltersModal() {
+            const searchTerm = document.getElementById('userSearchModal')?.value.toLowerCase() || '';
+            const roleFilter = document.getElementById('roleFilterModal')?.value || '';
+            const statusFilter = document.getElementById('statusFilterModal')?.value || '';
+            
+            filteredUsersModal = allUsersModal.filter(user => {
+                const matchesSearch = !searchTerm || 
+                    (user.full_name && user.full_name.toLowerCase().includes(searchTerm)) ||
+                    (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                    (user.username && user.username.toLowerCase().includes(searchTerm));
+                
+                const matchesRole = !roleFilter || (user.role || 'user') === roleFilter;
+                const matchesStatus = !statusFilter || (user.status || 'active') === statusFilter;
+                
+                return matchesSearch && matchesRole && matchesStatus;
+            });
+            
+            renderUsersModal(filteredUsersModal);
+            updateCountsModal();
+        }
+        
+        // Update counts
+        function updateCountsModal() {
+            document.getElementById('resultsCountModal').textContent = filteredUsersModal.length;
+            document.getElementById('totalCountModal').textContent = allUsersModal.length;
+            updateSelectedCountModal();
+        }
+        
+        // Update selected count
+        function updateSelectedCountModal() {
+            const selectedCheckboxes = document.querySelectorAll('.user-checkbox-modal:checked');
+            document.getElementById('selectedCountModal').textContent = selectedCheckboxes.length;
+            
+            // Enable/disable bulk action buttons
+            const bulkActivateBtn = document.getElementById('bulkActivateBtnModal');
+            const bulkDeactivateBtn = document.getElementById('bulkDeactivateBtnModal');
+            
+            if (bulkActivateBtn && bulkDeactivateBtn) {
+                const hasSelection = selectedCheckboxes.length > 0;
+                bulkActivateBtn.disabled = !hasSelection;
+                bulkDeactivateBtn.disabled = !hasSelection;
+            }
+        }
+        
+        // Get selected user IDs
+        function getSelectedUserIdsModal() {
+            return Array.from(document.querySelectorAll('.user-checkbox-modal:checked'))
+                .map(cb => cb.dataset.userId);
+        }
+        
+        // Toggle user status
+        async function toggleUserStatusModal(userId, isActive) {
+            const status = isActive ? 'active' : 'inactive';
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_status',
+                        user_id: userId,
+                        status: status
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (data.error && data.error.includes('Status column')) {
+                        alert('Status feature not available. The status column will be created on first use.');
+                    } else {
+                        alert('Failed to update user status: ' + (data.error || 'Unknown error'));
+                    }
+                    loadUsersModal();
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating user status');
+                loadUsersModal();
+            }
+        }
+        
+        // Bulk activate
+        async function bulkActivateModal() {
+            const userIds = getSelectedUserIdsModal();
+            if (userIds.length === 0) return;
+            
+            if (!confirm(`Activate ${userIds.length} user(s)?`)) return;
+            
+            try {
+                await Promise.all(userIds.map(id => 
+                    toggleUserStatusModal(id, true)
+                ));
+                loadUsersModal();
+            } catch (error) {
+                console.error('Error in bulk activate:', error);
+                alert('Error activating users');
+            }
+        }
+        
+        // Bulk deactivate
+        async function bulkDeactivateModal() {
+            const userIds = getSelectedUserIdsModal();
+            if (userIds.length === 0) return;
+            
+            if (!confirm(`Deactivate ${userIds.length} user(s)?`)) return;
+            
+            try {
+                await Promise.all(userIds.map(id => 
+                    toggleUserStatusModal(id, false)
+                ));
+                loadUsersModal();
+            } catch (error) {
+                console.error('Error in bulk deactivate:', error);
+                alert('Error deactivating users');
+            }
+        }
+
+        // Edit user
+        async function editUserModal(userId) {
+            try {
+                const response = await fetch(`../api/user_management.php?action=get_user&user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    const user = data.user;
+                    document.getElementById('edit_full_name').value = user.full_name || '';
+                    document.getElementById('edit_email').value = user.email || '';
+                    document.getElementById('edit_username').value = user.username || '';
+                    document.getElementById('edit_user_id').value = user.user_id;
+                    document.getElementById('editUserModal').classList.remove('hidden');
+                } else {
+                    alert('Failed to load user data');
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+                alert('Error loading user data');
+            }
+        }
+        window.editUserModal = editUserModal;
+
+        // Delete user
+        async function deleteUserModal(userId, userName) {
+            if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'delete_user',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('User deleted successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+        window.deleteUserModal = deleteUserModal;
+
+        // Change user role
+        async function changeUserRoleModal(userId, currentRole) {
+            const roles = ['user', 'supplier', 'admin'];
+            const currentIndex = roles.indexOf(currentRole);
+            const nextIndex = (currentIndex + 1) % roles.length;
+            const newRole = roles[nextIndex];
+            
+            if (!confirm(`Change user role from ${currentRole.toUpperCase()} to ${newRole.toUpperCase()}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_role',
+                        user_id: userId,
+                        role: newRole
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to update role');
+                }
+            } catch (error) {
+                console.error('Error updating role:', error);
+                alert('Error updating role');
+            }
+        }
+        window.changeUserRoleModal = changeUserRoleModal;
+
+        // Reset user password
+        async function resetUserPasswordModal(userId) {
+            const newPassword = prompt('Enter new password (minimum 8 characters):');
+            
+            if (!newPassword) {
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('Password must be at least 8 characters long');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to reset this user\'s password?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'reset_password',
+                        user_id: userId,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Password reset successfully');
+                } else {
+                    alert(data.error || 'Failed to reset password');
+                }
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                alert('Error resetting password');
+            }
+        }
+        window.resetUserPasswordModal = resetUserPasswordModal;
+
+        // Lock user account
+        async function lockUserAccountModal(userId, userName) {
+            if (!confirm(`Are you sure you want to LOCK the account for ${userName}?\n\nLocked users cannot login until unlocked by an admin.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'lock_account',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Account locked successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to lock account');
+                }
+            } catch (error) {
+                console.error('Error locking account:', error);
+                alert('Error locking account');
+            }
+        }
+        window.lockUserAccountModal = lockUserAccountModal;
+
+        // Unlock user account
+        async function unlockUserAccountModal(userId) {
+            if (!confirm('Are you sure you want to UNLOCK this account?\n\nThe user will be able to login again.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'unlock_account',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Account unlocked successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to unlock account');
+                }
+            } catch (error) {
+                console.error('Error unlocking account:', error);
+                alert('Error unlocking account');
+            }
+        }
+        window.unlockUserAccountModal = unlockUserAccountModal;
+        window.loadUsersModal = loadUsersModal;
+        window.updateSelectedCountModal = updateSelectedCountModal;
+
+        // Open User Management Modal
+        function openUserManagementModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            
+            // Open User Management modal with smooth transition
+            setTimeout(() => {
+                document.getElementById('userManagementModal').classList.remove('hidden');
+                // Load users when modal opens
+                if (typeof loadUsersModal === 'function') {
+                    loadUsersModal();
+                }
+            }, 150); // Small delay for smooth transition
+        }
+        window.openUserManagementModal = openUserManagementModal;
+
+        document.getElementById('closeUserManagementModal')?.addEventListener('click', () => {
+            document.getElementById('userManagementModal').classList.add('hidden');
+        });
+
+        // Close User Management modal on backdrop click
+        document.getElementById('userManagementModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'userManagementModal') {
+                document.getElementById('userManagementModal').classList.add('hidden');
+            }
+        });
+
+        // Create user form
+        document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const formMessage = document.getElementById('formMessage');
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'create_user',
+                        full_name: formData.get('full_name'),
+                        email: formData.get('email'),
+                        username: formData.get('username'),
+                        role: formData.get('user_role')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-success-50 text-success-700';
+                    formMessage.textContent = 'User created successfully!';
+                    formMessage.classList.remove('hidden');
+                    e.target.reset();
+                    document.getElementById('addUserModal').classList.add('hidden');
+                    loadUsersModal();
+                    setTimeout(() => formMessage.classList.add('hidden'), 3000);
+                } else {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                    formMessage.textContent = data.error || 'Failed to create user';
+                    formMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                formMessage.textContent = 'Error creating user';
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Edit user form
+        document.getElementById('updateUserForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const formMessage = document.getElementById('editFormMessage');
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_user',
+                        user_id: formData.get('edit_user_id'),
+                        full_name: formData.get('edit_full_name'),
+                        email: formData.get('edit_email'),
+                        username: formData.get('edit_username')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-success-50 text-success-700';
+                    formMessage.textContent = 'User updated successfully!';
+                    formMessage.classList.remove('hidden');
+                    document.getElementById('editUserModal').classList.add('hidden');
+                    loadUsersModal();
+                    setTimeout(() => formMessage.classList.add('hidden'), 3000);
+                } else {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                    formMessage.textContent = data.error || 'Failed to update user';
+                    formMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+                formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                formMessage.textContent = 'Error updating user';
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Event listeners for User Management Modal
+        document.getElementById('addUserBtnModal')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeAddUserModal')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeEditUserModal')?.addEventListener('click', () => {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelEditUser')?.addEventListener('click', () => {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        // Close modals on backdrop click
+        document.getElementById('addUserModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'addUserModal') {
+                document.getElementById('addUserModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('editUserModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'editUserModal') {
+                document.getElementById('editUserModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('userSearchModal')?.addEventListener('input', applyFiltersModal);
+        document.getElementById('roleFilterModal')?.addEventListener('change', applyFiltersModal);
+        document.getElementById('statusFilterModal')?.addEventListener('change', applyFiltersModal);
+        document.getElementById('clearFiltersBtnModal')?.addEventListener('click', () => {
+            document.getElementById('userSearchModal').value = '';
+            document.getElementById('roleFilterModal').value = '';
+            document.getElementById('statusFilterModal').value = '';
+            applyFiltersModal();
+        });
+        
+        document.getElementById('bulkActivateBtnModal')?.addEventListener('click', bulkActivateModal);
+        document.getElementById('bulkDeactivateBtnModal')?.addEventListener('click', bulkDeactivateModal);
+        
+        document.getElementById('selectAllModal')?.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.user-checkbox-modal');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCountModal();
+        });
+
+        // Archive Modal - Full Functionality
+        const ARCHIVE_API = '../php/get_archives.php';
+        const PROCESS_EXPIRED_API = '../php/process_and_archive_expired.php';
+
+        // Escape HTML helper
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Escape HTML helper for archive modal
+        function escapeHtmlArchive(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tab switching for Archive Modal
+        function switchArchiveTab(tabName) {
+            document.querySelectorAll('.tab-content-modal').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-button-modal').forEach(btn => {
+                btn.classList.remove('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+                btn.classList.add('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+            });
+            document.getElementById(`content${tabName}Modal`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab${tabName}Modal`);
+            activeTab.classList.add('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+            activeTab.classList.remove('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+        }
+
+        // Load archive data
+        async function loadArchivesModal() {
+            try {
+                // First, process and archive any expired items
+                try {
+                    await fetch(PROCESS_EXPIRED_API);
+                } catch (error) {
+                    console.error('Error processing expired items:', error);
+                    // Continue even if processing fails
+                }
+
+                // Then load archive data
+                const response = await fetch(`${ARCHIVE_API}?type=all`);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    document.getElementById('expiredCountModal').textContent = result.data.counts.expired || 0;
+                    document.getElementById('cancelledCountModal').textContent = result.data.counts.cancelled || 0;
+                    document.getElementById('deletedCountModal').textContent = result.data.counts.deleted || 0;
+                    document.getElementById('suppliersCountModal').textContent = result.data.counts.suppliers || 0;
+                    renderExpiredItemsModal(result.data.items.expired || []);
+                    renderCancelledOrdersModal(result.data.items.cancelled || []);
+                    renderDeletedItemsModal(result.data.items.deleted || []);
+                    renderArchivedSuppliersModal(result.data.items.suppliers || []);
+                }
+            } catch (error) {
+                console.error('Error loading archives:', error);
+            }
+        }
+
+        // Render expired items
+        function renderExpiredItemsModal(items) {
+            const tbody = document.getElementById('expiredItemsTableModal');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4">
+                        <div>
+                            <div class="font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</div>
+                            <div class="text-xs text-text-tertiary dark:text-gray-500">${escapeHtml(item.medicine_ndc || '')}</div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.batch_number || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.expiration_date || 'N/A'}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300 rounded-full text-xs font-medium">
+                            ${item.days_expired || 0} days
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.expired_at ? new Date(item.expired_at).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render cancelled orders
+        function renderCancelledOrdersModal(orders) {
+            const tbody = document.getElementById('cancelledOrdersTableModal');
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = orders.map(order => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(order.supplier_name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.item_count || 0} items</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancelled_at ? new Date(order.cancelled_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtml(order.cancellation_reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render deleted items
+        function renderDeletedItemsModal(items) {
+            const tbody = document.getElementById('deletedItemsTableModal');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No deleted items found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.manufacturer || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.category || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.deleted_at ? new Date(item.deleted_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtml(item.reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render archived suppliers
+        function renderArchivedSuppliersModal(suppliers) {
+            const tbody = document.getElementById('archivedSuppliersTableModal');
+            if (!tbody) return;
+            
+            if (suppliers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No archived suppliers found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = suppliers.map(supplier => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${escapeHtmlArchive(supplier.name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.contact || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.email || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.phone || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.location || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${supplier.archived_at ? new Date(supplier.archived_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtmlArchive(supplier.reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Open Archive Modal
+        function openArchiveModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('archiveModal').classList.remove('hidden');
+                loadArchivesModal();
+            }, 150);
+        }
+        window.openArchiveModal = openArchiveModal;
+
+        // Close Archive Modal
+        document.getElementById('closeArchiveModal')?.addEventListener('click', () => {
+            document.getElementById('archiveModal').classList.add('hidden');
+        });
+
+        // Close Archive modal on backdrop click
+        document.getElementById('archiveModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'archiveModal') {
+                document.getElementById('archiveModal').classList.add('hidden');
+            }
+        });
+
+        // Tab switching event listeners
+        document.getElementById('tabExpiredModal')?.addEventListener('click', () => switchArchiveTab('Expired'));
+        document.getElementById('tabCancelledModal')?.addEventListener('click', () => switchArchiveTab('Cancelled'));
+        document.getElementById('tabDeletedModal')?.addEventListener('click', () => switchArchiveTab('Deleted'));
+        document.getElementById('tabSuppliersModal')?.addEventListener('click', () => switchArchiveTab('Suppliers'));
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+</body>
+</html>

@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medicine Inventory - PHARMACY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar will be loaded here -->
+    <script src="../js/load-sidebar.js"></script>
+    <!-- Top Bar will be loaded here -->
+    <script src="../js/load-topbar.js" data-title="Inventory List" data-description="Manage your pharmaceutical inventory and stock levels"></script>
+    <!-- Archive Modal will be loaded here -->
+    <script src="../js/load-archive-modal.js" defer></script>
+    <!-- User Management Modal will be loaded here -->
+    <script src="../js/load-user-management-modal.js" defer></script>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+
+        <!-- Main Content Area -->
+        <main class="p-6">
+            <!-- Action Bar -->
+            <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <!-- Add Medicine Button -->
+                    <button id="addMedicineBtn" class="btn-primary px-6 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Item</span>
+                    </button>
+
+                    <!-- Bulk Actions -->
+                    <div class="flex space-x-2">
+                        <button id="bulkEditBtn" class="px-4 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200 disabled:opacity-50" disabled>
+                            <i class="fas fa-edit mr-2"></i>
+                            Bulk Edit
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export and Column Controls -->
+                <div class="flex space-x-2">
+                    <button id="exportCsvBtn" class="px-4 py-3 bg-accent text-white hover:bg-accent-700 rounded-xl transition-all duration-200 flex items-center space-x-2">
+                        <i class="fas fa-download"></i>
+                        <span>Export CSV</span>
+                    </button>
+                    <button id="columnToggleBtn" class="px-4 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                        <i class="fas fa-columns mr-2"></i>
+                        Columns
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="mb-6 bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <!-- Search -->
+                    <div class="flex-1">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-text-tertiary dark:text-gray-500"></i>
+                            </div>
+                            <input type="text" id="tableSearch" placeholder="Search medicines by name, NDC, manufacturer..." class="w-full pl-10 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                        </div>
+                    </div>
+
+                    <!-- Stock Status Filter -->
+                    <div class="min-w-0 lg:w-48">
+                        <select id="stockStatusFilter" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                            <option value>All Stock Status</option>
+                            <option value="in-stock">In Stock</option>
+                            <option value="low-stock">Low Stock</option>
+                            <option value="out-of-stock">Out of Stock</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+
+
+                    <!-- Clear Filters -->
+                    <button id="clearFiltersBtn" class="px-4 py-3 text-text-secondary dark:text-gray-300 hover:text-text-primary dark:hover:text-gray-100 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200 flex items-center space-x-2">
+                        <i class="fas fa-times"></i>
+                        <span>Clear</span>
+                    </button>
+                </div>
+
+                <!-- Results Count -->
+                <div class="mt-4 flex items-center justify-between">
+                    <div class="text-sm text-text-secondary dark:text-gray-400">
+                        Showing <span id="resultsCount" class="font-medium text-text-primary dark:text-gray-100">0</span> of <span id="totalCount" class="font-medium text-text-primary dark:text-gray-100">0</span> medicines
+                    </div>
+                    <div class="text-sm text-text-secondary dark:text-gray-400">
+                        <span id="selectedCount" class="font-medium text-text-primary dark:text-gray-100">0</span> selected
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 overflow-hidden">
+                <!-- Table Header -->
+                <div class="px-6 py-4 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-800">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">List </h3>
+                        <div class="flex items-center space-x-2">
+                            <button id="refreshTableBtn" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto">
+                    <table id="inventoryTable" class="w-full">
+                        <thead class="bg-surface-hover dark:bg-gray-800 border-b border-border-light dark:border-gray-700">
+                            <tr>
+                                <th class="px-6 py-4 text-left">
+                                    <input type="checkbox" id="selectAll" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" />
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-column="ndc">
+                                    <div class="flex items-center space-x-1">
+                                        <span>NDC Code</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-column="name">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Medicine Name</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200 column-manufacturer" data-column="manufacturer">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Manufacturer</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200 column-category" data-column="category">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Category</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-column="quantity">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Quantity</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-column="price">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Price</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-column="status">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Status</span>
+                                        <i class="fas fa-sort text-xs opacity-50"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody" class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                            <!-- Medicine data will be populated from database -->
+                            <tr>
+                                <td colspan="9" class="px-6 py-12 text-center text-text-secondary dark:text-gray-400">
+                                    <div class="flex flex-col items-center space-y-3">
+                                        <i class="fas fa-pills text-4xl opacity-50"></i>
+                                        <p class="text-lg font-medium">No medicines found</p>
+                                        <p class="text-sm">Connect to database to view medicine inventory</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer -->
+                <div class="px-6 py-4 border-t border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-800">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-text-secondary dark:text-gray-400">
+                            Showing <span id="paginationStart">0</span> to <span id="paginationEnd">0</span> of <span id="paginationTotal">0</span> results
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="prevPageBtn" class="px-3 py-2 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200 disabled:opacity-50" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div id="pageNumbers" class="flex items-center space-x-1">
+                                <!-- Page numbers will be populated by JavaScript -->
+                            </div>
+                            <button id="nextPageBtn" class="px-3 py-2 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200 disabled:opacity-50" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Medicine Modal -->
+    <div id="addMedicineModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Add New Item </h2>
+                <button id="closeAddMedicineModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="addMedicineForm" class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- NDC Code -->
+                    <div>
+                        <label for="ndcCode" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            NDC Code *
+                        </label>
+                        <input name="ndcCode" type="text" id="ndcCode" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="e.g., 0069-2587-68" />
+                    </div>
+
+                    <!-- Medicine Name -->
+                    <div>
+                        <label for="medicineName" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Medicine Name *
+                        </label>
+                        <input name="medicineName" type="text" id="medicineName" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter medicine name" />
+                    </div>
+
+                    <!-- Manufacturer -->
+                    <div>
+                        <label for="manufacturer" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Manufacturer
+                        </label>
+                        <input name="manufacturer" type="text" id="manufacturer" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter manufacturer name" />
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Category
+                        </label>
+                        <select id="category" name="category" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                            <option value>Select category</option>
+                            <option value="Medicine">Medicine</option>
+                            <option value="Item">Item</option>
+                        </select>
+                    </div>
+
+                    <!-- Unit Price -->
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Unit Price *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-text-tertiary dark:text-gray-500">$</span>
+                            </div>
+                            <input name="price" type="number" id="price" required min="0" step="0.01" class="w-full pl-8 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="0.00" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-border-light dark:border-gray-700">
+                    <button type="button" id="cancelAddMedicine" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium">
+                        Add Medicine
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Medicine Modal -->
+    <div id="editMedicineModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Edit Medicine</h2>
+                <button id="closeEditMedicineModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="editMedicineForm" class="p-6 space-y-6">
+                <input type="hidden" id="editMedicineId" name="id" />
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- NDC Code -->
+                    <div>
+                        <label for="editNdcCode" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            NDC Code *
+                        </label>
+                        <input name="ndcCode" type="text" id="editNdcCode" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="e.g., 0069-2587-68" />
+                    </div>
+
+                    <!-- Medicine Name -->
+                    <div>
+                        <label for="editMedicineName" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Medicine Name *
+                        </label>
+                        <input name="medicineName" type="text" id="editMedicineName" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter medicine name" />
+                    </div>
+
+                    <!-- Manufacturer -->
+                    <div>
+                        <label for="editManufacturer" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Manufacturer
+                        </label>
+                        <input name="manufacturer" type="text" id="editManufacturer" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter manufacturer name" />
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label for="editCategory" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Category
+                        </label>
+                        <select id="editCategory" name="category" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                            <option value>Select category</option>
+                            <option value="Medicine">Medicine</option>
+                            <option value="Item">Item</option>
+                        </select>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div>
+                        <label for="editQuantity" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Quantity *
+                        </label>
+                        <input name="quantity" type="number" id="editQuantity" required min="0" readonly class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-700 text-text-primary dark:text-gray-100 cursor-not-allowed opacity-75" placeholder="0" />
+                        <p class="text-xs text-text-tertiary dark:text-gray-500 mt-1">Quantity cannot be edited</p>
+                    </div>
+
+                    <!-- Reorder Level -->
+                    <div>
+                        <label for="editReorderLevel" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Reorder Level
+                        </label>
+                        <input name="reorderLevel" type="number" id="editReorderLevel" min="0" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="10" value="10" />
+                    </div>
+
+                    <!-- Unit Price -->
+                    <div>
+                        <label for="editPrice" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Unit Price *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-text-tertiary dark:text-gray-500">$</span>
+                            </div>
+                            <input name="price" type="number" id="editPrice" required min="0" step="0.01" class="w-full pl-8 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="0.00" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center space-x-4 pt-6 border-t border-border-light dark:border-gray-700">
+                    <button type="button" id="cancelEditMedicine" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Medicine
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Management Modal will be loaded by load-user-management-modal.js -->
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Settings</h2>
+                <button id="closeSettingsModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
+                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+                <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
+                        <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">Archive</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">View archived items, orders, and medicines</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorMessage" class="text-red-600 p-4 hidden"></div>
+
+    <script>
+        // Global variables
+        let currentPage = 1;
+        let currentFilters = {
+            search: '',
+            status: '',
+            category: '',
+            expiration: ''
+        };
+        const pageSize = 25;
+
+        // Get base URL for API calls - use relative path
+        function getApiBaseUrl() {
+            // Use relative path to php directory
+            const currentPath = window.location.pathname;
+            // If we're in pages/, go up one level to get to root, then to php
+            if (currentPath.includes('/pages/')) {
+                return '../php';
+            }
+            // Otherwise assume we're at root level
+            return 'php';
+        }
+
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+            
+            if (!localStorage.getItem('theme')) {
+                localStorage.setItem('theme', 'light');
+            }
+            
+            document.documentElement.classList.toggle('dark', isDark);
+            
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', isDark);
+                toggle.classList.toggle('bg-border-light', !isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', isDark);
+                button.classList.toggle('translate-x-1', !isDark);
+            });
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+            
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', !isDark);
+                toggle.classList.toggle('bg-border-light', isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', !isDark);
+                button.classList.toggle('translate-x-1', isDark);
+            });
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString + 'T00:00:00');
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        // Get status badge class
+        function getStatusClass(status) {
+            const statusClasses = {
+                'in-stock': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                'low-stock': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                'out-of-stock': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+                'expired': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+            };
+            return statusClasses[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+        }
+
+        // Format status text
+        function formatStatus(status) {
+            return status ? status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+        }
+
+        // Data fetching & rendering
+        async function fetchMedicines(page = 1, filters = {}) {
+            const tbody = document.getElementById('inventoryTableBody');
+            
+            if (!tbody) {
+                console.error('inventoryTableBody element not found');
+                return;
+            }
+            
+            // Show loading state
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="px-6 py-12 text-center text-text-secondary dark:text-gray-400">
+                        <div class="flex flex-col items-center space-y-3">
+                            <i class="fas fa-spinner fa-spin text-4xl text-primary-600"></i>
+                            <p class="text-lg font-medium">Loading medicines...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            try {
+                const baseUrl = getApiBaseUrl();
+                let url = `${baseUrl}/get_medicines.php?page=${page}&pageSize=${pageSize}`;
+                
+                if (filters.search) {
+                    url += `&search=${encodeURIComponent(filters.search)}`;
+                }
+                if (filters.status) {
+                    url += `&status=${encodeURIComponent(filters.status)}`;
+                }
+                if (filters.category) {
+                    url += `&category=${encodeURIComponent(filters.category)}`;
+                }
+                if (filters.expiration) {
+                    url += `&expiration=${encodeURIComponent(filters.expiration)}`;
+                }
+
+                console.log('Fetching medicines from:', url);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                console.log('Medicines data received:', data);
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to fetch medicines');
+                }
+
+                displayMedicines(data.data || []);
+                updatePagination(data.total || 0, data.page || page, data.pageSize || data.limit || pageSize);
+                updateResultsCount(data.data ? data.data.length : 0, data.total || 0);
+                currentPage = data.page || page;
+
+            } catch (error) {
+                console.error('Error fetching medicines:', error);
+                showError(`Failed to load medicines: ${error.message}`);
+                displayMedicines([]);
+            }
+        }
+
+        // Fetch and display stock availability by category
+        async function fetchStockAvailability() {
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_reports.php?action=stock-availability`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    updateStockBars(result.data);
+                } else {
+                    console.error('Failed to fetch stock availability:', result.message);
+                }
+            } catch (error) {
+                console.error('Error fetching stock availability:', error);
+            }
+        }
+
+        // Color mapping for categories (cycling through colors)
+        const categoryColors = [
+            { bg: 'bg-primary-600', text: 'text-primary-600', darkText: 'dark:text-primary-400' },
+            { bg: 'bg-accent-600', text: 'text-accent-600', darkText: 'dark:text-accent-400' },
+            { bg: 'bg-secondary-600', text: 'text-secondary-600', darkText: 'dark:text-secondary-400' },
+            { bg: 'bg-warning-600', text: 'text-warning-600', darkText: 'dark:text-warning-400' },
+            { bg: 'bg-error-600', text: 'text-error-600', darkText: 'dark:text-error-400' },
+            { bg: 'bg-success-600', text: 'text-success-600', darkText: 'dark:text-success-400' },
+            { bg: 'bg-purple-600', text: 'text-purple-600', darkText: 'dark:text-purple-400' },
+            { bg: 'bg-indigo-600', text: 'text-indigo-600', darkText: 'dark:text-indigo-400' }
+        ];
+
+        // Update stock availability progress bars
+        function updateStockBars(stockData) {
+            const container = document.getElementById('stockAvailabilityContainer');
+            if (!container) return;
+
+            // Clear existing content
+            container.innerHTML = '';
+
+            if (!stockData || stockData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                        <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
+                        <p>No categories found in inventory</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Generate category display name (capitalize first letter of each word)
+            function formatCategoryName(category) {
+                return category
+                    .split(/[\s_-]+/)
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+            }
+
+            // Render each category
+            stockData.forEach((item, index) => {
+                const colorIndex = index % categoryColors.length;
+                const color = categoryColors[colorIndex];
+                const categoryDisplayName = formatCategoryName(item.category);
+                const categorySlug = item.category.toLowerCase().replace(/\s+/g, '-');
+
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'space-y-2 category-stock-item';
+                categoryDiv.dataset.category = item.category;
+                categoryDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onclick="filterInventoryByCategory('${item.category}')">
+                            <div class="w-3 h-3 ${color.bg} rounded-full"></div>
+                            <span class="text-sm font-medium text-text-primary dark:text-gray-100">${categoryDisplayName}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-text-secondary dark:text-gray-400 stock-count-${categorySlug}">${item.inStockItems} / ${item.totalItems}</span>
+                            <span class="text-sm font-medium ${color.text} ${color.darkText} stock-percent-${categorySlug}">${item.percentage}%</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-border-light dark:bg-gray-700 rounded-full h-2">
+                        <div class="${color.bg} h-2 rounded-full transition-all duration-500 stock-bar-${categorySlug}" style="width: ${item.percentage}%"></div>
+                    </div>
+                `;
+                container.appendChild(categoryDiv);
+            });
+        }
+
+        // Function to filter inventory by category (make it globally available)
+        function filterInventoryByCategory(category) {
+            // Update current filters and refresh
+            currentFilters.category = category;
+            currentPage = 1;
+            fetchMedicines(currentPage, currentFilters);
+            
+            // Update URL without page reload
+            const url = new URL(window.location);
+            url.searchParams.set('category', category);
+            window.history.pushState({}, '', url);
+            
+            // Update search placeholder to show active filter
+            const searchInput = document.getElementById('tableSearch');
+            if (searchInput) {
+                searchInput.placeholder = `Filtered by category: ${category}`;
+            }
+        }
+        
+        // Make function globally available for onclick handlers
+        window.filterInventoryByCategory = filterInventoryByCategory;
+
+        function displayMedicines(medicines) {
+            const tbody = document.getElementById('inventoryTableBody');
+            
+            if (!tbody) {
+                console.error('inventoryTableBody element not found in displayMedicines');
+                return;
+            }
+            
+            if (!medicines || medicines.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="px-6 py-12 text-center text-text-secondary dark:text-gray-400">
+                            <div class="flex flex-col items-center space-y-3">
+                                <i class="fas fa-pills text-4xl opacity-50"></i>
+                                <p class="text-lg font-medium">No medicines found</p>
+                                <p class="text-sm">Add a new medicine to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = medicines.map(medicine => {
+                const statusClass = getStatusClass(medicine.status);
+                const statusText = formatStatus(medicine.status);
+                const price = parseFloat(medicine.price || 0).toFixed(2);
+                
+                return `
+                    <tr class="hover:bg-surface-hover dark:hover:bg-gray-800 transition-colors duration-200">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="medicine-checkbox h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" value="${medicine.id}" />
+                        </td>
+                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100">
+                            ${medicine.ndc || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-text-primary dark:text-gray-100">
+                            ${escapeHtml(medicine.name || 'N/A')}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400 column-manufacturer">
+                            ${escapeHtml(medicine.manufacturer || 'N/A')}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400 column-category">
+                            ${escapeHtml(medicine.category || 'N/A')}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100">
+                            ${medicine.quantity || 0}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100">
+                            $${price}
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <button class="edit-medicine-btn text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors duration-200" 
+                                        data-id="${medicine.id}" 
+                                        data-ndc="${escapeHtml(medicine.ndc || '')}" 
+                                        data-name="${escapeHtml(medicine.name || '')}" 
+                                        data-manufacturer="${escapeHtml(medicine.manufacturer || '')}" 
+                                        data-category="${escapeHtml(medicine.category || '')}" 
+                                        data-quantity="${medicine.quantity || 0}" 
+                                        data-reorder-level="${medicine.reorder_level || medicine.reorderLevel || 10}" 
+                                        data-price="${price}" 
+                                        title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updatePagination(total, currentPageNum, limit) {
+            const totalPages = Math.ceil(total / limit);
+            const start = (currentPageNum - 1) * limit + 1;
+            const end = Math.min(currentPageNum * limit, total);
+
+            // Update pagination info
+            document.getElementById('paginationStart').textContent = total > 0 ? start : 0;
+            document.getElementById('paginationEnd').textContent = end;
+            document.getElementById('paginationTotal').textContent = total;
+
+            // Update pagination buttons
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const pageNumbers = document.getElementById('pageNumbers');
+
+            prevBtn.disabled = currentPageNum <= 1;
+            nextBtn.disabled = currentPageNum >= totalPages;
+
+            prevBtn.onclick = () => {
+                if (currentPageNum > 1) {
+                    fetchMedicines(currentPageNum - 1, currentFilters);
+                }
+            };
+
+            nextBtn.onclick = () => {
+                if (currentPageNum < totalPages) {
+                    fetchMedicines(currentPageNum + 1, currentFilters);
+                }
+            };
+
+            // Generate page number buttons
+            pageNumbers.innerHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.className = `px-3 py-2 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200 ${
+                    i === currentPageNum ? 'bg-primary text-white border-primary' : ''
+                }`;
+                button.onclick = () => fetchMedicines(i, currentFilters);
+                pageNumbers.appendChild(button);
+            }
+        }
+
+        function updateResultsCount(showing, total) {
+            document.getElementById('resultsCount').textContent = showing;
+            document.getElementById('totalCount').textContent = total;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initializeTheme();
+
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update user display from localStorage
+            const userFullName = localStorage.getItem('userFullName') || 'User';
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            
+            if (userDisplayNameEl) {
+                userDisplayNameEl.textContent = userFullName;
+            }
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+            
+            // Theme toggle is now initialized by load-topbar.js
+
+            // Add Medicine Modal
+            const addMedicineModal = document.getElementById('addMedicineModal');
+            const addMedicineBtn = document.getElementById('addMedicineBtn');
+            const closeAddMedicineModal = document.getElementById('closeAddMedicineModal');
+            const cancelAddMedicine = document.getElementById('cancelAddMedicine');
+
+            addMedicineBtn.addEventListener('click', () => {
+                addMedicineModal.classList.remove('hidden');
+            });
+
+            closeAddMedicineModal.addEventListener('click', () => {
+                addMedicineModal.classList.add('hidden');
+            });
+
+            cancelAddMedicine.addEventListener('click', () => {
+                addMedicineModal.classList.add('hidden');
+            });
+
+            // Form submission
+            const addMedicineForm = document.getElementById('addMedicineForm');
+            if (addMedicineForm) {
+                addMedicineForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+                
+                try {
+                    const formData = new FormData(this);
+                    // Set quantity to 0 by default if not provided
+                    if (!formData.get('quantity') || formData.get('quantity') === '') {
+                        formData.set('quantity', '0');
+                    }
+                    
+                    // Log form data for debugging
+                    console.log('Form data being sent:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(key, ':', value);
+                    }
+                    
+                    const baseUrl = getApiBaseUrl();
+                    console.log('API URL:', `${baseUrl}/add_medicine.php`);
+                    
+                    const response = await fetch(`${baseUrl}/add_medicine.php`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    // Get response text first to check what we're actually receiving
+                    const responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    // Try to parse as JSON
+                    let result;
+                    try {
+                        result = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError);
+                        console.error('Response was not valid JSON:', responseText);
+                        throw new Error('Server returned invalid response. Please check the server logs.');
+                    }
+                    
+                    console.log('Parsed response:', result);
+                    
+                    if (result.success) {
+                        // Show success message
+                        showSuccess(result.message || 'Medicine added successfully!');
+                        
+                        // Reset form and close modal
+                        this.reset();
+                        document.getElementById('addMedicineModal').classList.add('hidden');
+                        
+                        // Refresh the medicines list
+                        await fetchMedicines(1, currentFilters);
+                        // Refresh stock availability
+                        await fetchStockAvailability();
+                    } else {
+                        // Check for duplicate or quantity update
+                        if (result.duplicate || result.data?.duplicate) {
+                            const message = result.message || 'Medicine already exists. A medicine with this NDC Code already exists.';
+                            alert(message);
+                        } else {
+                            showError(result.message || 'Failed to add medicine');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Full error:', error);
+                    console.error('Error stack:', error.stack);
+                    showError('Server error: ' + error.message);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            });
+            }
+
+            function showSuccess(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.className = 'text-green-600 p-4 bg-green-50 dark:bg-green-900 rounded-lg mb-4';
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('hidden');
+                setTimeout(() => {
+                    errorDiv.classList.add('hidden');
+                    errorDiv.className = 'text-red-600 p-4 hidden';
+                }, 3000);
+            }
+
+            // Edit Medicine Modal
+            const editMedicineModal = document.getElementById('editMedicineModal');
+            const closeEditMedicineModal = document.getElementById('closeEditMedicineModal');
+            const cancelEditMedicine = document.getElementById('cancelEditMedicine');
+
+            closeEditMedicineModal.addEventListener('click', () => {
+                editMedicineModal.classList.add('hidden');
+            });
+
+            cancelEditMedicine.addEventListener('click', () => {
+                editMedicineModal.classList.add('hidden');
+            });
+
+            // Edit button click handler (delegated event listener)
+            document.addEventListener('click', async function(e) {
+                if (e.target.closest('.edit-medicine-btn')) {
+                    const btn = e.target.closest('.edit-medicine-btn');
+                    const medicineData = {
+                        id: btn.dataset.id,
+                        ndc: btn.dataset.ndc,
+                        name: btn.dataset.name,
+                        manufacturer: btn.dataset.manufacturer || '',
+                        category: btn.dataset.category || '',
+                        quantity: btn.dataset.quantity,
+                        reorderLevel: btn.dataset.reorderLevel || '10',
+                        price: btn.dataset.price
+                    };
+
+                    // Populate edit form
+                    document.getElementById('editMedicineId').value = medicineData.id;
+                    document.getElementById('editNdcCode').value = medicineData.ndc;
+                    document.getElementById('editMedicineName').value = medicineData.name;
+                    document.getElementById('editManufacturer').value = medicineData.manufacturer;
+                    document.getElementById('editCategory').value = medicineData.category;
+                    document.getElementById('editQuantity').value = medicineData.quantity;
+                    document.getElementById('editReorderLevel').value = medicineData.reorderLevel;
+                    document.getElementById('editPrice').value = medicineData.price;
+
+                    // Show modal
+                    editMedicineModal.classList.remove('hidden');
+                }
+
+            });
+
+            // Edit form submission
+            const editMedicineForm = document.getElementById('editMedicineForm');
+            if (editMedicineForm) {
+                editMedicineForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+                
+                try {
+                    const formData = new FormData(this);
+                    // Remove quantity from form data as it cannot be updated
+                    formData.delete('quantity');
+                    const baseUrl = getApiBaseUrl();
+                    const url = `${baseUrl}/edit_medicine.php`;
+                    console.log('Edit URL:', url);
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    console.log('Edit response status:', response.status);
+                    
+                    const responseText = await response.text();
+                    let result;
+                    try {
+                        result = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError);
+                        throw new Error('Server returned invalid response.');
+                    }
+                    
+                    if (result.success) {
+                        showSuccess(result.message || 'Medicine updated successfully!');
+                        this.reset();
+                        editMedicineModal.classList.add('hidden');
+                        await fetchMedicines(currentPage, currentFilters);
+                        // Refresh stock availability
+                        await fetchStockAvailability();
+                    } else {
+                        // Check for duplicate
+                        if (result.duplicate || result.data?.duplicate) {
+                            const message = result.message || 'Cannot update medicine. A medicine with this NDC Code already exists.';
+                            alert(message);
+                        } else {
+                            showError(result.message || 'Failed to update medicine');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Edit error:', error);
+                    showError('Server error: ' + error.message);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            });
+            }
+
+            // Logout functionality (sidebar handles this, but keep for compatibility)
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to logout?')) {
+                        // Call logout endpoint to update status to inactive
+                        fetch('../php/logout.php', {
+                            method: 'GET',
+                            credentials: 'same-origin'
+                        }).then(() => {
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('userEmail');
+                        window.location.href = 'login.html';
+                        }).catch(() => {
+                            // Even if logout endpoint fails, still clear and redirect
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('userEmail');
+                            window.location.href = 'login.html';
+                        });
+                    }
+                });
+            }
+
+            // Export CSV functionality
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            if (exportCsvBtn) {
+                exportCsvBtn.addEventListener('click', function() {
+                    // TODO: Implement CSV export from database
+                    alert('CSV Export ready for database integration');
+                });
+            }
+
+            // Search functionality with debounce
+            const debouncedSearch = debounce((searchTerm) => {
+                currentFilters.search = searchTerm;
+                currentPage = 1;
+                fetchMedicines(currentPage, currentFilters);
+            }, 500);
+
+            const searchInputs = document.querySelectorAll('#globalSearch, #tableSearch');
+            searchInputs.forEach(input => {
+                input.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.trim();
+                    currentFilters.search = searchTerm;
+                    currentPage = 1;
+                    debouncedSearch(searchTerm);
+                });
+            });
+
+            // Filter functionality
+            const stockStatusFilter = document.getElementById('stockStatusFilter');
+            if (stockStatusFilter) {
+                stockStatusFilter.addEventListener('change', function() {
+                    currentFilters.status = this.value;
+                    // Clear expiration filter when status filter is changed (they're mutually exclusive)
+                    currentFilters.expiration = '';
+                    currentPage = 1;
+                    fetchMedicines(currentPage, currentFilters);
+                });
+            }
+
+
+            // Clear filters
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function() {
+                    currentFilters = { search: '', status: '', category: '', expiration: '' };
+                    if (stockStatusFilter) stockStatusFilter.value = '';
+                    searchInputs.forEach(input => {
+                        input.value = '';
+                        input.placeholder = 'Search medicines by name, NDC, manufacturer...';
+                    });
+                    // Clear category from URL
+                    const url = new URL(window.location);
+                    url.searchParams.delete('category');
+                    window.history.replaceState({}, '', url);
+                    currentPage = 1;
+                    fetchMedicines(currentPage, currentFilters);
+                });
+            }
+
+            // Bulk actions
+            const bulkEditBtn = document.getElementById('bulkEditBtn');
+            if (bulkEditBtn) {
+                bulkEditBtn.addEventListener('click', function() {
+                    // TODO: Implement bulk edit
+                    alert('Bulk edit ready for database integration');
+                });
+            }
+
+
+            // Column toggle
+            const columnToggleBtn = document.getElementById('columnToggleBtn');
+            if (columnToggleBtn) {
+                columnToggleBtn.addEventListener('click', function() {
+                    // TODO: Implement column visibility toggle
+                    alert('Column toggle ready for implementation');
+                });
+            }
+
+            // Refresh table
+            const refreshTableBtn = document.getElementById('refreshTableBtn');
+            if (refreshTableBtn) {
+                refreshTableBtn.addEventListener('click', async function() {
+                    const icon = this.querySelector('i');
+                    if (icon) icon.classList.add('fa-spin');
+                    
+                    await fetchMedicines(currentPage, currentFilters);
+                    await fetchStockAvailability();
+                    if (icon) icon.classList.remove('fa-spin');
+                });
+            }
+
+            // Refresh stock availability button
+            const refreshStockBtn = document.getElementById('refreshStockBtn');
+            if (refreshStockBtn) {
+                refreshStockBtn.addEventListener('click', async function() {
+                    const icon = this.querySelector('i');
+                    if (icon) icon.classList.add('fa-spin');
+                    await fetchStockAvailability();
+                    if (icon) icon.classList.remove('fa-spin');
+                });
+            }
+
+            // ESC key to close modals
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    addMedicineModal.classList.add('hidden');
+                }
+            });
+
+            // Check for URL parameters (filter, search, etc.)
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Handle filter parameter
+            const filterParam = urlParams.get('filter');
+            if (filterParam === 'low-stock') {
+                document.getElementById('stockStatusFilter').value = 'low-stock';
+                currentFilters.status = 'low-stock';
+            } else if (filterParam === 'expired') {
+                // Set expiration filter for expired medicines (based on expiration_date, not status)
+                // Clear status filter to avoid conflicts
+                if (document.getElementById('stockStatusFilter')) {
+                    document.getElementById('stockStatusFilter').value = '';
+                }
+                currentFilters.status = ''; // Clear status filter
+                currentFilters.expiration = 'expired'; // Use expiration filter instead
+            } else if (filterParam === 'recent') {
+                // For recent filter, we could add a date filter or just show all
+                // For now, just show all medicines
+            }
+            
+            // Handle search parameter
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                const searchValue = decodeURIComponent(searchParam);
+                document.getElementById('tableSearch').value = searchValue;
+                document.getElementById('globalSearch').value = searchValue;
+                currentFilters.search = searchValue;
+            }
+            
+            // Handle category parameter (from reports page)
+            const categoryParam = urlParams.get('category');
+            if (categoryParam) {
+                const categoryValue = decodeURIComponent(categoryParam);
+                currentFilters.category = categoryValue;
+                // Show a badge or indicator that category filter is active
+                const searchInput = document.getElementById('tableSearch');
+                if (searchInput) {
+                    searchInput.placeholder = `Filtered by category: ${categoryValue}`;
+                }
+            }
+            
+            // Initial load with any URL parameters applied
+            // Use setTimeout to ensure all DOM elements are ready
+            setTimeout(() => {
+                try {
+                    console.log('Loading medicines on page load...');
+                    fetchMedicines(1, currentFilters);
+                    fetchStockAvailability();
+                } catch (error) {
+                    console.error('Error loading medicines:', error);
+                    showError('Failed to load medicines: ' + error.message);
+                }
+            }, 100);
+
+            // Select all checkbox functionality
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.medicine-checkbox');
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                    updateBulkActions();
+                });
+            }
+
+            // Update bulk actions when checkboxes change
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('medicine-checkbox')) {
+                    updateBulkActions();
+                }
+            });
+
+            function updateBulkActions() {
+                const checkedBoxes = document.querySelectorAll('.medicine-checkbox:checked');
+                const hasSelection = checkedBoxes.length > 0;
+                
+                document.getElementById('bulkEditBtn').disabled = !hasSelection;
+                document.getElementById('selectedCount').textContent = checkedBoxes.length;
+            }
+
+            // Settings Modal
+            function openSettings() {
+                document.getElementById('settingsModal').classList.remove('hidden');
+            }
+            window.openSettings = openSettings;
+
+            document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+                document.getElementById('settingsModal').classList.add('hidden');
+            });
+
+            // Close modal on backdrop click
+            document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'settingsModal') {
+                    document.getElementById('settingsModal').classList.add('hidden');
+                }
+            });
+        });
+
+        // User Management Modal - Full Functionality
+        const currentUserEmail = localStorage.getItem('userEmail') || 'admin@inventory.com';
+        let allUsersModal = [];
+        let filteredUsersModal = [];
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load users
+        async function loadUsersModal() {
+            const tbody = document.getElementById('usersTableBodyModal');
+            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading users...</p></td></tr>';
+            
+            try {
+                const response = await fetch('../api/user_management.php?action=get_all');
+                const data = await response.json();
+                
+                if (data.success && data.users) {
+                    allUsersModal = data.users.filter(user => user.email !== currentUserEmail);
+                    applyFiltersModal();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+            }
+        }
+        
+        // Render users table
+        function renderUsersModal(users) {
+            const tbody = document.getElementById('usersTableBodyModal');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-users text-4xl opacity-50 mb-2"></i><p>No users found</p></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="user-checkbox-modal h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" data-user-id="${user.user_id}" onchange="updateSelectedCountModal()">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(user.full_name || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.email || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.username || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.employee_id || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'user').toUpperCase())}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        ${user.status !== undefined ? `
+                        ${user.status === 'locked' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                <i class="fas fa-lock mr-1"></i> Locked
+                            </span>
+                        ` : user.status === 'active' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <i class="fas fa-circle text-xs mr-1"></i> Active
+                            </span>
+                        ` : user.status === 'offline' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                <i class="fas fa-circle text-xs mr-1 opacity-50"></i> Offline
+                            </span>
+                        ` : `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                <i class="fas fa-circle text-xs mr-1"></i> ${escapeHtml(user.status || 'inactive')}
+                            </span>
+                        `}
+                        ` : `<span class="text-sm text-gray-500 dark:text-gray-400">N/A</span>`}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="editUserModal(${user.user_id})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Edit User" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="changeUserRoleModal(${user.user_id}, '${user.role || 'user'}')" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Change Role" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-user-tag"></i>
+                            </button>
+                            ${user.status === 'locked' ? `
+                                <button onclick="unlockUserAccountModal(${user.user_id})" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900 rounded-lg transition-colors" title="Unlock Account">
+                                    <i class="fas fa-unlock"></i>
+                                </button>
+                            ` : `
+                                <button onclick="lockUserAccountModal(${user.user_id}, '${escapeHtml(user.full_name || user.email)}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors" title="Lock Account">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                            `}
+                            <button onclick="resetUserPasswordModal(${user.user_id})" class="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Reset Password" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button onclick="deleteUserModal(${user.user_id}, '${escapeHtml(user.full_name || user.email)}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Delete User" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Apply filters
+        function applyFiltersModal() {
+            const searchTerm = document.getElementById('userSearchModal')?.value.toLowerCase() || '';
+            const roleFilter = document.getElementById('roleFilterModal')?.value || '';
+            const statusFilter = document.getElementById('statusFilterModal')?.value || '';
+            
+            filteredUsersModal = allUsersModal.filter(user => {
+                const matchesSearch = !searchTerm || 
+                    (user.full_name && user.full_name.toLowerCase().includes(searchTerm)) ||
+                    (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                    (user.username && user.username.toLowerCase().includes(searchTerm));
+                
+                const matchesRole = !roleFilter || (user.role || 'user') === roleFilter;
+                const matchesStatus = !statusFilter || (user.status || 'active') === statusFilter;
+                
+                return matchesSearch && matchesRole && matchesStatus;
+            });
+            
+            renderUsersModal(filteredUsersModal);
+            updateCountsModal();
+        }
+        
+        // Update counts
+        function updateCountsModal() {
+            document.getElementById('resultsCountModal').textContent = filteredUsersModal.length;
+            document.getElementById('totalCountModal').textContent = allUsersModal.length;
+            updateSelectedCountModal();
+        }
+        
+        // Update selected count
+        function updateSelectedCountModal() {
+            const selectedCheckboxes = document.querySelectorAll('.user-checkbox-modal:checked');
+            document.getElementById('selectedCountModal').textContent = selectedCheckboxes.length;
+            
+            // Enable/disable bulk action buttons
+            const bulkActivateBtn = document.getElementById('bulkActivateBtnModal');
+            const bulkDeactivateBtn = document.getElementById('bulkDeactivateBtnModal');
+            
+            if (bulkActivateBtn && bulkDeactivateBtn) {
+                const hasSelection = selectedCheckboxes.length > 0;
+                bulkActivateBtn.disabled = !hasSelection;
+                bulkDeactivateBtn.disabled = !hasSelection;
+            }
+        }
+        
+        // Get selected user IDs
+        function getSelectedUserIdsModal() {
+            return Array.from(document.querySelectorAll('.user-checkbox-modal:checked'))
+                .map(cb => cb.dataset.userId);
+        }
+        
+        // Toggle user status
+        async function toggleUserStatusModal(userId, isActive) {
+            const status = isActive ? 'active' : 'inactive';
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_status',
+                        user_id: userId,
+                        status: status
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (data.error && data.error.includes('Status column')) {
+                        alert('Status feature not available. The status column will be created on first use.');
+                    } else {
+                        alert('Failed to update user status: ' + (data.error || 'Unknown error'));
+                    }
+                    loadUsersModal();
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating user status');
+                loadUsersModal();
+            }
+        }
+        
+        // Bulk activate
+        async function bulkActivateModal() {
+            const userIds = getSelectedUserIdsModal();
+            if (userIds.length === 0) return;
+            
+            if (!confirm(`Activate ${userIds.length} user(s)?`)) return;
+            
+            try {
+                await Promise.all(userIds.map(id => 
+                    toggleUserStatusModal(id, true)
+                ));
+                loadUsersModal();
+            } catch (error) {
+                console.error('Error in bulk activate:', error);
+                alert('Error activating users');
+            }
+        }
+        
+        // Bulk deactivate
+        async function bulkDeactivateModal() {
+            const userIds = getSelectedUserIdsModal();
+            if (userIds.length === 0) return;
+            
+            if (!confirm(`Deactivate ${userIds.length} user(s)?`)) return;
+            
+            try {
+                await Promise.all(userIds.map(id => 
+                    toggleUserStatusModal(id, false)
+                ));
+                loadUsersModal();
+            } catch (error) {
+                console.error('Error in bulk deactivate:', error);
+                alert('Error deactivating users');
+            }
+        }
+
+        // Edit user
+        async function editUserModal(userId) {
+            try {
+                const response = await fetch(`../api/user_management.php?action=get_user&user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    const user = data.user;
+                    document.getElementById('edit_full_name').value = user.full_name || '';
+                    document.getElementById('edit_email').value = user.email || '';
+                    document.getElementById('edit_username').value = user.username || '';
+                    document.getElementById('edit_user_id').value = user.user_id;
+                    document.getElementById('editUserModal').classList.remove('hidden');
+                } else {
+                    alert('Failed to load user data');
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+                alert('Error loading user data');
+            }
+        }
+        window.editUserModal = editUserModal;
+
+        // Delete user
+        async function deleteUserModal(userId, userName) {
+            if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'delete_user',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('User deleted successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+        window.deleteUserModal = deleteUserModal;
+
+        // Change user role
+        async function changeUserRoleModal(userId, currentRole) {
+            const roles = ['user', 'supplier', 'admin'];
+            const currentIndex = roles.indexOf(currentRole);
+            const nextIndex = (currentIndex + 1) % roles.length;
+            const newRole = roles[nextIndex];
+            
+            if (!confirm(`Change user role from ${currentRole.toUpperCase()} to ${newRole.toUpperCase()}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_role',
+                        user_id: userId,
+                        role: newRole
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to update role');
+                }
+            } catch (error) {
+                console.error('Error updating role:', error);
+                alert('Error updating role');
+            }
+        }
+        window.changeUserRoleModal = changeUserRoleModal;
+
+        // Reset user password
+        async function resetUserPasswordModal(userId) {
+            const newPassword = prompt('Enter new password (minimum 8 characters):');
+            
+            if (!newPassword) {
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('Password must be at least 8 characters long');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to reset this user\'s password?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'reset_password',
+                        user_id: userId,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Password reset successfully');
+                } else {
+                    alert(data.error || 'Failed to reset password');
+                }
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                alert('Error resetting password');
+            }
+        }
+        window.resetUserPasswordModal = resetUserPasswordModal;
+
+        // Lock user account
+        async function lockUserAccountModal(userId, userName) {
+            if (!confirm(`Are you sure you want to LOCK the account for ${userName}?\n\nLocked users cannot login until unlocked by an admin.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'lock_account',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Account locked successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to lock account');
+                }
+            } catch (error) {
+                console.error('Error locking account:', error);
+                alert('Error locking account');
+            }
+        }
+        window.lockUserAccountModal = lockUserAccountModal;
+
+        // Unlock user account
+        async function unlockUserAccountModal(userId) {
+            if (!confirm('Are you sure you want to UNLOCK this account?\n\nThe user will be able to login again.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'unlock_account',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Account unlocked successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to unlock account');
+                }
+            } catch (error) {
+                console.error('Error unlocking account:', error);
+                alert('Error unlocking account');
+            }
+        }
+        window.unlockUserAccountModal = unlockUserAccountModal;
+        window.loadUsersModal = loadUsersModal;
+        window.updateSelectedCountModal = updateSelectedCountModal;
+
+        // Open User Management Modal
+        function openUserManagementModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            
+            // Open User Management modal with smooth transition
+            setTimeout(() => {
+                document.getElementById('userManagementModal').classList.remove('hidden');
+                // Load users when modal opens
+                if (typeof loadUsersModal === 'function') {
+                    loadUsersModal();
+                }
+            }, 150); // Small delay for smooth transition
+        }
+        window.openUserManagementModal = openUserManagementModal;
+
+        document.getElementById('closeUserManagementModal')?.addEventListener('click', () => {
+            document.getElementById('userManagementModal').classList.add('hidden');
+        });
+
+        // Close User Management modal on backdrop click
+        document.getElementById('userManagementModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'userManagementModal') {
+                document.getElementById('userManagementModal').classList.add('hidden');
+            }
+        });
+
+        // Create user form
+        document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const formMessage = document.getElementById('formMessage');
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'create_user',
+                        full_name: formData.get('full_name'),
+                        email: formData.get('email'),
+                        username: formData.get('username'),
+                        role: formData.get('user_role')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-success-50 text-success-700';
+                    formMessage.textContent = 'User created successfully!';
+                    formMessage.classList.remove('hidden');
+                    e.target.reset();
+                    document.getElementById('addUserModal').classList.add('hidden');
+                    loadUsersModal();
+                    setTimeout(() => formMessage.classList.add('hidden'), 3000);
+                } else {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                    formMessage.textContent = data.error || 'Failed to create user';
+                    formMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                formMessage.textContent = 'Error creating user';
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Edit user form
+        document.getElementById('updateUserForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const formMessage = document.getElementById('editFormMessage');
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_user',
+                        user_id: formData.get('edit_user_id'),
+                        full_name: formData.get('edit_full_name'),
+                        email: formData.get('edit_email'),
+                        username: formData.get('edit_username')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-success-50 text-success-700';
+                    formMessage.textContent = 'User updated successfully!';
+                    formMessage.classList.remove('hidden');
+                    document.getElementById('editUserModal').classList.add('hidden');
+                    loadUsersModal();
+                    setTimeout(() => formMessage.classList.add('hidden'), 3000);
+                } else {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                    formMessage.textContent = data.error || 'Failed to update user';
+                    formMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+                formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                formMessage.textContent = 'Error updating user';
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Event listeners for User Management Modal
+        document.getElementById('addUserBtnModal')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeAddUserModal')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeEditUserModal')?.addEventListener('click', () => {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelEditUser')?.addEventListener('click', () => {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        // Close modals on backdrop click
+        document.getElementById('addUserModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'addUserModal') {
+                document.getElementById('addUserModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('editUserModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'editUserModal') {
+                document.getElementById('editUserModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('userSearchModal')?.addEventListener('input', applyFiltersModal);
+        document.getElementById('roleFilterModal')?.addEventListener('change', applyFiltersModal);
+        document.getElementById('statusFilterModal')?.addEventListener('change', applyFiltersModal);
+        document.getElementById('clearFiltersBtnModal')?.addEventListener('click', () => {
+            document.getElementById('userSearchModal').value = '';
+            document.getElementById('roleFilterModal').value = '';
+            document.getElementById('statusFilterModal').value = '';
+            applyFiltersModal();
+        });
+        
+        document.getElementById('bulkActivateBtnModal')?.addEventListener('click', bulkActivateModal);
+        document.getElementById('bulkDeactivateBtnModal')?.addEventListener('click', bulkDeactivateModal);
+        
+        document.getElementById('selectAllModal')?.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.user-checkbox-modal');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCountModal();
+        });
+
+        // Utilities
+        function debounce(fn, ms) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), ms);
+            };
+        }
+
+        // Escape HTML helper
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+</body>
+</html>

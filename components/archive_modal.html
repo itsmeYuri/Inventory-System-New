@@ -1,0 +1,110 @@
+<!-- Archive Modal -->
+<div id="archiveModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] hidden" style="left: 60px;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animation-slide-up flex flex-col">
+        <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700 flex-shrink-0">
+            <div>
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Archive</h2>
+                <p class="text-sm text-text-secondary dark:text-gray-400 mt-1">View expired items and cancelled orders</p>
+            </div>
+            <button id="closeArchiveModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="space-y-6">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Expired Items</p>
+                                <p class="text-3xl font-bold text-error-600 dark:text-error-400" id="expiredCountModal">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-error-100 dark:bg-error-900 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-error-600 dark:text-error-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Cancelled Orders</p>
+                                <p class="text-3xl font-bold text-warning-600 dark:text-warning-400" id="cancelledCountModal">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-ban text-warning-600 dark:text-warning-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-border-light dark:border-gray-700">
+                    <div class="border-b border-border-light dark:border-gray-700">
+                        <nav class="flex -mb-px">
+                            <button id="tabExpiredModal" class="tab-button-modal active px-6 py-4 text-sm font-medium border-b-2 border-primary text-primary dark:text-primary-400">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Expired Items
+                            </button>
+                            <button id="tabCancelledModal" class="tab-button-modal px-6 py-4 text-sm font-medium border-b-2 border-transparent text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200">
+                                <i class="fas fa-ban mr-2"></i>
+                                Cancelled Orders
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="p-6">
+                        <!-- Expired Items Tab -->
+                        <div id="contentExpiredModal" class="tab-content-modal">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-border-light dark:border-gray-700">
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Medicine</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Batch</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Quantity</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Expiration Date</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Days Expired</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Expired At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expiredItemsTableModal">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Cancelled Orders Tab -->
+                        <div id="contentCancelledModal" class="tab-content-modal hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-border-light dark:border-gray-700">
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Order ID</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Supplier</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Order Date</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Total Amount</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Items</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Cancelled At</th>
+                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cancelledOrdersTableModal">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

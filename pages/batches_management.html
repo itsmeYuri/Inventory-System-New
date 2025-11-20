@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Batches Management - INVENTORY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar will be loaded here -->
+    <script src="../js/load-sidebar.js"></script>
+    <!-- Top Bar will be loaded here -->
+    <script src="../js/load-topbar.js" data-title="Batches Management" data-description="Track and manage order batches" data-search-placeholder="Search batches..."></script>
+    <!-- Archive Modal will be loaded here -->
+    <script src="../js/load-archive-modal.js" defer></script>
+    <!-- User Management Modal will be loaded here -->
+    <script src="../js/load-user-management-modal.js" defer></script>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+
+        <!-- Main Content Area -->
+        <main class="p-6">
+            <!-- Page Header with Actions -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+                <div>
+                    <h2 class="text-2xl font-semibold text-text-primary dark:text-gray-100">Batches Overview</h2>
+                    <p class="text-text-secondary dark:text-gray-400 mt-1">Manage and track all order batches</p>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button id="processExpiredBtn" class="px-4 py-2 bg-warning text-white rounded-lg hover:bg-warning-700 transition-all duration-200">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Process Expired
+                    </button>
+                    <button id="refreshBtn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters and Controls -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6 mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    <!-- Filter Controls -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center space-x-2">
+                            <label for="statusFilter" class="text-sm font-medium text-text-secondary dark:text-gray-400">Status:</label>
+                            <select id="statusFilter" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value>All Status</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <label for="dateFrom" class="text-sm font-medium text-text-secondary dark:text-gray-400">From:</label>
+                            <input type="date" id="dateFrom" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <label for="dateTo" class="text-sm font-medium text-text-secondary dark:text-gray-400">To:</label>
+                            <input type="date" id="dateTo" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                        </div>
+
+                        <button id="resetFilters" class="px-3 py-2 text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 border border-border-light dark:border-gray-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200">
+                            <i class="fas fa-undo mr-1"></i>
+                            Reset
+                        </button>
+                    </div>
+
+                    <!-- Results Info -->
+                    <div class="flex items-center space-x-4">
+                        <span id="resultsCount" class="text-sm text-text-secondary dark:text-gray-400">Showing 0 of 0 batches</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-text-secondary dark:text-gray-400">Show:</span>
+                            <select id="pageSize" class="px-2 py-1 border border-border-light dark:border-gray-600 rounded text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-500 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batches Table -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 overflow-hidden">
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-surface-hover dark:bg-gray-800">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="batch_number">
+                                    Batch Number
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="order_id">
+                                    Order ID
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="supplier">
+                                    Supplier
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="created_date">
+                                    Created Date
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    Items
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    Expired
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-primary dark:hover:text-primary-400 transition-colors duration-200" data-sort="status">
+                                    Status
+                                    <i class="fas fa-sort ml-1"></i>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchesTableBody" class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div id="mobileBatchesView" class="md:hidden divide-y divide-border-light">
+                    <!-- Mobile cards will be populated by JavaScript -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <div class="w-24 h-24 mx-auto mb-4 bg-surface-hover dark:bg-gray-800 rounded-full flex items-center justify-center">
+                        <i class="fas fa-boxes text-3xl text-text-tertiary dark:text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-2">No batches found</h3>
+                    <p class="text-text-secondary dark:text-gray-400 mb-6">Batches are created automatically when orders are placed.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="p-12 text-center">
+                    <div class="w-24 h-24 mx-auto mb-4 bg-surface-hover dark:bg-gray-800 rounded-full flex items-center justify-center">
+                        <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+                    </div>
+                    <p class="text-text-secondary dark:text-gray-400">Loading batches...</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6">
+                <div class="text-sm text-text-secondary dark:text-gray-400">
+                    Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalBatches">0</span> batches
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="prevPage" class="px-3 py-2 text-text-secondary dark:text-gray-400 hover:text-primary border border-border-light dark:border-gray-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="pageNumbers" class="flex items-center space-x-1"></span>
+                    <button id="nextPage" class="px-3 py-2 text-text-secondary dark:text-gray-400 hover:text-primary border border-border-light dark:border-gray-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Batch Details Modal -->
+    <div id="batchDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Batch Details</h2>
+                <button id="closeBatchDetailsModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="batchDetailsContent">
+                <!-- Batch details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Batch Modal -->
+    <div id="editBatchModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Edit Batch - Expiration Dates</h2>
+                <button id="closeEditBatchModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="editBatchContent">
+                <!-- Edit batch content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Batches data
+        let batchesData = [];
+        let filteredBatches = [];
+        let currentPage = 1;
+        let pageSize = 25;
+        let sortField = '';
+        let sortDirection = 'asc';
+
+        // API Base URL
+        function getApiBaseUrl() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/pages/')) {
+                return '../php';
+            }
+            return 'php';
+        }
+
+        // Helper functions
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function getStatusClass(status) {
+            const statusClasses = {
+                'active': 'bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300',
+                'expired': 'bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300',
+                'completed': 'bg-accent-100 dark:bg-accent-900 text-accent-700 dark:text-accent-300'
+            };
+            return statusClasses[status] || 'bg-surface-hover dark:bg-gray-800 text-text-secondary dark:text-gray-400';
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'active': '<i class="fas fa-check-circle mr-1"></i>',
+                'expired': '<i class="fas fa-exclamation-triangle mr-1"></i>',
+                'completed': '<i class="fas fa-check-double mr-1"></i>'
+            };
+            return icons[status] || '';
+        }
+
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white animation-slide-up ${
+                type === 'success' ? 'bg-success' : 
+                type === 'error' ? 'bg-error' : 
+                type === 'warning' ? 'bg-warning' : 'bg-primary'
+            }`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Fetch batches from database
+        async function fetchBatches(page = 1, search = '', status = '') {
+            try {
+                const baseUrl = getApiBaseUrl();
+                let url = `${baseUrl}/get_batches.php?page=${page}&pageSize=${pageSize}`;
+                
+                if (search) {
+                    url += `&search=${encodeURIComponent(search)}`;
+                }
+                if (status) {
+                    url += `&status=${encodeURIComponent(status)}`;
+                }
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (data.message && data.message.includes('does not exist')) {
+                        document.getElementById('loadingState').classList.add('hidden');
+                        document.getElementById('emptyState').classList.remove('hidden');
+                        document.getElementById('emptyState').innerHTML = `
+                            <div class="w-24 h-24 mx-auto mb-4 bg-surface-hover dark:bg-gray-800 rounded-full flex items-center justify-center">
+                                <i class="fas fa-database text-3xl text-warning"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-2">Batches Table Not Found</h3>
+                            <p class="text-text-secondary dark:text-gray-400 mb-6">Please run <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">php/create_batches_tables.php</code> to create the batches tables.</p>
+                        `;
+                        return;
+                    }
+                    throw new Error(data.message || 'Failed to fetch batches');
+                }
+                
+                batchesData = data.data || [];
+                filteredBatches = [...batchesData];
+                renderBatches();
+                updatePagination();
+                updateResultsCount();
+                
+            } catch (error) {
+                console.error('Error fetching batches:', error);
+                batchesData = [];
+                filteredBatches = [];
+                renderBatches();
+                showError('Failed to load batches: ' + error.message);
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        // Render batches table
+        function renderBatches() {
+            const tableBody = document.getElementById('batchesTableBody');
+            const mobileView = document.getElementById('mobileBatchesView');
+            const emptyState = document.getElementById('emptyState');
+            const loadingState = document.getElementById('loadingState');
+
+            loadingState.classList.add('hidden');
+
+            if (filteredBatches.length === 0) {
+                tableBody.innerHTML = '';
+                mobileView.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // Paginate
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const paginatedBatches = filteredBatches.slice(start, end);
+
+            // Desktop table
+            tableBody.innerHTML = paginatedBatches.map(batch => `
+                <tr class="table-row-hover">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-text-primary dark:text-gray-100">${escapeHtml(batch.batch_number || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-primary dark:text-gray-100">#${batch.order_id || 'N/A'}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-text-primary dark:text-gray-100">${escapeHtml(batch.supplier_name || 'Unknown')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-secondary dark:text-gray-400">${formatDate(batch.created_date)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-primary dark:text-gray-100">${batch.item_count || 0} item(s)</div>
+                        <div class="text-xs text-text-secondary dark:text-gray-400">Qty: ${batch.total_quantity || 0}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm ${batch.expired_count > 0 ? 'text-error-600 dark:text-error-400 font-medium' : 'text-text-secondary dark:text-gray-400'}">
+                            ${batch.expired_count || 0} expired
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="status-badge ${getStatusClass(batch.status)}">
+                            ${getStatusIcon(batch.status)}
+                            ${(batch.status || 'active').charAt(0).toUpperCase() + (batch.status || 'active').slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="viewBatchDetails(${batch.id})" class="text-primary dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors duration-200" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editBatch(${batch.id})" class="text-accent dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 transition-colors duration-200" title="Edit Batch">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Mobile cards
+            mobileView.innerHTML = paginatedBatches.map(batch => `
+                <div class="p-4">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <div class="font-medium text-text-primary dark:text-gray-100">${escapeHtml(batch.batch_number || 'N/A')}</div>
+                            <div class="text-sm text-text-secondary dark:text-gray-400">Order #${batch.order_id || 'N/A'}</div>
+                        </div>
+                        <span class="status-badge ${getStatusClass(batch.status)}">
+                            ${getStatusIcon(batch.status)}
+                            ${(batch.status || 'active').charAt(0).toUpperCase() + (batch.status || 'active').slice(1)}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                        <div>
+                            <div class="text-text-secondary dark:text-gray-400">Supplier</div>
+                            <div class="text-text-primary dark:text-gray-100">${escapeHtml(batch.supplier_name || 'Unknown')}</div>
+                        </div>
+                        <div>
+                            <div class="text-text-secondary dark:text-gray-400">Created</div>
+                            <div class="text-text-primary dark:text-gray-100">${formatDate(batch.created_date)}</div>
+                        </div>
+                        <div>
+                            <div class="text-text-secondary dark:text-gray-400">Items</div>
+                            <div class="text-text-primary dark:text-gray-100">${batch.item_count || 0}</div>
+                        </div>
+                        <div>
+                            <div class="text-text-secondary dark:text-gray-400">Expired</div>
+                            <div class="${batch.expired_count > 0 ? 'text-error-600 dark:text-error-400 font-medium' : 'text-text-primary dark:text-gray-100'}">${batch.expired_count || 0}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button onclick="viewBatchDetails(${batch.id})" class="text-primary hover:text-primary-700 transition-colors duration-200 p-2" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="editBatch(${batch.id})" class="text-accent hover:text-accent-700 transition-colors duration-200 p-2" title="Edit Batch">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // View batch details
+        async function viewBatchDetails(batchId) {
+            const batch = batchesData.find(b => b.id === batchId);
+            if (!batch) {
+                showError('Batch not found');
+                return;
+            }
+
+            const detailsContent = document.getElementById('batchDetailsContent');
+            detailsContent.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-text-secondary">Loading batch details...</p></div>';
+
+            document.getElementById('batchDetailsModal').classList.remove('hidden');
+
+            // Fetch batch items
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_batch_items.php?batch_id=${batchId}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                const batchItems = data.success ? (data.data || []) : [];
+
+                detailsContent.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Batch Header Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Batch Number</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium text-lg">${escapeHtml(batch.batch_number || 'N/A')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Status</label>
+                                <span class="status-badge ${getStatusClass(batch.status)}">
+                                    ${getStatusIcon(batch.status)}
+                                    ${(batch.status || 'active').charAt(0).toUpperCase() + (batch.status || 'active').slice(1)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order ID</label>
+                                <p class="text-text-primary dark:text-gray-100">#${batch.order_id || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(batch.supplier_name || 'Unknown')}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Created Date</label>
+                                <p class="text-text-primary dark:text-gray-100">${formatDate(batch.created_date)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Items</label>
+                                <p class="text-text-primary dark:text-gray-100">${batchItems.length} item(s)</p>
+                            </div>
+                        </div>
+
+                        ${batch.notes ? `
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Notes</label>
+                                <p class="text-text-primary dark:text-gray-100 bg-surface-hover dark:bg-gray-800 p-3 rounded-lg">${escapeHtml(batch.notes)}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Batch Items Table -->
+                        <div class="pt-4 border-t border-border-light dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-4">Batch Items</h3>
+                            ${batchItems.length > 0 ? `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-border-light dark:divide-gray-700">
+                                        <thead class="bg-surface-hover dark:bg-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Medicine</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">NDC</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Quantity</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Received</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Expiration Date</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                                            ${batchItems.map(item => {
+                                                const isExpired = item.is_expired === 1 || item.is_expired === true;
+                                                const daysUntilExpiry = item.days_until_expiry;
+                                                let expiryStatus = '';
+                                                if (isExpired) {
+                                                    expiryStatus = '<span class="text-error-600 dark:text-error-400 font-medium">Expired</span>';
+                                                } else if (daysUntilExpiry !== null && daysUntilExpiry <= 30) {
+                                                    expiryStatus = `<span class="text-warning-600 dark:text-warning-400 font-medium">Expires in ${daysUntilExpiry} days</span>`;
+                                                } else if (daysUntilExpiry !== null) {
+                                                    expiryStatus = `<span class="text-text-secondary dark:text-gray-400">${daysUntilExpiry} days left</span>`;
+                                                } else {
+                                                    expiryStatus = '<span class="text-text-secondary dark:text-gray-400">No expiration</span>';
+                                                }
+                                                return `
+                                                    <tr class="${isExpired ? 'bg-error-50 dark:bg-error-900/20' : ''}">
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-medium">${item.quantity || 0}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${item.received_quantity || 0}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${item.expiration_date ? formatDate(item.expiration_date) : 'N/A'}</td>
+                                                        <td class="px-4 py-3 text-sm">${expiryStatus}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p class="text-text-secondary dark:text-gray-400 text-center py-4">No items found for this batch.</p>'}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching batch items:', error);
+                detailsContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl text-error mb-2"></i>
+                        <p class="text-text-secondary dark:text-gray-400">Failed to load batch items. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Process expired batches
+        async function processExpiredBatches() {
+            if (!confirm('This will process all expired batch items and decrement inventory. Continue?')) {
+                return;
+            }
+
+            const btn = document.getElementById('processExpiredBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/process_expired_batches.php`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const stats = result.stats || {};
+                    showSuccess(`Processed ${stats.processed || 0} expired items. Decremented ${stats.decremented || 0} items from inventory.`);
+                    await fetchBatches(currentPage);
+                } else {
+                    showError(result.message || 'Failed to process expired batches');
+                }
+            } catch (error) {
+                console.error('Error processing expired batches:', error);
+                showError('Failed to process expired batches: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Update pagination
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredBatches.length / pageSize);
+            const showingFrom = filteredBatches.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+            const showingTo = Math.min(currentPage * pageSize, filteredBatches.length);
+
+            document.getElementById('showingFrom').textContent = showingFrom;
+            document.getElementById('showingTo').textContent = showingTo;
+            document.getElementById('totalBatches').textContent = filteredBatches.length;
+
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            const pageNumbers = document.getElementById('pageNumbers');
+
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
+
+            // Page numbers
+            pageNumbers.innerHTML = '';
+            if (totalPages === 0) return;
+
+            const maxPages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
+            let endPage = Math.min(totalPages, startPage + maxPages - 1);
+
+            if (endPage - startPage < maxPages - 1) {
+                startPage = Math.max(1, endPage - maxPages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg transition-all duration-200 ${
+                    i === currentPage 
+                        ? 'bg-primary text-white border-primary' 
+                        : 'text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-500'
+                }`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    renderBatches();
+                    updatePagination();
+                });
+                pageNumbers.appendChild(pageBtn);
+            }
+        }
+
+        function updateResultsCount() {
+            document.getElementById('resultsCount').textContent = `Showing ${filteredBatches.length} of ${batchesData.length} batches`;
+        }
+
+        // Event listeners
+        document.getElementById('prevPage')?.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderBatches();
+                updatePagination();
+            }
+        });
+
+        document.getElementById('nextPage')?.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredBatches.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderBatches();
+                updatePagination();
+            }
+        });
+
+        document.getElementById('pageSize')?.addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            renderBatches();
+            updatePagination();
+        });
+
+        document.getElementById('statusFilter')?.addEventListener('change', (e) => {
+            const status = e.target.value;
+            if (status) {
+                filteredBatches = batchesData.filter(b => b.status === status);
+            } else {
+                filteredBatches = [...batchesData];
+            }
+            currentPage = 1;
+            renderBatches();
+            updatePagination();
+            updateResultsCount();
+        });
+
+        document.getElementById('globalSearch')?.addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            
+            filteredBatches = batchesData.filter(batch => {
+                const matchesSearch = !search || 
+                    (batch.batch_number && batch.batch_number.toLowerCase().includes(search)) ||
+                    (batch.supplier_name && batch.supplier_name.toLowerCase().includes(search));
+                const matchesStatus = !status || batch.status === status;
+                return matchesSearch && matchesStatus;
+            });
+            
+            currentPage = 1;
+            renderBatches();
+            updatePagination();
+            updateResultsCount();
+        });
+
+        document.getElementById('resetFilters')?.addEventListener('click', () => {
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.getElementById('globalSearch').value = '';
+            filteredBatches = [...batchesData];
+            currentPage = 1;
+            renderBatches();
+            updatePagination();
+            updateResultsCount();
+        });
+
+        document.getElementById('refreshBtn')?.addEventListener('click', () => {
+            fetchBatches(currentPage);
+        });
+
+        document.getElementById('processExpiredBtn')?.addEventListener('click', processExpiredBatches);
+
+        // Modal close handlers
+        document.getElementById('closeBatchDetailsModal')?.addEventListener('click', () => {
+            document.getElementById('batchDetailsModal').classList.add('hidden');
+        });
+
+        document.getElementById('batchDetailsModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'batchDetailsModal') {
+                document.getElementById('batchDetailsModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('closeEditBatchModal')?.addEventListener('click', () => {
+            document.getElementById('editBatchModal').classList.add('hidden');
+        });
+
+        document.getElementById('editBatchModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'editBatchModal') {
+                document.getElementById('editBatchModal').classList.add('hidden');
+            }
+        });
+
+        // Use event delegation for dynamically created cancel button
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'cancelEditBatch' || e.target.closest('#cancelEditBatch')) {
+                document.getElementById('editBatchModal').classList.add('hidden');
+            }
+        });
+
+        // Edit batch - open modal with editable expiration dates
+        async function editBatch(batchId) {
+            const batch = batchesData.find(b => b.id === batchId);
+            if (!batch) {
+                showError('Batch not found');
+                return;
+            }
+
+            const editContent = document.getElementById('editBatchContent');
+            editContent.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-text-secondary">Loading batch items...</p></div>';
+
+            document.getElementById('editBatchModal').classList.remove('hidden');
+
+            // Fetch batch items
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_batch_items.php?batch_id=${batchId}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                const batchItems = data.success ? (data.data || []) : [];
+
+                editContent.innerHTML = `
+                    <form id="editBatchForm" class="space-y-6">
+                        <!-- Batch Header Info -->
+                        <div class="bg-surface-hover dark:bg-gray-800 p-4 rounded-lg">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Batch Number</label>
+                                    <p class="text-text-primary dark:text-gray-100 font-medium">${escapeHtml(batch.batch_number || 'N/A')}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order ID</label>
+                                    <p class="text-text-primary dark:text-gray-100">#${batch.order_id || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier</label>
+                                    <p class="text-text-primary dark:text-gray-100">${escapeHtml(batch.supplier_name || 'Unknown')}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Status</label>
+                                    <span class="status-badge ${getStatusClass(batch.status)}">
+                                        ${getStatusIcon(batch.status)}
+                                        ${(batch.status || 'active').charAt(0).toUpperCase() + (batch.status || 'active').slice(1)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Batch Items with Editable Expiration Dates -->
+                        <div class="pt-4 border-t border-border-light dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-4">Edit Expiration Dates</h3>
+                            ${batchItems.length > 0 ? `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-border-light dark:divide-gray-700">
+                                        <thead class="bg-surface-hover dark:bg-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Medicine</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">NDC</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Quantity</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Received</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Expiration Date</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Current Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                                            ${batchItems.map((item, index) => {
+                                                const isExpired = item.is_expired === 1 || item.is_expired === true;
+                                                const daysUntilExpiry = item.days_until_expiry;
+                                                let expiryStatus = '';
+                                                if (isExpired) {
+                                                    expiryStatus = '<span class="text-error-600 dark:text-error-400 font-medium">Expired</span>';
+                                                } else if (daysUntilExpiry !== null && daysUntilExpiry <= 30) {
+                                                    expiryStatus = `<span class="text-warning-600 dark:text-warning-400 font-medium">Expires in ${daysUntilExpiry} days</span>`;
+                                                } else if (daysUntilExpiry !== null) {
+                                                    expiryStatus = `<span class="text-text-secondary dark:text-gray-400">${daysUntilExpiry} days left</span>`;
+                                                } else {
+                                                    expiryStatus = '<span class="text-text-secondary dark:text-gray-400">No expiration</span>';
+                                                }
+                                                
+                                                // Format date for input (YYYY-MM-DD)
+                                                const expirationDateValue = item.expiration_date ? item.expiration_date : '';
+                                                
+                                                return `
+                                                    <tr class="${isExpired ? 'bg-error-50 dark:bg-error-900/20' : ''}">
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-medium">${item.quantity || 0}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${item.received_quantity || 0}</td>
+                                                        <td class="px-4 py-3">
+                                                            <input 
+                                                                type="date" 
+                                                                name="expiration_date_${item.id}" 
+                                                                data-item-id="${item.id}"
+                                                                value="${expirationDateValue}"
+                                                                class="w-full px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100 text-sm"
+                                                            />
+                                                        </td>
+                                                        <td class="px-4 py-3 text-sm">${expiryStatus}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p class="text-text-secondary dark:text-gray-400 text-center py-4">No items found for this batch.</p>'}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-border-light dark:border-gray-700">
+                            <button type="button" id="cancelEditBatch" onclick="document.getElementById('editBatchModal').classList.add('hidden')" class="px-4 py-2 border border-border-light dark:border-gray-600 text-text-secondary dark:text-gray-400 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-lg transition-all duration-200">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-primary text-white hover:bg-primary-700 rounded-lg transition-all duration-200">
+                                <i class="fas fa-save mr-2"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                `;
+
+                // Add form submit handler
+                document.getElementById('editBatchForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await saveBatchExpirationDates(batchId);
+                });
+
+            } catch (error) {
+                console.error('Error fetching batch items:', error);
+                editContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl text-error mb-2"></i>
+                        <p class="text-text-secondary dark:text-gray-400">Failed to load batch items. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Save batch expiration dates
+        async function saveBatchExpirationDates(batchId) {
+            try {
+                const form = document.getElementById('editBatchForm');
+                const dateInputs = form.querySelectorAll('input[type="date"][data-item-id]');
+                
+                const updates = [];
+                dateInputs.forEach(input => {
+                    const itemId = input.dataset.itemId;
+                    const expirationDate = input.value;
+                    if (itemId) {
+                        updates.push({
+                            item_id: itemId,
+                            expiration_date: expirationDate || null
+                        });
+                    }
+                });
+
+                if (updates.length === 0) {
+                    showError('No items to update');
+                    return;
+                }
+
+                const baseUrl = getApiBaseUrl();
+                const formData = new FormData();
+                formData.append('batch_id', batchId);
+                formData.append('updates', JSON.stringify(updates));
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+
+                const response = await fetch(`${baseUrl}/update_batch_items.php`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Batch expiration dates updated successfully!');
+                    document.getElementById('editBatchModal').classList.add('hidden');
+                    // Refresh batches list
+                    await fetchBatches(currentPage);
+                } else {
+                    showError(result.message || 'Failed to update batch items');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error saving batch expiration dates:', error);
+                showError('Failed to save changes: ' + error.message);
+                const submitBtn = document.querySelector('#editBatchForm button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Save Changes';
+                }
+            }
+        }
+
+        // Make functions globally accessible
+        window.viewBatchDetails = viewBatchDetails;
+        window.editBatch = editBatch;
+
+        // Theme functionality
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+        // Theme toggle is now initialized by load-topbar.js
+
+        // Logout functionality
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Live clock
+        function startClock() {
+            function updateClock() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                const clockEl = document.getElementById('liveClock');
+                if (clockEl) clockEl.textContent = timeString;
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update user display from localStorage
+            const userFullName = localStorage.getItem('userFullName') || 'User';
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            
+            if (userDisplayNameEl) {
+                userDisplayNameEl.textContent = userFullName;
+            }
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+            initializeTheme();
+            startClock();
+            
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            fetchBatches(1);
+        });
+    </script>
+
+    <!-- User Management Modal will be loaded by load-user-management-modal.js -->
+
+    <!-- Archive Modal will be loaded by load-archive-modal.js -->
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Settings</h2>
+                <button id="closeSettingsModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
+                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+                <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
+                        <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">Archive</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">View archived items, orders, and medicines</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Settings Modal
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+        window.openSettings = openSettings;
+
+        document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.add('hidden');
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                document.getElementById('settingsModal').classList.add('hidden');
+            }
+        });
+
+        // User Management Modal - Full Functionality
+        const currentUserEmail = localStorage.getItem('userEmail') || 'admin@inventory.com';
+        let allUsersModal = [];
+        let filteredUsersModal = [];
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load users
+        async function loadUsersModal() {
+            const tbody = document.getElementById('usersTableBodyModal');
+            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading users...</p></td></tr>';
+            
+            try {
+                const response = await fetch('../api/user_management.php?action=get_all');
+                const data = await response.json();
+                
+                if (data.success && data.users) {
+                    allUsersModal = data.users.filter(user => user.email !== currentUserEmail);
+                    applyFiltersModal();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+            }
+        }
+        
+        // Render users table
+        function renderUsersModal(users) {
+            const tbody = document.getElementById('usersTableBodyModal');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-users text-4xl opacity-50 mb-2"></i><p>No users found</p></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="user-checkbox-modal h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" data-user-id="${user.user_id}" onchange="updateSelectedCountModal()">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(user.full_name || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.email || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.username || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.employee_id || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'user').toUpperCase())}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        ${user.status !== undefined ? `
+                        ${user.status === 'locked' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                <i class="fas fa-lock mr-1"></i> Locked
+                            </span>
+                        ` : user.status === 'active' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <i class="fas fa-circle text-xs mr-1"></i> Active
+                            </span>
+                        ` : user.status === 'offline' ? `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                <i class="fas fa-circle text-xs mr-1 opacity-50"></i> Offline
+                            </span>
+                        ` : `
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                <i class="fas fa-circle text-xs mr-1"></i> ${escapeHtml(user.status || 'inactive')}
+                            </span>
+                        `}
+                        ` : `<span class="text-sm text-gray-500 dark:text-gray-400">N/A</span>`}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="editUserModal(${user.user_id})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Edit User" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="changeUserRoleModal(${user.user_id}, '${user.role || 'user'}')" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Change Role" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-user-tag"></i>
+                            </button>
+                            ${user.status === 'locked' ? `
+                                <button onclick="unlockUserAccountModal(${user.user_id})" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900 rounded-lg transition-colors" title="Unlock Account">
+                                    <i class="fas fa-unlock"></i>
+                                </button>
+                            ` : `
+                                <button onclick="lockUserAccountModal(${user.user_id}, '${escapeHtml(user.full_name || user.email)}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors" title="Lock Account">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                            `}
+                            <button onclick="resetUserPasswordModal(${user.user_id})" class="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Reset Password" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button onclick="deleteUserModal(${user.user_id}, '${escapeHtml(user.full_name || user.email)}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Delete User" ${user.status === 'locked' ? 'disabled' : ''}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Apply filters
+        function applyFiltersModal() {
+            const searchTerm = document.getElementById('userSearchModal')?.value.toLowerCase() || '';
+            const roleFilter = document.getElementById('roleFilterModal')?.value || '';
+            const statusFilter = document.getElementById('statusFilterModal')?.value || '';
+            
+            filteredUsersModal = allUsersModal.filter(user => {
+                const matchesSearch = !searchTerm || 
+                    (user.full_name && user.full_name.toLowerCase().includes(searchTerm)) ||
+                    (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                    (user.username && user.username.toLowerCase().includes(searchTerm));
+                
+                const matchesRole = !roleFilter || (user.role || 'user') === roleFilter;
+                const matchesStatus = !statusFilter || (user.status || 'active') === statusFilter;
+                
+                return matchesSearch && matchesRole && matchesStatus;
+            });
+            
+            renderUsersModal(filteredUsersModal);
+            updateCountsModal();
+        }
+        
+        // Update counts
+        function updateCountsModal() {
+            document.getElementById('resultsCountModal').textContent = filteredUsersModal.length;
+            document.getElementById('totalCountModal').textContent = allUsersModal.length;
+            updateSelectedCountModal();
+        }
+        
+        // Update selected count
+        function updateSelectedCountModal() {
+            const selectedCheckboxes = document.querySelectorAll('.user-checkbox-modal:checked');
+            document.getElementById('selectedCountModal').textContent = selectedCheckboxes.length;
+            
+            // Enable/disable bulk action buttons
+            const bulkActivateBtn = document.getElementById('bulkActivateBtnModal');
+            const bulkDeactivateBtn = document.getElementById('bulkDeactivateBtnModal');
+            
+            if (bulkActivateBtn && bulkDeactivateBtn) {
+                const hasSelection = selectedCheckboxes.length > 0;
+                bulkActivateBtn.disabled = !hasSelection;
+                bulkDeactivateBtn.disabled = !hasSelection;
+            }
+        }
+        
+        // Get selected user IDs
+        function getSelectedUserIdsModal() {
+            return Array.from(document.querySelectorAll('.user-checkbox-modal:checked'))
+                .map(cb => cb.dataset.userId);
+        }
+        
+        // Toggle user status
+        async function toggleUserStatusModal(userId, isActive) {
+            const status = isActive ? 'active' : 'inactive';
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_status',
+                        user_id: userId,
+                        status: status
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (data.error && data.error.includes('Status column')) {
+                        alert('Status feature not available. The status column will be created on first use.');
+                    } else {
+                        alert('Failed to update user status: ' + (data.error || 'Unknown error'));
+                    }
+                    loadUsersModal();
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating user status');
+                loadUsersModal();
+            }
+        }
+        
+        // Bulk activate
+        async function bulkActivateModal() {
+            const userIds = getSelectedUserIdsModal();
+            if (userIds.length === 0) return;
+            
+            if (!confirm(`Activate ${userIds.length} user(s)?`)) return;
+            
+            try {
+                await Promise.all(userIds.map(id => 
+                    toggleUserStatusModal(id, true)
+                ));
+                loadUsersModal();
+            } catch (error) {
+                console.error('Error in bulk activate:', error);
+                alert('Error activating users');
+            }
+        }
+        
+        // Bulk deactivate
+        async function bulkDeactivateModal() {
+            const userIds = getSelectedUserIdsModal();
+            if (userIds.length === 0) return;
+            
+            if (!confirm(`Deactivate ${userIds.length} user(s)?`)) return;
+            
+            try {
+                await Promise.all(userIds.map(id => 
+                    toggleUserStatusModal(id, false)
+                ));
+                loadUsersModal();
+            } catch (error) {
+                console.error('Error in bulk deactivate:', error);
+                alert('Error deactivating users');
+            }
+        }
+
+        // Edit user
+        async function editUserModal(userId) {
+            try {
+                const response = await fetch(`../api/user_management.php?action=get_user&user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    const user = data.user;
+                    document.getElementById('edit_full_name').value = user.full_name || '';
+                    document.getElementById('edit_email').value = user.email || '';
+                    document.getElementById('edit_username').value = user.username || '';
+                    document.getElementById('edit_user_id').value = user.user_id;
+                    document.getElementById('editUserModal').classList.remove('hidden');
+                } else {
+                    alert('Failed to load user data');
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+                alert('Error loading user data');
+            }
+        }
+        window.editUserModal = editUserModal;
+
+        // Delete user
+        async function deleteUserModal(userId, userName) {
+            if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'delete_user',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('User deleted successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+        window.deleteUserModal = deleteUserModal;
+
+        // Change user role
+        async function changeUserRoleModal(userId, currentRole) {
+            const roles = ['user', 'supplier', 'admin'];
+            const currentIndex = roles.indexOf(currentRole);
+            const nextIndex = (currentIndex + 1) % roles.length;
+            const newRole = roles[nextIndex];
+            
+            if (!confirm(`Change user role from ${currentRole.toUpperCase()} to ${newRole.toUpperCase()}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_role',
+                        user_id: userId,
+                        role: newRole
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to update role');
+                }
+            } catch (error) {
+                console.error('Error updating role:', error);
+                alert('Error updating role');
+            }
+        }
+        window.changeUserRoleModal = changeUserRoleModal;
+
+        // Reset user password
+        async function resetUserPasswordModal(userId) {
+            const newPassword = prompt('Enter new password (minimum 8 characters):');
+            
+            if (!newPassword) {
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('Password must be at least 8 characters long');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to reset this user\'s password?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'reset_password',
+                        user_id: userId,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Password reset successfully');
+                } else {
+                    alert(data.error || 'Failed to reset password');
+                }
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                alert('Error resetting password');
+            }
+        }
+        window.resetUserPasswordModal = resetUserPasswordModal;
+
+        // Lock user account
+        async function lockUserAccountModal(userId, userName) {
+            if (!confirm(`Are you sure you want to LOCK the account for ${userName}?\n\nLocked users cannot login until unlocked by an admin.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'lock_account',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Account locked successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to lock account');
+                }
+            } catch (error) {
+                console.error('Error locking account:', error);
+                alert('Error locking account');
+            }
+        }
+        window.lockUserAccountModal = lockUserAccountModal;
+
+        // Unlock user account
+        async function unlockUserAccountModal(userId) {
+            if (!confirm('Are you sure you want to UNLOCK this account?\n\nThe user will be able to login again.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'unlock_account',
+                        user_id: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Account unlocked successfully');
+                    loadUsersModal();
+                } else {
+                    alert(data.error || 'Failed to unlock account');
+                }
+            } catch (error) {
+                console.error('Error unlocking account:', error);
+                alert('Error unlocking account');
+            }
+        }
+        window.unlockUserAccountModal = unlockUserAccountModal;
+        window.loadUsersModal = loadUsersModal;
+        window.updateSelectedCountModal = updateSelectedCountModal;
+
+        // Open User Management Modal
+        function openUserManagementModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            
+            // Open User Management modal with smooth transition
+            setTimeout(() => {
+                document.getElementById('userManagementModal').classList.remove('hidden');
+                // Load users when modal opens
+                if (typeof loadUsersModal === 'function') {
+                    loadUsersModal();
+                }
+            }, 150); // Small delay for smooth transition
+        }
+        window.openUserManagementModal = openUserManagementModal;
+
+        document.getElementById('closeUserManagementModal')?.addEventListener('click', () => {
+            document.getElementById('userManagementModal').classList.add('hidden');
+        });
+
+        // Close User Management modal on backdrop click
+        document.getElementById('userManagementModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'userManagementModal') {
+                document.getElementById('userManagementModal').classList.add('hidden');
+            }
+        });
+
+        // Create user form
+        document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const formMessage = document.getElementById('formMessage');
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'create_user',
+                        full_name: formData.get('full_name'),
+                        email: formData.get('email'),
+                        username: formData.get('username'),
+                        role: formData.get('user_role')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-success-50 text-success-700';
+                    formMessage.textContent = 'User created successfully!';
+                    formMessage.classList.remove('hidden');
+                    e.target.reset();
+                    document.getElementById('addUserModal').classList.add('hidden');
+                    loadUsersModal();
+                    setTimeout(() => formMessage.classList.add('hidden'), 3000);
+                } else {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                    formMessage.textContent = data.error || 'Failed to create user';
+                    formMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                formMessage.textContent = 'Error creating user';
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Edit user form
+        document.getElementById('updateUserForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const formMessage = document.getElementById('editFormMessage');
+            
+            try {
+                const response = await fetch('../api/user_management.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'update_user',
+                        user_id: formData.get('edit_user_id'),
+                        full_name: formData.get('edit_full_name'),
+                        email: formData.get('edit_email'),
+                        username: formData.get('edit_username')
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-success-50 text-success-700';
+                    formMessage.textContent = 'User updated successfully!';
+                    formMessage.classList.remove('hidden');
+                    document.getElementById('editUserModal').classList.add('hidden');
+                    loadUsersModal();
+                    setTimeout(() => formMessage.classList.add('hidden'), 3000);
+                } else {
+                    formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                    formMessage.textContent = data.error || 'Failed to update user';
+                    formMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+                formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                formMessage.textContent = 'Error updating user';
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Event listeners for User Management Modal
+        document.getElementById('addUserBtnModal')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeAddUserModal')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+            document.getElementById('addUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeEditUserModal')?.addEventListener('click', () => {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelEditUser')?.addEventListener('click', () => {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        // Close modals on backdrop click
+        document.getElementById('addUserModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'addUserModal') {
+                document.getElementById('addUserModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('editUserModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'editUserModal') {
+                document.getElementById('editUserModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('userSearchModal')?.addEventListener('input', applyFiltersModal);
+        document.getElementById('roleFilterModal')?.addEventListener('change', applyFiltersModal);
+        document.getElementById('statusFilterModal')?.addEventListener('change', applyFiltersModal);
+        document.getElementById('clearFiltersBtnModal')?.addEventListener('click', () => {
+            document.getElementById('userSearchModal').value = '';
+            document.getElementById('roleFilterModal').value = '';
+            document.getElementById('statusFilterModal').value = '';
+            applyFiltersModal();
+        });
+        
+        document.getElementById('bulkActivateBtnModal')?.addEventListener('click', bulkActivateModal);
+        document.getElementById('bulkDeactivateBtnModal')?.addEventListener('click', bulkDeactivateModal);
+        
+        document.getElementById('selectAllModal')?.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.user-checkbox-modal');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCountModal();
+        });
+        // Archive Modal - Full Functionality
+        const ARCHIVE_API = '../php/get_archives.php';
+        const PROCESS_EXPIRED_API = '../php/process_and_archive_expired.php';
+
+        // Escape HTML helper
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Escape HTML helper for archive modal
+        function escapeHtmlArchive(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tab switching for Archive Modal
+        function switchArchiveTab(tabName) {
+            document.querySelectorAll('.tab-content-modal').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-button-modal').forEach(btn => {
+                btn.classList.remove('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+                btn.classList.add('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+            });
+            document.getElementById(`content${tabName}Modal`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab${tabName}Modal`);
+            activeTab.classList.add('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+            activeTab.classList.remove('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+        }
+
+        // Load archive data
+        async function loadArchivesModal() {
+            try {
+                // First, process and archive any expired items
+                try {
+                    await fetch(PROCESS_EXPIRED_API);
+                } catch (error) {
+                    console.error('Error processing expired items:', error);
+                    // Continue even if processing fails
+                }
+
+                // Then load archive data
+                const response = await fetch(`${ARCHIVE_API}?type=all`);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    document.getElementById('expiredCountModal').textContent = result.data.counts.expired || 0;
+                    document.getElementById('cancelledCountModal').textContent = result.data.counts.cancelled || 0;
+                    document.getElementById('deletedCountModal').textContent = result.data.counts.deleted || 0;
+                    document.getElementById('suppliersCountModal').textContent = result.data.counts.suppliers || 0;
+                    renderExpiredItemsModal(result.data.items.expired || []);
+                    renderCancelledOrdersModal(result.data.items.cancelled || []);
+                    renderDeletedItemsModal(result.data.items.deleted || []);
+                    renderArchivedSuppliersModal(result.data.items.suppliers || []);
+                }
+            } catch (error) {
+                console.error('Error loading archives:', error);
+            }
+        }
+
+        // Render expired items
+        function renderExpiredItemsModal(items) {
+            const tbody = document.getElementById('expiredItemsTableModal');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4">
+                        <div>
+                            <div class="font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</div>
+                            <div class="text-xs text-text-tertiary dark:text-gray-500">${escapeHtml(item.medicine_ndc || '')}</div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.batch_number || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.expiration_date || 'N/A'}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300 rounded-full text-xs font-medium">
+                            ${item.days_expired || 0} days
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.expired_at ? new Date(item.expired_at).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render cancelled orders
+        function renderCancelledOrdersModal(orders) {
+            const tbody = document.getElementById('cancelledOrdersTableModal');
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = orders.map(order => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(order.supplier_name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.item_count || 0} items</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancelled_at ? new Date(order.cancelled_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtml(order.cancellation_reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render deleted items
+        function renderDeletedItemsModal(items) {
+            const tbody = document.getElementById('deletedItemsTableModal');
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No deleted items found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.manufacturer || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(item.category || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.deleted_at ? new Date(item.deleted_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtml(item.reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render archived suppliers
+        function renderArchivedSuppliersModal(suppliers) {
+            const tbody = document.getElementById('archivedSuppliersTableModal');
+            if (!tbody) return;
+            
+            if (suppliers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No archived suppliers found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = suppliers.map(supplier => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${escapeHtmlArchive(supplier.name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.contact || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.email || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.phone || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.location || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${supplier.archived_at ? new Date(supplier.archived_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtmlArchive(supplier.reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Open Archive Modal
+        function openArchiveModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('archiveModal').classList.remove('hidden');
+                loadArchivesModal();
+            }, 150);
+        }
+        window.openArchiveModal = openArchiveModal;
+
+        // Close Archive Modal
+        document.getElementById('closeArchiveModal')?.addEventListener('click', () => {
+            document.getElementById('archiveModal').classList.add('hidden');
+        });
+
+        // Close Archive modal on backdrop click
+        document.getElementById('archiveModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'archiveModal') {
+                document.getElementById('archiveModal').classList.add('hidden');
+            }
+        });
+
+        // Tab switching event listeners
+        document.getElementById('tabExpiredModal')?.addEventListener('click', () => switchArchiveTab('Expired'));
+        document.getElementById('tabCancelledModal')?.addEventListener('click', () => switchArchiveTab('Cancelled'));
+        document.getElementById('tabDeletedModal')?.addEventListener('click', () => switchArchiveTab('Deleted'));
+        document.getElementById('tabSuppliersModal')?.addEventListener('click', () => switchArchiveTab('Suppliers'));
+    </script>
+</body>
+</html>
+

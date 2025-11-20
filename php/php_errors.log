@@ -1,0 +1,24 @@
+[19-Nov-2025 19:10:23 Europe/Berlin] Attempting to archive supplier ID: 8
+[19-Nov-2025 19:10:23 Europe/Berlin] archived_suppliers table already exists
+[19-Nov-2025 19:10:23 Europe/Berlin] Exception in archive_supplier.php: Unknown column 'contact_person' in 'field list'
+[19-Nov-2025 19:10:23 Europe/Berlin] Stack trace: #0 C:\xampp\htdocs\In-1\php\archive_supplier.php(147): mysqli_prepare(Object(mysqli), 'INSERT INTO arc...')
+#1 {main}
+[19-Nov-2025 19:10:23 Europe/Berlin] File: C:\xampp\htdocs\In-1\php\archive_supplier.php, Line: 147
+[19-Nov-2025 19:10:31 Europe/Berlin] Attempting to archive supplier ID: 8
+[19-Nov-2025 19:10:31 Europe/Berlin] archived_suppliers table already exists
+[19-Nov-2025 19:10:31 Europe/Berlin] Exception in archive_supplier.php: Unknown column 'contact_person' in 'field list'
+[19-Nov-2025 19:10:31 Europe/Berlin] Stack trace: #0 C:\xampp\htdocs\In-1\php\archive_supplier.php(147): mysqli_prepare(Object(mysqli), 'INSERT INTO arc...')
+#1 {main}
+[19-Nov-2025 19:10:31 Europe/Berlin] File: C:\xampp\htdocs\In-1\php\archive_supplier.php, Line: 147
+[19-Nov-2025 19:10:40 Europe/Berlin] Attempting to archive supplier ID: 8
+[19-Nov-2025 19:10:40 Europe/Berlin] archived_suppliers table already exists
+[19-Nov-2025 19:10:40 Europe/Berlin] Exception in archive_supplier.php: Unknown column 'contact_person' in 'field list'
+[19-Nov-2025 19:10:40 Europe/Berlin] Stack trace: #0 C:\xampp\htdocs\In-1\php\archive_supplier.php(147): mysqli_prepare(Object(mysqli), 'INSERT INTO arc...')
+#1 {main}
+[19-Nov-2025 19:10:40 Europe/Berlin] File: C:\xampp\htdocs\In-1\php\archive_supplier.php, Line: 147
+[19-Nov-2025 19:50:47 Europe/Berlin] Attempting to archive supplier ID: 8
+[19-Nov-2025 19:50:47 Europe/Berlin] archived_suppliers table already exists
+[19-Nov-2025 19:50:47 Europe/Berlin] Exception in archive_supplier.php: Unknown column 'contact_person' in 'field list'
+[19-Nov-2025 19:50:47 Europe/Berlin] Stack trace: #0 C:\xampp\htdocs\In-1\php\archive_supplier.php(147): mysqli_prepare(Object(mysqli), 'INSERT INTO arc...')
+#1 {main}
+[19-Nov-2025 19:50:47 Europe/Berlin] File: C:\xampp\htdocs\In-1\php\archive_supplier.php, Line: 147

@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suppliers Management - INVENTORY Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+<script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Sidebar will be loaded here -->
+    <script src="../js/load-sidebar.js"></script>
+    <!-- Top Bar will be loaded here -->
+    <script src="../js/load-topbar.js" data-title="Suppliers Management" data-description="Manage vendor relationships and contacts" data-search-placeholder="Search suppliers, contacts, locations..."></script>
+    <!-- Archive Modal will be loaded here -->
+    <script src="../js/load-archive-modal.js" defer></script>
+    <!-- User Management Modal will be loaded here -->
+    <script src="../js/load-user-management-modal.js" defer></script>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+
+        <!-- Main Content Area -->
+        <main class="p-6">
+            <!-- Page Actions -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                    <button id="addSupplierBtn" class="btn-primary px-4 py-2 rounded-lg font-medium flex items-center space-x-2 shadow-sm">
+                        <i class="fas fa-plus text-sm"></i>
+                        <span>Add Supplier</span>
+                    </button>
+                    <button id="bulkActionsBtn" class="px-4 py-2 border border-border-light rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 flex items-center space-x-2">
+                        <i class="fas fa-tasks text-sm"></i>
+                        <span>Bulk Actions</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 text-sm text-text-secondary">
+                        <span>Total Suppliers:</span>
+                        <span id="totalCount" class="font-medium text-text-primary">12</span>
+                    </div>
+                    <button id="exportBtn" class="px-3 py-2 border border-border-light rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 flex items-center space-x-2">
+                        <i class="fas fa-download text-sm"></i>
+                        <span class="hidden sm:inline">Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-border-light dark:border-gray-700 p-4 mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-text-tertiary dark:text-gray-400 text-sm"></i>
+                            </div>
+                            <input type="text" id="tableSearch" class="w-full sm:w-64 pl-10 pr-4 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Search suppliers..." />
+                        </div>
+                        
+                        <select id="locationFilter" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                            <option value>All Locations</option>
+                            <option value="New York">New York</option>
+                            <option value="California">California</option>
+                            <option value="Texas">Texas</option>
+                            <option value="Florida">Florida</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button id="resetFilters" class="px-3 py-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-undo text-sm"></i>
+                            <span>Reset</span>
+                        </button>
+                        <div class="text-sm text-text-secondary dark:text-gray-400">
+                            Showing <span id="showingCount">12</span> of <span id="totalSuppliers">12</span> suppliers
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suppliers Table -->
+            <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-border-light dark:border-gray-700 overflow-hidden">
+                <!-- Desktop Table -->
+                <div class="hidden lg:block overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-surface-hover dark:bg-gray-800 border-b border-border-light dark:border-gray-700">
+                            <tr>
+                                <th class="w-12 px-4 py-3">
+                                    <input type="checkbox" id="selectAll" class="rounded border-border-medium text-primary-600 focus:ring-primary-200" />
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="name">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Supplier Name</span>
+                                        <i class="fas fa-sort text-xs"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="contact">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Contact Person</span>
+                                        <i class="fas fa-sort text-xs"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="email">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Email</span>
+                                        <i class="fas fa-sort text-xs"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="phone">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Phone Number</span>
+                                        <i class="fas fa-sort text-xs"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="location">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Location</span>
+                                        <i class="fas fa-sort text-xs"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliersTableBody" class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Cards -->
+                <div id="supplierCards" class="lg:hidden divide-y divide-border-light">
+                    <!-- Cards will be populated by JavaScript -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-12">
+                    <div class="w-24 h-24 mx-auto mb-4 bg-surface-hover rounded-full flex items-center justify-center">
+                        <i class="fas fa-truck text-3xl text-text-tertiary"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-text-primary mb-2">No suppliers found</h3>
+                    <p class="text-text-secondary mb-6">Get started by adding your first supplier to the system.</p>
+                    <button class="btn-primary px-4 py-2 rounded-lg font-medium">
+                        Add First Supplier
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6">
+                <div class="text-sm text-text-secondary">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">12</span> of <span class="font-medium">12</span> results
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="px-3 py-2 border border-border-light rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <button class="px-3 py-2 bg-primary text-white rounded-lg">1</button>
+                    <button class="px-3 py-2 border border-border-light rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Supplier Modal -->
+    <div id="addSupplierModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light">
+                <h2 class="text-xl font-semibold text-text-primary">Add New Supplier</h2>
+                <button id="closeAddModal" class="text-text-tertiary hover:text-text-secondary transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="addSupplierForm" class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Supplier Name -->
+                    <div class="md:col-span-2">
+                        <label for="supplierName" class="block text-sm font-medium text-text-primary mb-2">
+                            Supplier Name <span class="text-error-600">*</span>
+                        </label>
+                        <input type="text" id="supplierName" name="supplierName" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter supplier company name" />
+                        <div id="supplierName-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                    </div>
+
+                    <!-- Contact Person -->
+                    <div>
+                        <label for="contactPerson" class="block text-sm font-medium text-text-primary mb-2">
+                            Contact Person <span class="text-error-600">*</span>
+                        </label>
+                        <input type="text" id="contactPerson" name="contactPerson" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter contact person name" />
+                        <div id="contactPerson-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-text-primary mb-2">
+                            Email Address <span class="text-error-600">*</span>
+                        </label>
+                        <input type="email" id="email" name="email" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter email address" />
+                        <div id="email-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div>
+                        <label for="phoneNumber" class="block text-sm font-medium text-text-primary mb-2">
+                            Phone Number <span class="text-error-600">*</span>
+                        </label>
+                        <input type="tel" id="phoneNumber" name="phoneNumber" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter phone number" />
+                        <div id="phoneNumber-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                    </div>
+
+                    <!-- Location -->
+                    <div>
+                        <label for="location" class="block text-sm font-medium text-text-primary mb-2">
+                            Location <span class="text-error-600">*</span>
+                        </label>
+                        <input type="text" id="location" name="location" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter location/address" />
+                        <div id="location-error" class="text-sm text-error-600 hidden mt-1" role="alert"></div>
+                    </div>
+
+                    <!-- Website -->
+                    <div class="md:col-span-2">
+                        <label for="website" class="block text-sm font-medium text-text-primary mb-2">
+                            Website (Optional)
+                        </label>
+                        <input type="url" id="website" name="website" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="https://example.com" />
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="md:col-span-2">
+                        <label for="notes" class="block text-sm font-medium text-text-primary mb-2">
+                            Notes (Optional)
+                        </label>
+                        <textarea id="notes" name="notes" rows="3" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 resize-none" placeholder="Additional notes about the supplier..."></textarea>
+                    </div>
+
+                    <!-- Medicines Section -->
+                    <div class="md:col-span-2 border-t border-border-light pt-4">
+                        <label class="block text-sm font-medium text-text-primary mb-2">
+                            Available Medicines <span class="text-text-secondary text-xs font-normal">(Select medicines this supplier offers)</span>
+                        </label>
+                        <p class="text-xs text-text-secondary mb-3">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Select medicines from your inventory that this supplier can provide. These medicines will be linked to the supplier and available when creating orders.
+                        </p>
+                        
+                        <!-- Loading State -->
+                        <div id="medicinesLoading" class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-primary-600"></i>
+                            <span class="ml-2 text-text-secondary">Loading medicines...</span>
+                        </div>
+
+                        <!-- Medicines by Category -->
+                        <div id="medicinesByCategory" class="hidden space-y-4 max-h-96 overflow-y-auto border border-border-light rounded-lg p-4 bg-surface-hover">
+                            <!-- Medicines grouped by category will be populated here -->
+                        </div>
+                        
+                        <!-- Selected Count -->
+                        <div id="selectedMedicinesCount" class="hidden mt-3 text-sm text-primary-600 font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            <span id="selectedCount">0</span> medicine(s) selected
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-border-light">
+                    <button type="button" id="cancelAdd" class="px-6 py-3 border border-border-light rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium">
+                        Add Supplier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Supplier Modal -->
+    <div id="editSupplierModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light">
+                <h2 class="text-xl font-semibold text-text-primary">Edit Supplier</h2>
+                <button id="closeEditModal" class="text-text-tertiary hover:text-text-secondary transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="editSupplierForm" class="p-6 space-y-6">
+                <!-- Same form fields as add modal -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="editSupplierName" class="block text-sm font-medium text-text-primary mb-2">
+                            Supplier Name <span class="text-error-600">*</span>
+                        </label>
+                        <input type="text" id="editSupplierName" name="supplierName" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    </div>
+
+                    <div>
+                        <label for="editContactPerson" class="block text-sm font-medium text-text-primary mb-2">
+                            Contact Person <span class="text-error-600">*</span>
+                        </label>
+                        <input type="text" id="editContactPerson" name="contactPerson" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    </div>
+
+                    <div>
+                        <label for="editEmail" class="block text-sm font-medium text-text-primary mb-2">
+                            Email Address <span class="text-error-600">*</span>
+                        </label>
+                        <input type="email" id="editEmail" name="email" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    </div>
+
+                    <div>
+                        <label for="editPhoneNumber" class="block text-sm font-medium text-text-primary mb-2">
+                            Phone Number <span class="text-error-600">*</span>
+                        </label>
+                        <input type="tel" id="editPhoneNumber" name="phoneNumber" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    </div>
+
+                    <div>
+                        <label for="editLocation" class="block text-sm font-medium text-text-primary mb-2">
+                            Location <span class="text-error-600">*</span>
+                        </label>
+                        <input type="text" id="editLocation" name="location" required class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="editWebsite" class="block text-sm font-medium text-text-primary mb-2">
+                            Website (Optional)
+                        </label>
+                        <input type="url" id="editWebsite" name="website" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="editNotes" class="block text-sm font-medium text-text-primary mb-2">
+                            Notes (Optional)
+                        </label>
+                        <textarea id="editNotes" name="notes" rows="3" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 resize-none"></textarea>
+                    </div>
+
+                    <!-- Medicines Section -->
+                    <div class="md:col-span-2 border-t border-border-light pt-4">
+                        <label class="block text-sm font-medium text-text-primary mb-2">
+                            Available Medicines <span class="text-text-secondary text-xs font-normal">(Select medicines this supplier offers)</span>
+                        </label>
+                        <p class="text-xs text-text-secondary mb-3">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Select medicines from your inventory that this supplier can provide. These medicines will be linked to the supplier and available when creating orders.
+                        </p>
+                        
+                        <!-- Loading State -->
+                        <div id="editMedicinesLoading" class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-primary-600"></i>
+                            <span class="ml-2 text-text-secondary">Loading medicines...</span>
+                        </div>
+
+                        <!-- Medicines by Category -->
+                        <div id="editMedicinesByCategory" class="hidden space-y-4 max-h-96 overflow-y-auto border border-border-light rounded-lg p-4 bg-surface-hover">
+                            <!-- Medicines grouped by category will be populated here -->
+                        </div>
+                        
+                        <!-- Selected Count -->
+                        <div id="editSelectedMedicinesCount" class="hidden mt-3 text-sm text-primary-600 font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            <span id="editSelectedCount">0</span> medicine(s) selected
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-border-light">
+                    <button type="button" id="cancelEdit" class="px-6 py-3 border border-border-light rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium">
+                        Update Supplier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Supplier Detail Modal -->
+    <div id="supplierDetailModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Supplier Details</h2>
+                <button id="closeDetailModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="supplierDetailsContent">
+                <!-- Supplier details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100" id="confirmationTitle">Confirm Action</h3>
+                <button id="closeConfirmationModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <p class="text-text-primary dark:text-gray-100" id="confirmationMessage">
+                    <!-- Confirmation message will be populated by JavaScript -->
+                </p>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3">
+                <button id="confirmationCancel" class="px-4 py-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 border border-border-light dark:border-gray-600 rounded-lg hover:bg-surface-hover dark:hover:bg-gray-800 transition-all duration-200">
+                    Cancel
+                </button>
+                <button id="confirmationConfirm" class="px-4 py-2 bg-primary hover:bg-primary-700 text-white rounded-lg transition-all duration-200">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full animation-slide-up">
+            <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Settings</h2>
+                <button id="closeSettingsModal" class="text-text-tertiary dark:text-gray-400 hover:text-text-secondary dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
+                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+                <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
+                    <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
+                        <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">Archive</h3>
+                        <p class="text-sm text-text-secondary dark:text-gray-400">View archived items, orders, medicines, and suppliers</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archive Modal will be loaded by load-archive-modal.js -->
+
+    <script>
+        // Suppliers data - will be loaded from database
+        let suppliersData = [];
+        let filteredSuppliers = [];
+        let currentEditId = null;
+        
+        // Medicine selection for supplier form
+        let allMedicines = [];
+        let medicinesByCategory = []; // Array of {category, medicines: []}
+        let selectedMedicines = []; // Array of medicine IDs
+        let medicineSearchResults = [];
+        let medicineSearchTimeout = null;
+        
+        // API Base URL
+        function getApiBaseUrl() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/pages/')) {
+                return '../php';
+            }
+            return 'php';
+        }
+        
+        // Fetch suppliers from database
+        async function fetchSuppliers(page = 1, search = '') {
+            try {
+                const baseUrl = getApiBaseUrl();
+                let url = `${baseUrl}/get_suppliers.php?page=${page}&pageSize=100`;
+                
+                if (search) {
+                    url += `&search=${encodeURIComponent(search)}`;
+                }
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to fetch suppliers');
+                }
+                
+                // Transform database data to match frontend format
+                suppliersData = (data.data || []).map(supplier => ({
+                    id: supplier.id,
+                    name: supplier.name,
+                    contact: supplier.contact_person || '',
+                    email: supplier.email || '',
+                    phone: supplier.phone || '',
+                    location: supplier.address || '',
+                    website: supplier.website || '',
+                    notes: supplier.notes || ''
+                }));
+                
+                filteredSuppliers = [...suppliersData];
+                filterSuppliers();
+                updateCounts();
+                
+            } catch (error) {
+                console.error('Error fetching suppliers:', error);
+                // Show error but don't break the page
+                suppliersData = [];
+                filteredSuppliers = [];
+                filterSuppliers();
+                showError('Failed to load suppliers: ' + error.message);
+            }
+        }
+        
+        // DOM Elements
+        // Sidebar is loaded dynamically via load-sidebar.js
+        const addSupplierBtn = document.getElementById('addSupplierBtn');
+        const addSupplierModal = document.getElementById('addSupplierModal');
+        const editSupplierModal = document.getElementById('editSupplierModal');
+        const supplierDetailModal = document.getElementById('supplierDetailModal');
+        const tableSearch = document.getElementById('tableSearch');
+        const locationFilter = document.getElementById('locationFilter');
+        const resetFilters = document.getElementById('resetFilters');
+        const selectAll = document.getElementById('selectAll');
+
+        // Modal functionality
+        if (addSupplierBtn && addSupplierModal) {
+            addSupplierBtn.addEventListener('click', () => {
+                // Reset form and selected medicines
+                selectedMedicines = [];
+                document.getElementById('addSupplierForm').reset();
+                // Refresh medicines list when opening modal
+                fetchMedicinesByCategory();
+                addSupplierModal.classList.remove('hidden');
+            });
+        }
+
+        const closeAddModal = document.getElementById('closeAddModal');
+        if (closeAddModal && addSupplierModal) {
+            closeAddModal.addEventListener('click', () => {
+                addSupplierModal.classList.add('hidden');
+            });
+        }
+
+        const cancelAdd = document.getElementById('cancelAdd');
+        if (cancelAdd && addSupplierModal) {
+            cancelAdd.addEventListener('click', () => {
+                addSupplierModal.classList.add('hidden');
+            });
+        }
+
+        const closeEditModal = document.getElementById('closeEditModal');
+        if (closeEditModal && editSupplierModal) {
+            closeEditModal.addEventListener('click', () => {
+                editSupplierModal.classList.add('hidden');
+            });
+        }
+
+        const cancelEdit = document.getElementById('cancelEdit');
+        if (cancelEdit && editSupplierModal) {
+            cancelEdit.addEventListener('click', () => {
+                editSupplierModal.classList.add('hidden');
+            });
+        }
+
+        const closeDetailModal = document.getElementById('closeDetailModal');
+        if (closeDetailModal && supplierDetailModal) {
+            closeDetailModal.addEventListener('click', () => {
+                supplierDetailModal.classList.add('hidden');
+            });
+        }
+
+        // Close modals on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (addSupplierModal) addSupplierModal.classList.add('hidden');
+                if (editSupplierModal) editSupplierModal.classList.add('hidden');
+                if (supplierDetailModal) supplierDetailModal.classList.add('hidden');
+            }
+        });
+
+        // Close modals on backdrop click
+        [addSupplierModal, editSupplierModal, supplierDetailModal].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        // Search and filter functionality
+        if (tableSearch) {
+            tableSearch.addEventListener('input', function() {
+                filterSuppliers();
+            });
+        }
+        
+        if (locationFilter) {
+            locationFilter.addEventListener('change', function() {
+                filterSuppliers();
+            });
+        }
+
+        function filterSuppliers() {
+            const searchTerm = tableSearch.value.toLowerCase();
+            const locationFilter = document.getElementById('locationFilter').value;
+
+            filteredSuppliers = suppliersData.filter(supplier => {
+                const matchesSearch = !searchTerm || 
+                    supplier.name.toLowerCase().includes(searchTerm) ||
+                    supplier.contact.toLowerCase().includes(searchTerm) ||
+                    supplier.email.toLowerCase().includes(searchTerm) ||
+                    supplier.phone.includes(searchTerm) ||
+                    supplier.location.toLowerCase().includes(searchTerm);
+
+                const matchesLocation = !locationFilter || supplier.location === locationFilter;
+
+                return matchesSearch && matchesLocation;
+            });
+
+            renderSuppliers();
+            updateCounts();
+        }
+
+        if (resetFilters) {
+            resetFilters.addEventListener('click', () => {
+                if (tableSearch) tableSearch.value = '';
+                if (locationFilter) locationFilter.value = '';
+                filteredSuppliers = [...suppliersData];
+                renderSuppliers();
+                updateCounts();
+            });
+        }
+
+        // Render suppliers table
+        function renderSuppliers() {
+            const tableBody = document.getElementById('suppliersTableBody');
+            const supplierCards = document.getElementById('supplierCards');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filteredSuppliers.length === 0) {
+                tableBody.innerHTML = '';
+                supplierCards.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // Desktop table
+            tableBody.innerHTML = filteredSuppliers.map(supplier => `
+                <tr class="table-row-hover cursor-pointer" data-supplier-id="${supplier.id}">
+                    <td class="px-4 py-4">
+                        <input type="checkbox" class="supplier-checkbox rounded border-border-medium text-primary-600 focus:ring-primary-200" value="${supplier.id}">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-capsules text-primary-600"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-text-primary dark:text-gray-100">${supplier.name}</div>
+                                <div class="text-sm text-text-tertiary dark:text-gray-400">${supplier.website || 'No website'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-primary dark:text-gray-100">${supplier.contact}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-primary dark:text-gray-100">${supplier.email}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-primary dark:text-gray-100">${supplier.phone}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-text-primary dark:text-gray-100">${supplier.location}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex items-center justify-end space-x-2">
+                            <button class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 p-1" onclick="viewSupplier(${supplier.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 p-1" onclick="editSupplier(${supplier.id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-warning-600 dark:text-warning-400 hover:text-warning-700 dark:hover:text-warning-300 p-1" onclick="archiveSupplier(${supplier.id})" title="Archive Supplier">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Mobile cards
+            supplierCards.innerHTML = filteredSuppliers.map(supplier => `
+                <div class="p-4 cursor-pointer hover:bg-surface-hover transition-colors duration-200" data-supplier-id="${supplier.id}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" class="supplier-checkbox rounded border-border-medium text-primary-600 focus:ring-primary-200 mt-1" value="${supplier.id}">
+                            <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-capsules text-primary-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-text-primary">${supplier.name}</div>
+                                <div class="text-sm text-text-tertiary">${supplier.contact}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="text-primary-600 hover:text-primary-700 p-1" onclick="viewSupplier(${supplier.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-accent-600 hover:text-accent-700 p-1" onclick="editSupplier(${supplier.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-warning-600 hover:text-warning-700 p-1" onclick="archiveSupplier(${supplier.id})" title="Archive Supplier">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center text-text-secondary">
+                            <i class="fas fa-envelope w-4 mr-2"></i>
+                            <span>${supplier.email}</span>
+                        </div>
+                        <div class="flex items-center text-text-secondary">
+                            <i class="fas fa-phone w-4 mr-2"></i>
+                            <span>${supplier.phone}</span>
+                        </div>
+                        <div class="flex items-center text-text-secondary">
+                            <i class="fas fa-map-marker-alt w-4 mr-2"></i>
+                            <span>${supplier.location}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add click handlers for table rows
+            document.querySelectorAll('[data-supplier-id]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('button') && !e.target.closest('input')) {
+                        const supplierId = parseInt(row.dataset.supplierId);
+                        viewSupplier(supplierId);
+                    }
+                });
+            });
+        }
+
+        // Update counts
+        function updateCounts() {
+            document.getElementById('totalCount').textContent = suppliersData.length;
+            document.getElementById('showingCount').textContent = filteredSuppliers.length;
+            document.getElementById('totalSuppliers').textContent = suppliersData.length;
+        }
+
+        /**
+         * Custom Confirmation Modal Function
+         * Replaces browser confirm() with a custom modal
+         * @param {string} message - The confirmation message to display
+         * @param {string} title - Optional title for the modal (default: "Confirm Action")
+         * @returns {Promise<boolean>} - Promise that resolves to true if confirmed, false if cancelled
+         */
+        function showConfirmation(message, title = 'Confirm Action') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmationModal');
+                const titleEl = document.getElementById('confirmationTitle');
+                const messageEl = document.getElementById('confirmationMessage');
+                const confirmBtn = document.getElementById('confirmationConfirm');
+                const cancelBtn = document.getElementById('confirmationCancel');
+                const closeBtn = document.getElementById('closeConfirmationModal');
+
+                // Check if all elements exist
+                if (!modal || !titleEl || !messageEl || !confirmBtn || !cancelBtn || !closeBtn) {
+                    console.error('Confirmation modal elements not found:', {
+                        modal: !!modal,
+                        titleEl: !!titleEl,
+                        messageEl: !!messageEl,
+                        confirmBtn: !!confirmBtn,
+                        cancelBtn: !!cancelBtn,
+                        closeBtn: !!closeBtn
+                    });
+                    // Fallback to browser confirm
+                    const confirmed = confirm(`${title}\n\n${message}`);
+                    resolve(confirmed);
+                    return;
+                }
+
+                // Set content
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+
+                // Handle confirmation
+                const handleConfirm = () => {
+                    cleanup();
+                    modal.classList.add('hidden');
+                    resolve(true);
+                };
+
+                // Handle cancellation
+                const handleCancel = () => {
+                    cleanup();
+                    modal.classList.add('hidden');
+                    resolve(false);
+                };
+
+                // Close on backdrop click
+                const handleBackdropClick = (e) => {
+                    if (e.target === modal) {
+                        handleCancel();
+                    }
+                };
+
+                // Cleanup function to remove event listeners
+                const cleanup = () => {
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    closeBtn.removeEventListener('click', handleCancel);
+                    modal.removeEventListener('click', handleBackdropClick);
+                };
+
+                // Add event listeners (one-time use)
+                confirmBtn.addEventListener('click', handleConfirm, { once: true });
+                cancelBtn.addEventListener('click', handleCancel, { once: true });
+                closeBtn.addEventListener('click', handleCancel, { once: true });
+                modal.addEventListener('click', handleBackdropClick, { once: true });
+
+                // Show modal
+                modal.classList.remove('hidden');
+            });
+        }
+
+        /**
+         * View Supplier Details Function
+         * Opens a modal displaying supplier information
+         * @param {number|string} supplierId - The ID of the supplier to view
+         */
+        async function viewSupplier(supplierId) {
+            const supplier = suppliersData.find(s => s.id == supplierId);
+            if (!supplier) {
+                showError('Supplier not found');
+                return;
+            }
+
+            const detailsContent = document.getElementById('supplierDetailsContent');
+            detailsContent.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-text-secondary">Loading supplier details...</p></div>';
+
+            document.getElementById('supplierDetailModal').classList.remove('hidden');
+
+            try {
+                // Fetch supplier medicines if available
+                const baseUrl = getApiBaseUrl();
+                let supplierMedicines = [];
+                
+                try {
+                    const medicinesResponse = await fetch(`${baseUrl}/get_supplier_medicines.php?supplier_id=${supplierId}`, {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    const medicinesData = await medicinesResponse.json();
+                    if (medicinesData.success && medicinesData.data) {
+                        supplierMedicines = medicinesData.data;
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch supplier medicines:', error);
+                }
+
+                // Format dates
+                const formatDate = (dateString) => {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                };
+
+                // Escape HTML
+                const escapeHtml = (text) => {
+                    if (!text) return '';
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                };
+
+                detailsContent.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Supplier Header Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier ID</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">#${supplier.id}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Company Name</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium text-lg">${escapeHtml(supplier.name || 'N/A')}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Contact Person</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(supplier.contact || supplier.contact_person || 'N/A')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Email</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(supplier.email || 'N/A')}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Phone</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(supplier.phone || 'N/A')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Location</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(supplier.location || supplier.address || 'N/A')}</p>
+                            </div>
+                        </div>
+
+                        ${supplier.website ? `
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Website</label>
+                                <p class="text-text-primary dark:text-gray-100">
+                                    <a href="${escapeHtml(supplier.website)}" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">
+                                        ${escapeHtml(supplier.website)}
+                                    </a>
+                                </p>
+                            </div>
+                        ` : ''}
+
+                        ${supplier.created_at ? `
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Created Date</label>
+                                    <p class="text-text-primary dark:text-gray-100">${formatDate(supplier.created_at)}</p>
+                                </div>
+                                ${supplier.updated_at ? `
+                                    <div>
+                                        <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Last Updated</label>
+                                        <p class="text-text-primary dark:text-gray-100">${formatDate(supplier.updated_at)}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Supplier Medicines Table -->
+                        ${supplierMedicines.length > 0 ? `
+                            <div class="pt-4 border-t border-border-light dark:border-gray-700">
+                                <h3 class="text-lg font-medium text-text-primary dark:text-gray-100 mb-4">Available Medicines (${supplierMedicines.length})</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-border-light dark:divide-gray-700">
+                                        <thead class="bg-surface-hover dark:bg-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Medicine</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">NDC</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Category</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-400 uppercase">Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                                            ${supplierMedicines.map(medicine => {
+                                                return `
+                                                    <tr>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(medicine.name || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(medicine.ndc || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(medicine.category || 'N/A')}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">$${(parseFloat(medicine.price) || 0).toFixed(2)}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading supplier details:', error);
+                detailsContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl text-error mb-2"></i>
+                        <p class="text-text-secondary dark:text-gray-400">Failed to load supplier details. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Make editSupplier globally accessible for onclick handlers
+        window.editSupplier = async function(id) {
+            console.log('editSupplier called with ID:', id, 'Type:', typeof id);
+            console.log('Current suppliersData length:', suppliersData.length);
+            
+            // Convert ID to number for comparison
+            const supplierId = parseInt(id);
+            if (isNaN(supplierId) || supplierId <= 0) {
+                alert('Invalid supplier ID: ' + id);
+                return;
+            }
+
+            // Try to find supplier in local data (check both string and number)
+            let supplier = suppliersData.find(s => {
+                const sId = parseInt(s.id);
+                return sId === supplierId || s.id === supplierId || s.id === id;
+            });
+            
+            console.log('Supplier found in local data:', supplier ? 'Yes' : 'No');
+            
+            // If not found locally, fetch from API
+            if (!supplier) {
+                console.log('Fetching suppliers from API...');
+                try {
+                    const baseUrl = getApiBaseUrl();
+                    const url = `${baseUrl}/get_suppliers.php?page=1&pageSize=1000`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('API response:', data);
+                        if (data.success && data.data) {
+                            // Update suppliersData
+                            suppliersData = data.data.map(s => ({
+                                id: s.id,
+                                name: s.name,
+                                contact: s.contact_person || '',
+                                email: s.email || '',
+                                phone: s.phone || '',
+                                location: s.address || '',
+                                website: s.website || '',
+                                notes: s.notes || ''
+                            }));
+                            
+                            console.log('Updated suppliersData length:', suppliersData.length);
+                            
+                            // Try to find again
+                            supplier = suppliersData.find(s => {
+                                const sId = parseInt(s.id);
+                                return sId === supplierId || s.id === supplierId || s.id === id;
+                            });
+                            
+                            console.log('Supplier found after API fetch:', supplier ? 'Yes' : 'No');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching suppliers:', error);
+                }
+            }
+            
+            if (!supplier) {
+                console.error('Supplier not found. ID:', supplierId, 'Available IDs:', suppliersData.map(s => s.id));
+                alert('Supplier not found. Please refresh the page and try again.');
+                return;
+            }
+            
+            console.log('Loading supplier for edit:', supplier);
+
+            currentEditId = supplierId;
+            document.getElementById('editSupplierName').value = supplier.name || '';
+            document.getElementById('editContactPerson').value = supplier.contact || '';
+            document.getElementById('editEmail').value = supplier.email || '';
+            document.getElementById('editPhoneNumber').value = supplier.phone || '';
+            document.getElementById('editLocation').value = supplier.location || '';
+            document.getElementById('editWebsite').value = supplier.website || '';
+            document.getElementById('editNotes').value = supplier.notes || '';
+
+            // Load existing medicines for this supplier
+            selectedMedicines = [];
+            try {
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/get_supplier_medicines.php?supplier_id=${supplierId}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        selectedMedicines = data.data.map(med => med.id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading supplier medicines:', error);
+            }
+            
+            // Refresh medicines list to ensure we have the latest data
+            await fetchMedicinesByCategory();
+            editSupplierModal.classList.remove('hidden');
+        };
+
+        /**
+         * Archive Supplier Function
+         * Archives a supplier after confirmation
+         * @param {number|string} id - The ID of the supplier to archive
+         */
+        async function archiveSupplier(id) {
+            // Convert id to number for comparison
+            const supplierId = parseInt(id);
+            
+            // Try to find supplier with loose equality to handle string/number mismatch
+            const supplier = suppliersData.find(s => s.id == supplierId || s.id == id);
+            if (!supplier) {
+                console.error('Supplier not found in data. ID:', id, 'Type:', typeof id);
+                console.error('Available suppliers:', suppliersData.map(s => ({ id: s.id, name: s.name, type: typeof s.id })));
+                showError(`Supplier not found. ID: ${id}`);
+                return;
+            }
+            
+            const confirmed = await showConfirmation(
+                `Are you sure you want to archive "${supplier.name}"? The supplier will be moved to the archive and removed from the active list.`,
+                'Archive Supplier'
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                // Use the supplier's ID from the found supplier object
+                formData.append('id', String(supplier.id));
+                formData.append('reason', 'Supplier archived by user');
+                
+                // Get current user email if available
+                const userEmail = localStorage.getItem('userEmail');
+                if (userEmail) {
+                    formData.append('archived_by', userEmail);
+                }
+                
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/archive_supplier.php`;
+                
+                console.log('Archiving supplier:', {
+                    id: supplier.id,
+                    name: supplier.name,
+                    url: url
+                });
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    // Try to get error message from response
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                        console.error('Server error response:', errorData);
+                    } catch (e) {
+                        const errorText = await response.text();
+                        console.error('Server error text:', errorText);
+                        errorMessage = errorText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                // Parse JSON response
+                let result;
+                try {
+                    const responseText = await response.text();
+                    console.log('Archive API response:', responseText);
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse JSON response:', parseError);
+                    throw new Error('Invalid response from server');
+                }
+                
+                if (result.success) {
+                    showSuccess(`Supplier "${supplier.name}" archived successfully!`);
+                    
+                    // Refresh suppliers list
+                    await fetchSuppliers(1, '');
+                    
+                    // If archive modal is open, refresh it to show the newly archived supplier
+                    const archiveModal = document.getElementById('archiveModal');
+                    if (archiveModal && !archiveModal.classList.contains('hidden')) {
+                        console.log('Archive modal is open, refreshing archive data...');
+                        if (typeof loadArchivesModal === 'function') {
+                            await loadArchivesModal();
+                        }
+                    }
+                } else {
+                    console.error('Archive failed:', result);
+                    showError(result.message || 'Failed to archive supplier');
+                }
+            } catch (error) {
+                console.error('Error archiving supplier:', error);
+                showError('Server error: ' + error.message);
+            }
+        }
+
+        // Make functions globally accessible for onclick handlers
+        window.viewSupplier = viewSupplier;
+        window.archiveSupplier = archiveSupplier;
+
+        // Form submissions
+        document.getElementById('addSupplierForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            
+            try {
+                const formData = new FormData(this);
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/add_supplier.php`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const supplierId = result.data?.id;
+                    
+                    // Link medicines to supplier if any were selected
+                    if (selectedMedicines.length > 0 && supplierId) {
+                        try {
+                            const linkData = new FormData();
+                            linkData.append('supplier_id', supplierId);
+                            linkData.append('medicine_ids', JSON.stringify(selectedMedicines));
+                            
+                            const linkResponse = await fetch(`${baseUrl}/link_medicines_to_supplier.php`, {
+                                method: 'POST',
+                                body: linkData,
+                                headers: {
+                                    'Accept': 'application/json'
+                                },
+                                credentials: 'include'
+                            });
+                            
+                            const linkResult = await linkResponse.json();
+                            if (linkResult.success) {
+                                showSuccess(`✓ Supplier added successfully! Linked ${selectedMedicines.length} medicine(s) to this supplier. These medicines are now available when creating orders with this supplier.`);
+                            } else {
+                                showSuccess('✓ Supplier added successfully, but some medicines could not be linked: ' + (linkResult.message || 'Unknown error'));
+                            }
+                        } catch (linkError) {
+                            console.error('Error linking medicines:', linkError);
+                            showSuccess('✓ Supplier added successfully, but there was an error linking medicines: ' + linkError.message);
+                        }
+                    } else {
+                        showSuccess('✓ Supplier added successfully! You can link medicines later by editing this supplier.');
+                    }
+                    
+                    this.reset();
+                    selectedMedicines = [];
+                    renderMedicinesByCategory();
+                    addSupplierModal.classList.add('hidden');
+                    // Refresh suppliers list
+                    await fetchSuppliers(1, '');
+                } else {
+                    showError(result.message || 'Failed to add supplier');
+                }
+            } catch (error) {
+                console.error('Error adding supplier:', error);
+                showError('Server error: ' + error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        });
+
+        document.getElementById('editSupplierForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentEditId) return;
+            
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            
+            try {
+                const formData = new FormData(this);
+                formData.append('id', currentEditId);
+                
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/edit_supplier.php`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const supplierId = currentEditId;
+                    
+                    // Link medicines to supplier if any were selected
+                    if (selectedMedicines.length > 0 && supplierId) {
+                        try {
+                            const linkData = new FormData();
+                            linkData.append('supplier_id', supplierId);
+                            linkData.append('medicine_ids', JSON.stringify(selectedMedicines));
+                            
+                            const linkResponse = await fetch(`${baseUrl}/link_medicines_to_supplier.php`, {
+                                method: 'POST',
+                                body: linkData,
+                                headers: {
+                                    'Accept': 'application/json'
+                                },
+                                credentials: 'include'
+                            });
+                            
+                            const linkResult = await linkResponse.json();
+                            if (linkResult.success) {
+                                showSuccess(`Supplier updated successfully! Linked ${selectedMedicines.length} medicine(s) to this supplier.`);
+                            } else {
+                                showSuccess('Supplier updated successfully, but some medicines could not be linked.');
+                            }
+                        } catch (linkError) {
+                            console.error('Error linking medicines:', linkError);
+                            showSuccess('Supplier updated successfully, but there was an error linking medicines.');
+                        }
+                    } else {
+                        showSuccess('Supplier updated successfully!');
+                    }
+                    
+                    this.reset();
+                    selectedMedicines = [];
+                    renderMedicinesByCategory();
+                    editSupplierModal.classList.add('hidden');
+                    currentEditId = null;
+                    // Refresh suppliers list
+                    await fetchSuppliers(1, '');
+                } else {
+                    showError(result.message || 'Failed to update supplier');
+                }
+            } catch (error) {
+                console.error('Error updating supplier:', error);
+                showError('Server error: ' + error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        });
+
+        // Select all functionality
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.supplier-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        }
+
+        // Export functionality
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Supplier Name,Contact Person,Email,Phone,Location,Website\n" +
+                filteredSuppliers.map(supplier => 
+                    `"${supplier.name}","${supplier.contact}","${supplier.email}","${supplier.phone}","${supplier.location}","${supplier.website || ''}"`
+                ).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "suppliers_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+            
+            document.documentElement.classList.toggle('dark', isDark);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', isDark);
+                toggle.classList.toggle('bg-border-light', !isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', isDark);
+                button.classList.toggle('translate-x-1', !isDark);
+            });
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            document.documentElement.classList.toggle('dark', !isDark);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update toggle buttons
+            const toggles = document.querySelectorAll('#themeToggle');
+            const toggleButtons = document.querySelectorAll('#themeToggleButton');
+            
+            toggles.forEach(toggle => {
+                toggle.classList.toggle('bg-primary', !isDark);
+                toggle.classList.toggle('bg-border-light', isDark);
+            });
+            
+            toggleButtons.forEach(button => {
+                button.classList.toggle('translate-x-6', !isDark);
+                button.classList.toggle('translate-x-1', isDark);
+            });
+        }
+
+        // Helper functions for notifications
+        function showSuccess(message) {
+            // Simple alert for now, can be enhanced with toast notifications
+            alert('✓ ' + message);
+        }
+
+        function showError(message) {
+            // Simple alert for now, can be enhanced with toast notifications
+            alert('✗ ' + message);
+        }
+        
+        // Fetch all medicines grouped by category
+        async function fetchMedicinesByCategory() {
+            try {
+                const baseUrl = getApiBaseUrl();
+                const url = `${baseUrl}/get_medicines_by_category.php`;
+                
+                console.log('Fetching medicines from:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Medicines data received:', data);
+                
+                if (data.success && data.data) {
+                    medicinesByCategory = data.data;
+                    allMedicines = data.data.flatMap(cat => cat.medicines);
+                    console.log('Total medicines:', allMedicines.length);
+                    console.log('Categories:', medicinesByCategory.length);
+                    renderMedicinesByCategory();
+                } else {
+                    console.error('API returned unsuccessful response:', data);
+                    const loading = document.getElementById('medicinesLoading');
+                    const editLoading = document.getElementById('editMedicinesLoading');
+                    if (loading) {
+                        loading.innerHTML = `<div class="text-center py-4 text-error-600">${data.message || 'Failed to load medicines'}</div>`;
+                    }
+                    if (editLoading) {
+                        editLoading.innerHTML = `<div class="text-center py-4 text-error-600">${data.message || 'Failed to load medicines'}</div>`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching medicines by category:', error);
+                const loading = document.getElementById('medicinesLoading');
+                const editLoading = document.getElementById('editMedicinesLoading');
+                if (loading) {
+                    loading.innerHTML = `<div class="text-center py-4 text-error-600">Error: ${error.message}</div>`;
+                }
+                if (editLoading) {
+                    editLoading.innerHTML = `<div class="text-center py-4 text-error-600">Error: ${error.message}</div>`;
+                }
+                showError('Failed to load medicines. Please check console for details.');
+            }
+        }
+        
+        // Render medicines grouped by category with checkboxes
+        function renderMedicinesByCategory() {
+            const container = document.getElementById('medicinesByCategory');
+            const editContainer = document.getElementById('editMedicinesByCategory');
+            const loading = document.getElementById('medicinesLoading');
+            const editLoading = document.getElementById('editMedicinesLoading');
+            
+            const render = (cont, loadEl) => {
+                if (!cont || !loadEl) return;
+                
+                loadEl.classList.add('hidden');
+                cont.classList.remove('hidden');
+                
+                if (!medicinesByCategory || medicinesByCategory.length === 0) {
+                    cont.innerHTML = '<div class="text-center py-4 text-text-secondary">No medicines available. Please add medicines to the inventory first.</div>';
+                    return;
+                }
+                
+                let html = '';
+                medicinesByCategory.forEach(categoryGroup => {
+                    if (!categoryGroup.medicines || categoryGroup.medicines.length === 0) {
+                        return; // Skip empty categories
+                    }
+                    
+                    html += `
+                        <div class="border border-border-light rounded-lg p-4 mb-3">
+                            <h4 class="font-semibold text-text-primary mb-3 flex items-center">
+                                <i class="fas fa-pills mr-2 text-primary-600"></i>
+                                ${escapeHtml(categoryGroup.category || 'Uncategorized')}
+                                <span class="ml-2 text-xs font-normal text-text-secondary">(${categoryGroup.medicines.length})</span>
+                            </h4>
+                            <div class="space-y-2">
+                    `;
+                    
+                    categoryGroup.medicines.forEach(med => {
+                        const isChecked = selectedMedicines.includes(parseInt(med.id));
+                        html += `
+                            <label class="flex items-center space-x-3 p-2 hover:bg-surface-hover rounded-lg cursor-pointer transition-colors">
+                                <input type="checkbox" 
+                                       value="${med.id}" 
+                                       ${isChecked ? 'checked' : ''}
+                                       onchange="toggleMedicineSelection(${med.id}, this.checked)"
+                                       class="w-4 h-4 text-primary-600 border-border-medium rounded focus:ring-primary-200 cursor-pointer" />
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-text-primary">${escapeHtml(med.name || 'N/A')}</div>
+                                    <div class="text-xs text-text-secondary">NDC: ${med.ndc || 'N/A'} | Price: $${parseFloat(med.price || 0).toFixed(2)}</div>
+                                </div>
+                            </label>
+                        `;
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    cont.innerHTML = '<div class="text-center py-4 text-text-secondary"><i class="fas fa-exclamation-triangle mr-2"></i>No medicines available. Please add medicines to the inventory first.</div>';
+                } else {
+                    cont.innerHTML = html;
+                }
+            };
+            
+            render(container, loading);
+            render(editContainer, editLoading);
+            
+            // Update selected count after rendering
+            updateSelectedMedicinesCount();
+        }
+        
+        // Toggle medicine selection
+        function toggleMedicineSelection(medicineId, isSelected) {
+            const medId = parseInt(medicineId);
+            if (isSelected) {
+                if (!selectedMedicines.includes(medId)) {
+                    selectedMedicines.push(medId);
+                }
+            } else {
+                selectedMedicines = selectedMedicines.filter(id => id !== medId);
+            }
+            console.log('Selected medicines:', selectedMedicines);
+            updateSelectedMedicinesCount();
+        }
+        
+        // Update selected medicines count display
+        function updateSelectedMedicinesCount() {
+            const countElement = document.getElementById('selectedMedicinesCount');
+            const countText = document.getElementById('selectedCount');
+            const editCountElement = document.getElementById('editSelectedMedicinesCount');
+            const editCountText = document.getElementById('editSelectedCount');
+            
+            if (countElement && countText) {
+                if (selectedMedicines.length > 0) {
+                    countElement.classList.remove('hidden');
+                    countText.textContent = selectedMedicines.length;
+                } else {
+                    countElement.classList.add('hidden');
+                }
+            }
+            
+            if (editCountElement && editCountText) {
+                if (selectedMedicines.length > 0) {
+                    editCountElement.classList.remove('hidden');
+                    editCountText.textContent = selectedMedicines.length;
+                } else {
+                    editCountElement.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Make function globally accessible
+        window.toggleMedicineSelection = toggleMedicineSelection;
+        
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initializeTheme();
+
+            // Check authentication
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update user display from localStorage
+            const userFullName = localStorage.getItem('userFullName') || 'User';
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            
+            const userDisplayNameEl = document.getElementById('userDisplayName');
+            const userDisplayEmailEl = document.getElementById('userDisplayEmail');
+            
+            if (userDisplayNameEl) {
+                userDisplayNameEl.textContent = userFullName;
+            }
+            if (userDisplayEmailEl) {
+                userDisplayEmailEl.textContent = userEmail;
+            }
+
+            // Load suppliers from database
+            fetchSuppliers(1, '');
+            
+            // Load medicines grouped by category
+            fetchMedicinesByCategory();
+            
+            // Reset selected medicines when modals open/close
+            const addSupplierModal = document.getElementById('addSupplierModal');
+            const editSupplierModal = document.getElementById('editSupplierModal');
+            
+            const resetMedicines = () => {
+                selectedMedicines = [];
+                renderMedicinesByCategory();
+            };
+            
+            if (addSupplierModal) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            if (addSupplierModal.classList.contains('hidden')) {
+                                resetMedicines();
+                            }
+                        }
+                    });
+                });
+                observer.observe(addSupplierModal, { attributes: true });
+            }
+            
+            if (editSupplierModal) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            if (editSupplierModal.classList.contains('hidden')) {
+                                resetMedicines();
+                            }
+                        }
+                    });
+                });
+                observer.observe(editSupplierModal, { attributes: true });
+            }
+        });
+
+        // Theme toggle functionality
+        document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+        // Theme toggle is now initialized by load-topbar.js
+
+        // Logout functionality
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Call logout endpoint to update status to inactive
+                fetch('../php/logout.php', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                }).then(() => {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html';
+                }).catch(() => {
+                    // Even if logout endpoint fails, still clear and redirect
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html';
+                });
+            }
+        });
+
+        // Global search functionality
+        document.getElementById('globalSearch')?.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            if (searchTerm) {
+                document.getElementById('tableSearch').value = searchTerm;
+                filterSuppliers();
+            }
+        });
+
+        // Settings Modal Functions
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+        window.openSettings = openSettings;
+
+        // Close Settings Modal
+        document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.add('hidden');
+        });
+
+        // Archive Modal - Full Functionality
+        const ARCHIVE_API = '../php/get_archives.php';
+        const PROCESS_EXPIRED_API = '../php/process_and_archive_expired.php';
+
+        // Escape HTML helper for archive modal
+        function escapeHtmlArchive(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tab switching for Archive Modal
+        function switchArchiveTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content-modal').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button-modal').forEach(btn => {
+                btn.classList.remove('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+                btn.classList.add('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`content${tabName}Modal`).classList.remove('hidden');
+            
+            // Add active class to selected tab
+            const activeTab = document.getElementById(`tab${tabName}Modal`);
+            activeTab.classList.add('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
+            activeTab.classList.remove('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+        }
+
+        // Load archive data
+        async function loadArchivesModal() {
+            try {
+                // First, process and archive any expired items
+                try {
+                    await fetch(PROCESS_EXPIRED_API);
+                } catch (error) {
+                    console.error('Error processing expired items:', error);
+                    // Continue even if processing fails
+                }
+
+                // Then load archive data
+                const response = await fetch(`${ARCHIVE_API}?type=all`);
+                const result = await response.json();
+
+                console.log('Archive API Response:', result); // Debug log
+
+                if (result.success && result.data) {
+                    // Update counts
+                    document.getElementById('expiredCountModal').textContent = result.data.counts.expired || 0;
+                    document.getElementById('cancelledCountModal').textContent = result.data.counts.cancelled || 0;
+                    document.getElementById('deletedCountModal').textContent = result.data.counts.deleted || 0;
+                    document.getElementById('suppliersCountModal').textContent = result.data.counts.suppliers || 0;
+
+                    // Render expired items
+                    renderExpiredItemsModal(result.data.items.expired || []);
+                    
+                    // Render cancelled orders
+                    renderCancelledOrdersModal(result.data.items.cancelled || []);
+                    
+                    // Render deleted items
+                    renderDeletedItemsModal(result.data.items.deleted || []);
+
+                    // Render archived suppliers
+                    renderArchivedSuppliersModal(result.data.items.suppliers || []);
+                } else {
+                    console.error('Archive API error:', result.message || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error loading archives:', error);
+            }
+        }
+
+        // Render expired items
+        function renderExpiredItemsModal(items) {
+            const tbody = document.getElementById('expiredItemsTableModal');
+            if (!tbody) {
+                console.error('expiredItemsTableModal element not found');
+                return;
+            }
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4">
+                        <div>
+                            <div class="font-medium text-text-primary dark:text-gray-100">${escapeHtmlArchive(item.medicine_name || 'N/A')}</div>
+                            <div class="text-xs text-text-tertiary dark:text-gray-500">${escapeHtmlArchive(item.medicine_ndc || '')}</div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(item.batch_number || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.expiration_date || 'N/A'}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300 rounded-full text-xs font-medium">
+                            ${item.days_expired || 0} days
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.expired_at ? new Date(item.expired_at).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render cancelled orders
+        function renderCancelledOrdersModal(orders) {
+            const tbody = document.getElementById('cancelledOrdersTableModal');
+            if (!tbody) return;
+            
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map(order => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(order.supplier_name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.item_count || 0} items</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancelled_at ? new Date(order.cancelled_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtmlArchive(order.cancellation_reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render deleted items
+        function renderDeletedItemsModal(items) {
+            const tbody = document.getElementById('deletedItemsTableModal');
+            if (!tbody) return;
+            
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No deleted items found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${escapeHtmlArchive(item.name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(item.ndc || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(item.manufacturer || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(item.category || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${item.quantity || 0}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${item.deleted_at ? new Date(item.deleted_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtmlArchive(item.reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Render archived suppliers
+        function renderArchivedSuppliersModal(suppliers) {
+            const tbody = document.getElementById('archivedSuppliersTableModal');
+            if (!tbody) return;
+            
+            if (suppliers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No archived suppliers found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = suppliers.map(supplier => `
+                <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">${escapeHtmlArchive(supplier.name || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.contact || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.email || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.phone || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(supplier.location || 'N/A')}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${supplier.archived_at ? new Date(supplier.archived_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtmlArchive(supplier.reason || 'N/A')}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Open Archive Modal
+        function openArchiveModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('archiveModal').classList.remove('hidden');
+                // Load archives when modal opens
+                loadArchivesModal();
+            }, 150);
+        }
+        window.openArchiveModal = openArchiveModal;
+
+        // Close Archive Modal
+        document.getElementById('closeArchiveModal')?.addEventListener('click', () => {
+            document.getElementById('archiveModal').classList.add('hidden');
+        });
+
+        // Close Archive modal on backdrop click
+        document.getElementById('archiveModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'archiveModal') {
+                document.getElementById('archiveModal').classList.add('hidden');
+            }
+        });
+
+        // Tab switching event listeners
+        document.getElementById('tabExpiredModal')?.addEventListener('click', () => switchArchiveTab('Expired'));
+        document.getElementById('tabCancelledModal')?.addEventListener('click', () => switchArchiveTab('Cancelled'));
+        document.getElementById('tabDeletedModal')?.addEventListener('click', () => switchArchiveTab('Deleted'));
+        document.getElementById('tabSuppliersModal')?.addEventListener('click', () => switchArchiveTab('Suppliers'));
+    </script>
+<script id="dhws-dataInjector" src="../public/dhws-data-injector.js"></script>
+</body>
+</html>
