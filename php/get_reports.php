@@ -38,11 +38,10 @@ try {
     $action = $_GET['action'] ?? 'dashboard';
     $dateRange = $_GET['dateRange'] ?? 'monthly';
     $category = $_GET['category'] ?? '';
-    $reportType = $_GET['reportType'] ?? 'sales';
 
     switch ($action) {
         case 'dashboard':
-            getDashboardData($conn, $dateRange, $category, $reportType);
+            getDashboardData($conn, $dateRange, $category);
             break;
         case 'top-selling':
             getTopSellingMedicines($conn, $dateRange, $category);
@@ -73,10 +72,7 @@ try {
     ]);
 }
 
-function getDashboardData($conn, $dateRange, $category, $reportType) {
-    // Calculate date range
-    $dateFilter = getDateFilter($dateRange);
-    
+function getDashboardData($conn, $dateRange, $category) {
     // Build category filter
     $categoryFilter = '';
     if (!empty($category)) {
@@ -84,21 +80,29 @@ function getDashboardData($conn, $dateRange, $category, $reportType) {
         $categoryFilter = " AND category = '{$cat}'";
     }
 
-    // Total Revenue (sum of all inventory value: quantity * price)
-    $revenueSql = "SELECT SUM(quantity * price) as total_revenue 
+    // Get date filter for medicines (using created_at)
+    $medicineDateFilter = getDateFilterForColumn($dateRange, 'created_at', $conn);
+    
+    // Get date filter for orders (using order_date)
+    $orderDateFilter = getDateFilterForColumn($dateRange, 'order_date', $conn);
+
+    // Total Stocked (total quantity of items in stock within date range)
+    $stockedSql = "SELECT SUM(quantity) as total_stocked 
                    FROM medicines 
-                   WHERE 1=1 {$categoryFilter}";
-    $revenueResult = mysqli_query($conn, $revenueSql);
-    $revenue = 0;
-    if ($revenueResult) {
-        $row = mysqli_fetch_assoc($revenueResult);
-        $revenue = (float)($row['total_revenue'] ?? 0);
+                   WHERE status IN ('in-stock', 'low-stock') 
+                   AND {$medicineDateFilter} {$categoryFilter}";
+    $stockedResult = mysqli_query($conn, $stockedSql);
+    $totalStocked = 0;
+    if ($stockedResult) {
+        $row = mysqli_fetch_assoc($stockedResult);
+        $totalStocked = (int)($row['total_stocked'] ?? 0);
     }
 
-    // Medicine Turnover (total quantity of in-stock items)
+    // Medicine Turnover (total quantity of in-stock items within date range)
     $turnoverSql = "SELECT SUM(quantity) as total_quantity 
                     FROM medicines 
-                    WHERE status IN ('in-stock', 'low-stock') {$categoryFilter}";
+                    WHERE status IN ('in-stock', 'low-stock') 
+                    AND {$medicineDateFilter} {$categoryFilter}";
     $turnoverResult = mysqli_query($conn, $turnoverSql);
     $turnover = 0;
     if ($turnoverResult) {
@@ -106,14 +110,23 @@ function getDashboardData($conn, $dateRange, $category, $reportType) {
         $turnover = (int)($row['total_quantity'] ?? 0);
     }
 
-    // Profit Margin (estimated: assume 30% margin on inventory value)
-    $profitMargin = $revenue > 0 ? ($revenue * 0.30) : 0;
-    $profitMarginPercent = $revenue > 0 ? 30 : 0;
+    // Order Completed (count of completed orders within date range)
+    $completedOrdersSql = "SELECT COUNT(*) as completed_count 
+                          FROM orders 
+                          WHERE status = 'completed' 
+                          AND {$orderDateFilter}";
+    $completedOrdersResult = mysqli_query($conn, $completedOrdersSql);
+    $completedOrders = 0;
+    if ($completedOrdersResult) {
+        $row = mysqli_fetch_assoc($completedOrdersResult);
+        $completedOrders = (int)($row['completed_count'] ?? 0);
+    }
 
-    // Top Selling Items (medicines with highest quantity)
+    // Top Selling Items (medicines with highest quantity within date range)
     $topSellingSql = "SELECT COUNT(*) as count 
                       FROM medicines 
-                      WHERE quantity > 0 {$categoryFilter}";
+                      WHERE quantity > 0 
+                      AND {$medicineDateFilter} {$categoryFilter}";
     $topSellingResult = mysqli_query($conn, $topSellingSql);
     $topSellingCount = 0;
     if ($topSellingResult) {
@@ -124,10 +137,9 @@ function getDashboardData($conn, $dateRange, $category, $reportType) {
     echo json_encode([
         'success' => true,
         'data' => [
-            'totalRevenue' => number_format($revenue, 2),
+            'totalStocked' => number_format($totalStocked),
             'medicineTurnover' => number_format($turnover),
-            'profitMargin' => number_format($profitMargin, 2),
-            'profitMarginPercent' => number_format($profitMarginPercent, 1),
+            'completedOrders' => number_format($completedOrders),
             'topSellingItems' => $topSellingCount
         ]
     ], JSON_UNESCAPED_UNICODE);
@@ -295,17 +307,39 @@ function getCategoryDistribution($conn) {
 }
 
 function getDateFilter($dateRange) {
+    // Legacy function - kept for backward compatibility
+    return getDateFilterForColumn($dateRange, 'created_at');
+}
+
+function getDateFilterForColumn($dateRange, $columnName = 'created_at', $conn = null) {
     $currentDate = date('Y-m-d');
+    
+    // Escape column name (safe for column names, not user input)
+    $column = preg_replace('/[^a-zA-Z0-9_]/', '', $columnName);
     
     switch ($dateRange) {
         case 'daily':
-            return "DATE(created_at) = '{$currentDate}'";
+            return "DATE({$column}) = '{$currentDate}'";
         case 'weekly':
-            return "created_at >= DATE_SUB('{$currentDate}', INTERVAL 7 DAY)";
+            return "{$column} >= DATE_SUB('{$currentDate}', INTERVAL 7 DAY)";
         case 'monthly':
-            return "created_at >= DATE_SUB('{$currentDate}', INTERVAL 30 DAY)";
+            return "{$column} >= DATE_SUB('{$currentDate}', INTERVAL 30 DAY)";
         case 'custom':
-            // For custom, we'd need start and end dates from request
+            // For custom, check if dateFrom and dateTo are provided
+            $dateFrom = $_GET['dateFrom'] ?? '';
+            $dateTo = $_GET['dateTo'] ?? '';
+            if (!empty($dateFrom) && !empty($dateTo)) {
+                // Escape dates
+                if ($conn) {
+                    $dateFrom = mysqli_real_escape_string($conn, $dateFrom);
+                    $dateTo = mysqli_real_escape_string($conn, $dateTo);
+                } else {
+                    // Fallback if no connection provided
+                    $dateFrom = addslashes($dateFrom);
+                    $dateTo = addslashes($dateTo);
+                }
+                return "DATE({$column}) >= '{$dateFrom}' AND DATE({$column}) <= '{$dateTo}'";
+            }
             return "1=1";
         default:
             return "1=1";

@@ -341,9 +341,15 @@
                 
                 batchesData = data.data || [];
                 filteredBatches = [...batchesData];
-                renderBatches();
-                updatePagination();
-                updateResultsCount();
+                
+                // Apply sorting if a sort field is set
+                if (sortField) {
+                    handleSort(sortField);
+                } else {
+                    renderBatches();
+                    updatePagination();
+                    updateResultsCount();
+                }
                 
             } catch (error) {
                 console.error('Error fetching batches:', error);
@@ -353,6 +359,77 @@
                 showError('Failed to load batches: ' + error.message);
             } finally {
                 document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        // Handle sorting
+        function handleSort(field) {
+            if (sortField === field) {
+                // Toggle direction if same field
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New field, default to ascending
+                sortField = field;
+                sortDirection = 'asc';
+            }
+
+            // Map field names to actual data field names
+            const fieldMap = {
+                'supplier': 'supplier_name'
+            };
+            const actualField = fieldMap[field] || field;
+
+            // Sort the filtered batches
+            filteredBatches.sort((a, b) => {
+                let aVal = a[actualField];
+                let bVal = b[actualField];
+
+                // Handle different field types
+                if (field === 'batch_number' || field === 'supplier' || field === 'status') {
+                    // String comparison
+                    aVal = (aVal || '').toString().toLowerCase();
+                    bVal = (bVal || '').toString().toLowerCase();
+                } else if (field === 'order_id' || field === 'item_count' || field === 'expired_count') {
+                    // Numeric comparison
+                    aVal = parseInt(aVal) || 0;
+                    bVal = parseInt(bVal) || 0;
+                } else if (field === 'created_date') {
+                    // Date comparison
+                    aVal = aVal ? new Date(aVal).getTime() : 0;
+                    bVal = bVal ? new Date(bVal).getTime() : 0;
+                } else {
+                    // Default string comparison
+                    aVal = (aVal || '').toString().toLowerCase();
+                    bVal = (bVal || '').toString().toLowerCase();
+                }
+
+                // Compare values
+                if (sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+
+            // Update sort icons and re-render
+            updateSortIcons();
+            renderBatches();
+            updatePagination();
+        }
+
+        // Update sort icons in table headers
+        function updateSortIcons() {
+            // Reset all icons to default sort icon
+            document.querySelectorAll('[data-sort] i').forEach(icon => {
+                icon.className = 'fas fa-sort ml-1';
+            });
+
+            // Update active sort icon
+            if (sortField) {
+                const activeHeader = document.querySelector(`[data-sort="${sortField}"] i`);
+                if (activeHeader) {
+                    activeHeader.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'} ml-1`;
+                }
             }
         }
 
@@ -707,47 +784,125 @@
             updatePagination();
         });
 
-        document.getElementById('statusFilter')?.addEventListener('change', (e) => {
-            const status = e.target.value;
-            if (status) {
-                filteredBatches = batchesData.filter(b => b.status === status);
-            } else {
-                filteredBatches = [...batchesData];
-            }
-            currentPage = 1;
-            renderBatches();
-            updatePagination();
-            updateResultsCount();
-        });
-
-        document.getElementById('globalSearch')?.addEventListener('input', (e) => {
-            const search = e.target.value.toLowerCase();
-            const status = document.getElementById('statusFilter').value;
+        // Apply all filters (status, search, date)
+        function applyFilters() {
+            const search = document.getElementById('globalSearch')?.value.toLowerCase() || '';
+            const status = document.getElementById('statusFilter')?.value || '';
+            const dateFrom = document.getElementById('dateFrom')?.value || '';
+            const dateTo = document.getElementById('dateTo')?.value || '';
             
             filteredBatches = batchesData.filter(batch => {
+                // Search filter
                 const matchesSearch = !search || 
                     (batch.batch_number && batch.batch_number.toLowerCase().includes(search)) ||
                     (batch.supplier_name && batch.supplier_name.toLowerCase().includes(search));
+                
+                // Status filter
                 const matchesStatus = !status || batch.status === status;
-                return matchesSearch && matchesStatus;
+                
+                // Date filter
+                let matchesDate = true;
+                if (dateFrom || dateTo) {
+                    const batchDate = batch.created_date ? new Date(batch.created_date) : null;
+                    if (batchDate) {
+                        if (dateFrom) {
+                            const fromDate = new Date(dateFrom);
+                            fromDate.setHours(0, 0, 0, 0);
+                            if (batchDate < fromDate) {
+                                matchesDate = false;
+                            }
+                        }
+                        if (dateTo && matchesDate) {
+                            const toDate = new Date(dateTo);
+                            toDate.setHours(23, 59, 59, 999);
+                            if (batchDate > toDate) {
+                                matchesDate = false;
+                            }
+                        }
+                    } else {
+                        // If batch has no date and date filter is set, exclude it
+                        matchesDate = false;
+                    }
+                }
+                
+                return matchesSearch && matchesStatus && matchesDate;
             });
             
             currentPage = 1;
+            
+            // Apply sorting if a sort field is set
+            if (sortField) {
+                // Map field names to actual data field names
+                const fieldMap = {
+                    'supplier': 'supplier_name'
+                };
+                const actualField = fieldMap[sortField] || sortField;
+                
+                // Re-sort the filtered batches
+                filteredBatches.sort((a, b) => {
+                    let aVal = a[actualField];
+                    let bVal = b[actualField];
+
+                    // Handle different field types
+                    if (sortField === 'batch_number' || sortField === 'supplier' || sortField === 'status') {
+                        // String comparison
+                        aVal = (aVal || '').toString().toLowerCase();
+                        bVal = (bVal || '').toString().toLowerCase();
+                    } else if (sortField === 'order_id' || sortField === 'item_count' || sortField === 'expired_count') {
+                        // Numeric comparison
+                        aVal = parseInt(aVal) || 0;
+                        bVal = parseInt(bVal) || 0;
+                    } else if (sortField === 'created_date') {
+                        // Date comparison
+                        aVal = aVal ? new Date(aVal).getTime() : 0;
+                        bVal = bVal ? new Date(bVal).getTime() : 0;
+                    } else {
+                        // Default string comparison
+                        aVal = (aVal || '').toString().toLowerCase();
+                        bVal = (bVal || '').toString().toLowerCase();
+                    }
+
+                    // Compare values
+                    if (sortDirection === 'asc') {
+                        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                    } else {
+                        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                    }
+                });
+            }
+            
             renderBatches();
             updatePagination();
             updateResultsCount();
-        });
+        }
+
+        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+
+        document.getElementById('globalSearch')?.addEventListener('input', applyFilters);
+
+        // Date filter event listeners
+        document.getElementById('dateFrom')?.addEventListener('change', applyFilters);
+        document.getElementById('dateTo')?.addEventListener('change', applyFilters);
 
         document.getElementById('resetFilters')?.addEventListener('click', () => {
             document.getElementById('statusFilter').value = '';
             document.getElementById('dateFrom').value = '';
             document.getElementById('dateTo').value = '';
             document.getElementById('globalSearch').value = '';
-            filteredBatches = [...batchesData];
-            currentPage = 1;
-            renderBatches();
-            updatePagination();
-            updateResultsCount();
+            sortField = '';
+            sortDirection = 'asc';
+            updateSortIcons();
+            applyFilters();
+        });
+
+        // Add click event listeners to sortable table headers
+        document.querySelectorAll('[data-sort]').forEach(header => {
+            header.addEventListener('click', (e) => {
+                const field = header.getAttribute('data-sort');
+                if (field) {
+                    handleSort(field);
+                }
+            });
         });
 
         document.getElementById('refreshBtn')?.addEventListener('click', () => {
@@ -1061,6 +1216,9 @@
             }
             
             fetchBatches(1);
+            
+            // Initialize sort icons
+            updateSortIcons();
         });
     </script>
 

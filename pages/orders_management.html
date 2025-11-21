@@ -370,6 +370,35 @@
         </div>
     </div>
 
+    <!-- Message Modal (Success/Error) -->
+    <div id="messageModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div id="messageIcon" class="w-10 h-10 rounded-full flex items-center justify-center">
+                        <!-- Icon will be set dynamically -->
+                    </div>
+                    <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100" id="messageTitle">Message</h3>
+                </div>
+                <button id="closeMessageModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <p class="text-text-primary dark:text-gray-100" id="messageContent">
+                    <!-- Message content will be populated by JavaScript -->
+                </p>
+            </div>
+            
+            <div class="flex items-center justify-end">
+                <button id="messageOkBtn" class="px-6 py-2 bg-primary hover:bg-primary-700 text-white rounded-lg transition-all duration-200">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Receipt Confirmation Modal -->
     <div id="receiptConfirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-xl w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
@@ -739,13 +768,80 @@
             return div.innerHTML;
         }
         
-        // Helper function for notifications
+        // Helper function for notifications - using modal instead of alert
         function showError(message) {
-            alert('✗ ' + message);
+            showMessageModal(message, 'error');
         }
         
         function showSuccess(message) {
-            alert('✓ ' + message);
+            showMessageModal(message, 'success');
+        }
+
+        // Show message modal
+        function showMessageModal(message, type = 'info') {
+            const modal = document.getElementById('messageModal');
+            const titleEl = document.getElementById('messageTitle');
+            const contentEl = document.getElementById('messageContent');
+            const iconEl = document.getElementById('messageIcon');
+            const okBtn = document.getElementById('messageOkBtn');
+            const closeBtn = document.getElementById('closeMessageModal');
+
+            if (!modal || !titleEl || !contentEl || !iconEl) {
+                // Fallback to alert if modal elements don't exist
+                alert((type === 'success' ? '✓ ' : '✗ ') + message);
+                return;
+            }
+
+            // Set title and content
+            if (type === 'success') {
+                titleEl.textContent = 'Success';
+                iconEl.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-success-100 dark:bg-success-900';
+                iconEl.innerHTML = '<i class="fas fa-check-circle text-success-600 dark:text-success-400 text-xl"></i>';
+                okBtn.className = 'px-6 py-2 bg-success hover:bg-success-700 text-white rounded-lg transition-all duration-200';
+            } else if (type === 'error') {
+                titleEl.textContent = 'Error';
+                iconEl.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-error-100 dark:bg-error-900';
+                iconEl.innerHTML = '<i class="fas fa-exclamation-circle text-error-600 dark:text-error-400 text-xl"></i>';
+                okBtn.className = 'px-6 py-2 bg-error hover:bg-error-700 text-white rounded-lg transition-all duration-200';
+            } else {
+                titleEl.textContent = 'Information';
+                iconEl.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-primary-100 dark:bg-primary-900';
+                iconEl.innerHTML = '<i class="fas fa-info-circle text-primary-600 dark:text-primary-400 text-xl"></i>';
+                okBtn.className = 'px-6 py-2 bg-primary hover:bg-primary-700 text-white rounded-lg transition-all duration-200';
+            }
+
+            contentEl.textContent = message;
+
+            // Show modal
+            modal.classList.remove('hidden');
+
+            // Close handlers
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+
+            if (okBtn) {
+                okBtn.onclick = closeModal;
+            }
+            if (closeBtn) {
+                closeBtn.onclick = closeModal;
+            }
+            
+            // Close on backdrop click
+            modal.onclick = (e) => {
+                if (e.target.id === 'messageModal') {
+                    closeModal();
+                }
+            };
+
+            // Close on ESC key
+            const escHandler = (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
         }
 
         // Theme management
@@ -1741,7 +1837,14 @@
                     credentials: 'include'
                 });
 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('HTTP Error:', response.status, errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
+                console.log('Cancel order response:', result);
 
                 if (result.success) {
                     showSuccess('Order cancelled successfully');
@@ -1753,12 +1856,18 @@
                     updateBulkActionsVisibility();
                     
                     // Refetch orders from server to get updated status
+                    // Reset to page 1 and clear status filter to show cancelled orders
+                    currentPage = 1;
                     const statusFilter = document.getElementById('statusFilter').value;
                     const dateFrom = document.getElementById('dateFrom').value;
                     const dateTo = document.getElementById('dateTo').value;
                     const searchTerm = document.getElementById('globalSearch')?.value || '';
+                    
+                    // If status filter is set to something other than cancelled, 
+                    // we might want to show all or just cancelled orders
                     await fetchOrders(currentPage, searchTerm, statusFilter, 0, dateFrom, dateTo);
                 } else {
+                    console.error('Cancel order failed:', result);
                     showError(result.message || 'Failed to cancel order');
                 }
             } catch (error) {

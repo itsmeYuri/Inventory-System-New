@@ -7,6 +7,15 @@
     let allUsersModal = [];
     let filteredUsersModal = [];
 
+    // Get API Base URL helper
+    function getApiBaseUrl() {
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('/pages/')) {
+            return '../php';
+        }
+        return 'php';
+    }
+
     // Escape HTML
     function escapeHtml(text) {
         if (text == null) return '';
@@ -23,18 +32,56 @@
         tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading users...</p></td></tr>';
         
         try {
-            const response = await fetch('../api/user_management.php?action=get_all');
-            const data = await response.json();
+            const baseUrl = getApiBaseUrl();
+            const url = `${baseUrl}/user_management.php?action=get_all`;
+            console.log('Fetching users from:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            console.log('Response status:', response.status, response.ok);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('HTTP Error:', response.status, errorText);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                console.error('Response was:', responseText);
+                throw new Error('Invalid JSON response from server');
+            }
+            
+            console.log('Parsed data:', data);
             
             if (data.success && data.users) {
                 allUsersModal = data.users.filter(user => user.email !== currentUserEmail);
+                console.log('Loaded users:', allUsersModal.length);
                 applyFiltersModal();
             } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+                const errorMsg = data.error || 'Failed to load users';
+                console.error('API Error:', errorMsg);
+                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users: ${escapeHtml(errorMsg)}</p></td></tr>`;
             }
         } catch (error) {
             console.error('Error loading users:', error);
-            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users</p></td></tr>';
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack
+            });
+            tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-red-500"><p>Error loading users: ${escapeHtml(error.message)}</p><p class="text-xs mt-2">Check console for details</p></td></tr>`;
         }
     }
     
@@ -177,11 +224,14 @@
         const status = isActive ? 'active' : 'inactive';
         
         try {
-            const response = await fetch('../api/user_management.php', {
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: new URLSearchParams({
                     action: 'update_status',
                     user_id: userId,
@@ -245,7 +295,14 @@
     // Edit user
     async function editUserModal(userId) {
         try {
-            const response = await fetch(`../api/user_management.php?action=get_user&user_id=${userId}`);
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php?action=get_user&user_id=${userId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'include'
+            });
             const data = await response.json();
             
             if (data.success && data.user) {
@@ -277,11 +334,14 @@
         }
         
         try {
-            const response = await fetch('../api/user_management.php', {
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: new URLSearchParams({
                     action: 'delete_user',
                     user_id: userId
@@ -314,11 +374,14 @@
         }
         
         try {
-            const response = await fetch('../api/user_management.php', {
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: new URLSearchParams({
                     action: 'update_role',
                     user_id: userId,
@@ -357,11 +420,14 @@
         }
         
         try {
-            const response = await fetch('../api/user_management.php', {
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: new URLSearchParams({
                     action: 'reset_password',
                     user_id: userId,
@@ -389,11 +455,14 @@
         }
         
         try {
-            const response = await fetch('../api/user_management.php', {
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: new URLSearchParams({
                     action: 'lock_account',
                     user_id: userId
@@ -421,11 +490,14 @@
         }
         
         try {
-            const response = await fetch('../api/user_management.php', {
+            const baseUrl = getApiBaseUrl();
+            const response = await fetch(`${baseUrl}/user_management.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: new URLSearchParams({
                     action: 'unlock_account',
                     user_id: userId
@@ -502,12 +574,32 @@
                 const formData = new FormData(e.target);
                 const formMessage = document.getElementById('formMessage');
                 
+                // Validate username - no spaces allowed
+                const username = formData.get('username');
+                if (username && /\s/.test(username)) {
+                    if (formMessage) {
+                        formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                        formMessage.textContent = 'Username cannot contain spaces. Please remove all spaces.';
+                        formMessage.classList.remove('hidden');
+                    }
+                    // Highlight the username field
+                    const usernameInput = document.getElementById('username');
+                    if (usernameInput) {
+                        usernameInput.classList.add('border-error-500');
+                        setTimeout(() => usernameInput.classList.remove('border-error-500'), 3000);
+                    }
+                    return;
+                }
+                
                 try {
-                    const response = await fetch('../api/user_management.php', {
+                    const baseUrl = getApiBaseUrl();
+                    const response = await fetch(`${baseUrl}/user_management.php`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
+                            'Accept': 'application/json'
                         },
+                        credentials: 'include',
                         body: new URLSearchParams({
                             action: 'create_user',
                             full_name: formData.get('full_name'),
@@ -557,12 +649,32 @@
                 const formData = new FormData(e.target);
                 const formMessage = document.getElementById('editFormMessage');
                 
+                // Validate username - no spaces allowed
+                const username = formData.get('edit_username');
+                if (username && /\s/.test(username)) {
+                    if (formMessage) {
+                        formMessage.className = 'p-3 rounded-lg text-sm bg-error-50 text-error-700';
+                        formMessage.textContent = 'Username cannot contain spaces. Please remove all spaces.';
+                        formMessage.classList.remove('hidden');
+                    }
+                    // Highlight the username field
+                    const usernameInput = document.getElementById('edit_username');
+                    if (usernameInput) {
+                        usernameInput.classList.add('border-error-500');
+                        setTimeout(() => usernameInput.classList.remove('border-error-500'), 3000);
+                    }
+                    return;
+                }
+                
                 try {
-                    const response = await fetch('../api/user_management.php', {
+                    const baseUrl = getApiBaseUrl();
+                    const response = await fetch(`${baseUrl}/user_management.php`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
+                            'Accept': 'application/json'
                         },
+                        credentials: 'include',
                         body: new URLSearchParams({
                             action: 'update_user',
                             user_id: formData.get('edit_user_id'),
@@ -624,6 +736,29 @@
             cancelAddUser.addEventListener('click', () => {
                 const addUserModal = document.getElementById('addUserModal');
                 if (addUserModal) addUserModal.classList.add('hidden');
+            });
+        }
+
+        // Real-time username validation - strip spaces
+        const usernameInput = document.getElementById('username');
+        if (usernameInput) {
+            usernameInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (/\s/.test(value)) {
+                    // Remove all spaces
+                    e.target.value = value.replace(/\s/g, '');
+                }
+            });
+        }
+
+        const editUsernameInput = document.getElementById('edit_username');
+        if (editUsernameInput) {
+            editUsernameInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (/\s/.test(value)) {
+                    // Remove all spaces
+                    e.target.value = value.replace(/\s/g, '');
+                }
             });
         }
 

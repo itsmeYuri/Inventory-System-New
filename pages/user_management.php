@@ -26,8 +26,6 @@ $user_email = $_SESSION['user_email'] ?? $_SESSION['email'] ?? 'user@example.com
     <script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
 </head>
 <body class="min-h-screen bg-background transition-colors duration-300">
-    <?php require_once __DIR__ . '/../php/navigation.php'; render_navigation(); ?>
-
     <!-- Main Content - Include the rest from user_management.html -->
     <?php
     // Read the HTML file and extract main content (after </head>)
@@ -39,6 +37,10 @@ $user_email = $_SESSION['user_email'] ?? $_SESSION['email'] ?? 'user@example.com
             $main_content = $matches[1];
             // Remove the old sidebar
             $main_content = preg_replace('/<!-- Sidebar Overlay -->.*?<\/aside>/s', '', $main_content);
+            // Remove the header section (Top Header)
+            $main_content = preg_replace('/<!-- Top Header -->.*?<\/header>/s', '', $main_content);
+            // Remove left margin from main tag (was for sidebar)
+            $main_content = preg_replace('/class="lg:ml-64[^"]*"/', 'class=""', $main_content);
             // Update links
             $main_content = str_replace('dashboard.html', 'dashboard.php', $main_content);
             $main_content = str_replace('inventory_management.html', 'medicine.php', $main_content);

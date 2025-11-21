@@ -54,6 +54,21 @@ require_once __DIR__ . '/archive_helper.php';
         sendJsonResponse(false, 'Database connection failed', null, 500);
     }
 
+    // Ensure 'cancelled' status exists in orders table
+    $checkStatus = mysqli_query($conn, "SHOW COLUMNS FROM orders WHERE Field = 'status'");
+    if ($checkStatus && mysqli_num_rows($checkStatus) > 0) {
+        $statusColumn = mysqli_fetch_assoc($checkStatus);
+        $currentType = $statusColumn['Type'] ?? '';
+        // Check if 'cancelled' is not in the ENUM
+        if (strpos($currentType, "'cancelled'") === false) {
+            // Add 'cancelled' to the ENUM
+            $alterSql = "ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'shipping', 'completed', 'cancelled') DEFAULT 'pending'";
+            mysqli_query($conn, $alterSql);
+            // Log but don't fail if this doesn't work
+            error_log("Attempted to add 'cancelled' status to orders table");
+        }
+    }
+
     // Get order ID
     $order_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($order_id <= 0) {
@@ -68,7 +83,10 @@ require_once __DIR__ . '/archive_helper.php';
     $received_quantities = isset($_POST['received_quantities']) ? $_POST['received_quantities'] : null;
 
     // Check if this is a status-only update (for cancel/delivered actions)
-    $statusOnlyUpdate = !empty($status) && empty($supplier_id) && empty($order_date);
+    // Status-only update if status is provided but supplier_id and order_date are not provided or are empty
+    $hasSupplierId = isset($_POST['supplier_id']) && !empty($_POST['supplier_id']);
+    $hasOrderDate = isset($_POST['order_date']) && !empty(trim($_POST['order_date']));
+    $statusOnlyUpdate = !empty($status) && !$hasSupplierId && !$hasOrderDate;
     
     // If not status-only, validate required fields
     if (!$statusOnlyUpdate) {
@@ -348,6 +366,7 @@ require_once __DIR__ . '/archive_helper.php';
         }
         
         if (!mysqli_stmt_execute($updateStmt)) {
+            mysqli_stmt_close($updateStmt);
             throw new Exception('Failed to update order: ' . mysqli_stmt_error($updateStmt));
         }
 
@@ -356,7 +375,31 @@ require_once __DIR__ . '/archive_helper.php';
 
         if ($affectedRows === 0) {
             mysqli_rollback($conn);
-            sendJsonResponse(false, 'No order found with the provided ID or no changes were made', null, 404);
+            // Check if order exists
+            $checkOrderSql = "SELECT id, status FROM orders WHERE id = ?";
+            $checkStmt = mysqli_prepare($conn, $checkOrderSql);
+            if ($checkStmt) {
+                mysqli_stmt_bind_param($checkStmt, 'i', $order_id);
+                mysqli_stmt_execute($checkStmt);
+                $checkResult = mysqli_stmt_get_result($checkStmt);
+                if ($checkRow = mysqli_fetch_assoc($checkResult)) {
+                    // Order exists but status might already be the same
+                    if ($checkRow['status'] === $status) {
+                        // Status is already set, so update was successful (no change needed)
+                        mysqli_rollback($conn);
+                        mysqli_stmt_close($checkStmt);
+                        sendJsonResponse(true, 'Order status is already set to ' . $status, ['id' => $order_id, 'status' => $status], 200);
+                    } else {
+                        mysqli_stmt_close($checkStmt);
+                        sendJsonResponse(false, 'No order found with the provided ID or update failed', null, 404);
+                    }
+                } else {
+                    mysqli_stmt_close($checkStmt);
+                    sendJsonResponse(false, 'Order not found', null, 404);
+                }
+            } else {
+                sendJsonResponse(false, 'No order found with the provided ID or no changes were made', null, 404);
+            }
         }
 
         // Commit transaction

@@ -228,6 +228,22 @@
         </div>
     </div>
 
+    <!-- Calendar Event Details Modal -->
+    <div id="calendarEventModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-6 animation-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100" id="calendarEventTitle">Event Details</h2>
+                <button id="closeCalendarEventModal" class="text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="calendarEventContent">
+                <!-- Event details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
     <!-- User Management Modal will be loaded by load-user-management-modal.js -->
 
     <!-- Settings Modal -->
@@ -394,53 +410,7 @@
                     height: 'auto',
                     eventDisplay: 'block',
                     eventClick: function(info) {
-                        const props = info.event.extendedProps;
-                        const eventType = props.type || 'unknown';
-                        let message = '';
-                        
-                        if (eventType === 'expiration') {
-                            const isExpired = props.isExpired || false;
-                            const status = props.status || 'unknown';
-                            const quantity = props.quantity || 0;
-                            const batchNumber = props.batchNumber ? `Batch #${props.batchNumber}` : 'No batch';
-                            const medicineName = info.event.title.replace(' (Expires)', '');
-                            
-                            message = `📦 Medicine Expiration\n\n` +
-                                `Medicine: ${medicineName}\n` +
-                                `Expiry Date: ${info.event.startStr}\n` +
-                                `Quantity: ${quantity}\n` +
-                                `Batch: ${batchNumber}\n` +
-                                `Stock Status: ${status}\n` +
-                                `Expiration Status: ${isExpired ? '⚠️ EXPIRED' : '✅ Active'}`;
-                        } else if (eventType === 'order') {
-                            const orderId = props.orderId || 'N/A';
-                            const status = props.status || 'unknown';
-                            const supplierName = props.supplierName || 'Unknown Supplier';
-                            const itemCount = props.itemCount || 0;
-                            
-                            message = `🛒 Order\n\n` +
-                                `Order ID: #${orderId}\n` +
-                                `Order Date: ${info.event.startStr}\n` +
-                                `Supplier: ${supplierName}\n` +
-                                `Status: ${status.toUpperCase()}\n` +
-                                `Items: ${itemCount}`;
-                        } else if (eventType === 'batch_expiration') {
-                            const batchNumber = props.batchNumber ? `#${props.batchNumber}` : 'N/A';
-                            const quantity = props.quantity || 0;
-                            const isExpired = props.isExpired || false;
-                            const medicineName = props.medicineName || 'Unknown Medicine';
-                            
-                            message = `📋 Batch Expiration\n\n` +
-                                `Medicine: ${medicineName}\n` +
-                                `Batch Number: ${batchNumber}\n` +
-                                `Expiry Date: ${info.event.startStr}\n` +
-                                `Quantity: ${quantity}\n` +
-                                `Status: ${isExpired ? '⚠️ EXPIRED' : '✅ Active'}`;
-                        } else {
-                            message = `Event: ${info.event.title}\nDate: ${info.event.startStr}`;
-                        }
-                        
-                        alert(message);
+                        showCalendarEventModal(info);
                     },
                     dayHeaderContent: function(arg) {
                         return arg.text;
@@ -549,12 +519,31 @@
                 });
             }
 
+            // Setup calendar event modal
+            const calendarEventModal = document.getElementById('calendarEventModal');
+            const closeCalendarEventModal = document.getElementById('closeCalendarEventModal');
+            if (closeCalendarEventModal) {
+                closeCalendarEventModal.addEventListener('click', () => {
+                    calendarEventModal.classList.add('hidden');
+                });
+            }
+            if (calendarEventModal) {
+                calendarEventModal.addEventListener('click', (e) => {
+                    if (e.target === calendarEventModal) {
+                        calendarEventModal.classList.add('hidden');
+                    }
+                });
+            }
+
             // ESC key to close modals
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     document.getElementById('settingsModal').classList.add('hidden');
                     if (orderDetailsModal) {
                         orderDetailsModal.classList.add('hidden');
+                    }
+                    if (calendarEventModal) {
+                        calendarEventModal.classList.add('hidden');
                     }
                 }
             });
@@ -1264,11 +1253,200 @@
             }
         }
 
+        // Show Calendar Event Modal
+        function showCalendarEventModal(info) {
+            const modal = document.getElementById('calendarEventModal');
+            const titleEl = document.getElementById('calendarEventTitle');
+            const contentEl = document.getElementById('calendarEventContent');
+            
+            if (!modal || !titleEl || !contentEl) {
+                console.error('Calendar event modal elements not found');
+                return;
+            }
+
+            const props = info.event.extendedProps;
+            const eventType = props.type || 'unknown';
+            const eventDate = new Date(info.event.startStr);
+            const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            let title = '';
+            let content = '';
+
+            if (eventType === 'expiration') {
+                const isExpired = props.isExpired || false;
+                const status = props.status || 'unknown';
+                const quantity = props.quantity || 0;
+                const batchNumber = props.batchNumber ? `Batch #${props.batchNumber}` : 'No batch';
+                const medicineName = info.event.title.replace(' (Expires)', '').replace(' (Expired)', '');
+                
+                title = '📦 Medicine Expiration';
+                content = `
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-4 bg-primary-50 dark:bg-primary-900 rounded-xl">
+                            <div class="w-12 h-12 bg-primary-600 dark:bg-primary-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-capsules text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">${escapeHtml(medicineName)}</h3>
+                                <p class="text-sm text-text-secondary dark:text-gray-400">Expiration Alert</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Expiry Date</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">${formattedDate}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Quantity</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">${quantity}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Batch Number</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(batchNumber)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Stock Status</label>
+                                <p class="text-text-primary dark:text-gray-100 capitalize">${escapeHtml(status)}</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl ${isExpired ? 'bg-error-50 dark:bg-error-900 border border-error-200 dark:border-error-700' : 'bg-success-50 dark:bg-success-900 border border-success-200 dark:border-success-700'}">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas ${isExpired ? 'fa-exclamation-triangle text-error-600 dark:text-error-400' : 'fa-check-circle text-success-600 dark:text-success-400'}"></i>
+                                <span class="font-semibold ${isExpired ? 'text-error-700 dark:text-error-300' : 'text-success-700 dark:text-success-300'}">
+                                    ${isExpired ? '⚠️ EXPIRED' : '✅ Active'}
+                                </span>
+                            </div>
+                            <p class="text-sm ${isExpired ? 'text-error-600 dark:text-error-400' : 'text-success-600 dark:text-success-400'} mt-1">
+                                ${isExpired ? 'This medicine has expired and should be removed from inventory.' : 'This medicine is still active and within expiration date.'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else if (eventType === 'order') {
+                const orderId = props.orderId || 'N/A';
+                const status = props.status || 'unknown';
+                const supplierName = props.supplierName || 'Unknown Supplier';
+                const itemCount = props.itemCount || 0;
+                
+                title = '🛒 Order Details';
+                content = `
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-4 bg-secondary-50 dark:bg-secondary-900 rounded-xl">
+                            <div class="w-12 h-12 bg-secondary-600 dark:bg-secondary-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-shopping-cart text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">Order #${orderId}</h3>
+                                <p class="text-sm text-text-secondary dark:text-gray-400">Order Information</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Order Date</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">${formattedDate}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Status</label>
+                                <span class="status-badge ${getStatusClass(status)}">
+                                    ${getStatusIcon(status)}
+                                    ${(status || '').charAt(0).toUpperCase() + (status || '').slice(1)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Supplier</label>
+                                <p class="text-text-primary dark:text-gray-100">${escapeHtml(supplierName)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Items Count</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">${itemCount} item(s)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (eventType === 'batch_expiration') {
+                const batchNumber = props.batchNumber ? `#${props.batchNumber}` : 'N/A';
+                const quantity = props.quantity || 0;
+                const isExpired = props.isExpired || false;
+                const medicineName = props.medicineName || 'Unknown Medicine';
+                
+                title = '📋 Batch Expiration';
+                content = `
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-4 bg-warning-50 dark:bg-warning-900 rounded-xl">
+                            <div class="w-12 h-12 bg-warning-600 dark:bg-warning-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-boxes text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">${escapeHtml(medicineName)}</h3>
+                                <p class="text-sm text-text-secondary dark:text-gray-400">Batch Expiration Alert</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Batch Number</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">${escapeHtml(batchNumber)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Quantity</label>
+                                <p class="text-text-primary dark:text-gray-100 font-medium">${quantity}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Expiry Date</label>
+                            <p class="text-text-primary dark:text-gray-100">${formattedDate}</p>
+                        </div>
+
+                        <div class="p-4 rounded-xl ${isExpired ? 'bg-error-50 dark:bg-error-900 border border-error-200 dark:border-error-700' : 'bg-success-50 dark:bg-success-900 border border-success-200 dark:border-success-700'}">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas ${isExpired ? 'fa-exclamation-triangle text-error-600 dark:text-error-400' : 'fa-check-circle text-success-600 dark:text-success-400'}"></i>
+                                <span class="font-semibold ${isExpired ? 'text-error-700 dark:text-error-300' : 'text-success-700 dark:text-success-300'}">
+                                    ${isExpired ? '⚠️ EXPIRED' : '✅ Active'}
+                                </span>
+                            </div>
+                            <p class="text-sm ${isExpired ? 'text-error-600 dark:text-error-400' : 'text-success-600 dark:text-success-400'} mt-1">
+                                ${isExpired ? 'This batch has expired and should be removed from inventory.' : 'This batch is still active and within expiration date.'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                title = '📅 Calendar Event';
+                content = `
+                    <div class="space-y-4">
+                        <div class="p-4 bg-primary-50 dark:bg-primary-900 rounded-xl">
+                            <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-2">${escapeHtml(info.event.title)}</h3>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Event Date: ${formattedDate}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            titleEl.textContent = title;
+            contentEl.innerHTML = content;
+            modal.classList.remove('hidden');
+        }
+
         // Global functions
         window.openSettings = openSettings;
         window.filterLowStock = filterLowStock;
         window.viewAllActivities = viewAllActivities;
         window.viewOrderDetails = viewOrderDetails;
+        window.showCalendarEventModal = showCalendarEventModal;
     </script>
 <!-- dhws-data-injector.js removed - file not found -->
 </body>

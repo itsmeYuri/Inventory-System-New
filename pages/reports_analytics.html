@@ -52,7 +52,6 @@
                                 <option value="monthly">Monthly</option>
                                 <option value="weekly">Weekly</option>
                                 <option value="daily">Daily</option>
-                                <option value="custom">Custom Range</option>
                             </select>
                         </div>
 
@@ -61,23 +60,7 @@
                             <label class="text-sm font-medium text-text-primary dark:text-gray-100">Category:</label>
                             <select id="categoryFilter" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
                                 <option value>All Categories</option>
-                                <option value="antibiotics">Antibiotics</option>
-                                <option value="analgesics">Analgesics</option>
-                                <option value="cardiovascular">Cardiovascular</option>
-                                <option value="diabetes">Diabetes</option>
-                                <option value="respiratory">Respiratory</option>
-                                <option value="vitamins">Vitamins & Supplements</option>
-                            </select>
-                        </div>
-
-                        <!-- Report Type -->
-                        <div class="flex items-center space-x-2">
-                            <label class="text-sm font-medium text-text-primary dark:text-gray-100">Report Type:</label>
-                            <select id="reportTypeSelect" class="px-3 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
-                                <option value="sales">Sales Performance</option>
-                                <option value="inventory">Inventory Levels</option>
-                                <option value="turnover">Medicine Turnover</option>
-                                <option value="profit">Profit Analysis</option>
+                                <!-- Categories will be populated dynamically from database -->
                             </select>
                         </div>
                     </div>
@@ -92,18 +75,18 @@
 
             <!-- Key Performance Metrics -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Total Revenue -->
+                <!-- Total Stocked -->
                 <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Total Revenue</p>
-                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="totalRevenue">--</p>
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Total Stocked</p>
+                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="totalStocked">--</p>
                             <div class="flex items-center mt-2">
-                                <span class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</span>
+                                <span class="text-sm text-text-tertiary dark:text-gray-500">Total items in stock</span>
                             </div>
                         </div>
                         <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-dollar-sign text-primary-600 dark:text-primary-400 text-lg"></i>
+                            <i class="fas fa-boxes text-primary-600 dark:text-primary-400 text-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -124,18 +107,18 @@
                     </div>
                 </div>
 
-                <!-- Profit Margin -->
+                <!-- Order Completed -->
                 <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Profit Margin</p>
-                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="profitMargin">--</p>
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400">Order Completed</p>
+                            <p class="text-2xl font-semibold text-text-primary dark:text-gray-100 mt-1" id="completedOrders">--</p>
                             <div class="flex items-center mt-2">
-                                <span class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</span>
+                                <span class="text-sm text-text-tertiary dark:text-gray-500">Total completed orders</span>
                             </div>
                         </div>
                         <div class="w-12 h-12 bg-success-100 dark:bg-success-900 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-percentage text-success-600 dark:text-success-400 text-lg"></i>
+                            <i class="fas fa-check-circle text-success-600 dark:text-success-400 text-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -301,7 +284,6 @@
                         <option>Monthly</option>
                         <option>Weekly</option>
                         <option>Daily</option>
-                        <option>Custom Range</option>
                     </select>
                 </div>
 
@@ -348,8 +330,7 @@
         // Global state
         let currentFilters = {
             dateRange: 'monthly',
-            category: '',
-            reportType: 'sales'
+            category: ''
         };
 
         // Theme management
@@ -428,8 +409,7 @@
                 const params = new URLSearchParams({
                     action: 'dashboard',
                     dateRange: currentFilters.dateRange,
-                    category: currentFilters.category,
-                    reportType: currentFilters.reportType
+                    category: currentFilters.category
                 });
 
                 const response = await fetch(`${API_BASE}?${params}`);
@@ -481,14 +461,14 @@
 
         // Update KPI Metrics
         function updateKPIMetrics(data) {
-            const revenueEl = document.getElementById('totalRevenue');
+            const stockedEl = document.getElementById('totalStocked');
             const turnoverEl = document.getElementById('medicineTurnover');
-            const profitEl = document.getElementById('profitMargin');
+            const completedEl = document.getElementById('completedOrders');
             const topSellingEl = document.getElementById('topSellingItems');
 
-            if (revenueEl) {
-                revenueEl.textContent = `$${data.totalRevenue || '0.00'}`;
-                revenueEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Total inventory value';
+            if (stockedEl) {
+                stockedEl.textContent = data.totalStocked || '0';
+                stockedEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Total items in stock';
             }
 
             if (turnoverEl) {
@@ -496,9 +476,9 @@
                 turnoverEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Total units in stock';
             }
 
-            if (profitEl) {
-                profitEl.textContent = `${data.profitMarginPercent || '0'}%`;
-                profitEl.parentElement.querySelector('.text-text-tertiary').textContent = `Est. profit: $${data.profitMargin || '0.00'}`;
+            if (completedEl) {
+                completedEl.textContent = data.completedOrders || '0';
+                completedEl.parentElement.querySelector('.text-text-tertiary').textContent = 'Total completed orders';
             }
 
             if (topSellingEl) {
@@ -695,7 +675,6 @@
         function handleFilterChange() {
             currentFilters.dateRange = document.getElementById('dateRangeFilter')?.value || 'monthly';
             currentFilters.category = document.getElementById('categoryFilter')?.value || '';
-            currentFilters.reportType = document.getElementById('reportTypeSelect')?.value || 'sales';
 
             refreshAllData();
         }
@@ -750,10 +729,72 @@
             }, 2000);
         });
 
+        // Fetch categories from database
+        async function fetchCategories() {
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/get_medicines.php?page=1&pageSize=1000`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // Get unique categories from medicines
+                    const categories = [...new Set(result.data
+                        .map(medicine => medicine.category)
+                        .filter(cat => cat && cat.trim() !== '')
+                    )].sort();
+
+                    // Populate category filter
+                    const categoryFilter = document.getElementById('categoryFilter');
+                    if (categoryFilter) {
+                        // Keep "All Categories" option
+                        const allCategoriesOption = categoryFilter.querySelector('option[value=""]');
+                        categoryFilter.innerHTML = '';
+                        if (allCategoriesOption) {
+                            categoryFilter.appendChild(allCategoriesOption);
+                        } else {
+                            const defaultOption = document.createElement('option');
+                            defaultOption.value = '';
+                            defaultOption.textContent = 'All Categories';
+                            categoryFilter.appendChild(defaultOption);
+                        }
+
+                        // Add categories from database
+                        categories.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category;
+                            option.textContent = category;
+                            categoryFilter.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        }
+
+        // Get API Base URL helper
+        function getApiBaseUrl() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/pages/')) {
+                return '../php';
+            }
+            return 'php';
+        }
+
         // Event Listeners
         document.getElementById('refreshBtn')?.addEventListener('click', refreshAllData);
 
-        document.getElementById('reportTypeSelect')?.addEventListener('change', handleFilterChange);
         document.getElementById('dateRangeFilter')?.addEventListener('change', handleFilterChange);
         document.getElementById('categoryFilter')?.addEventListener('change', handleFilterChange);
 
@@ -782,8 +823,11 @@
                 userDisplayEmailEl.textContent = userEmail;
             }
             
-            // Load initial data
-            refreshAllData();
+            // Fetch categories from database and populate filter, then load data
+            fetchCategories().then(() => {
+                // After categories are loaded, refresh all data
+                refreshAllData();
+            });
             
             // Close modals on ESC key
             document.addEventListener('keydown', (e) => {

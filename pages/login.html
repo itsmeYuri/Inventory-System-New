@@ -241,6 +241,61 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 
+    <!-- Welcome Modal for New Users -->
+    <div id="welcomeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-2xl mb-4">
+                    <i class="fas fa-hand-wave text-primary-600 text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-text-primary mb-2">Welcome to INVENTORY Management System!</h2>
+                <p class="text-text-secondary">We're excited to have you here</p>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div class="flex items-start space-x-3 p-3 bg-primary-50 dark:bg-primary-900 rounded-xl">
+                    <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-info-circle text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-text-primary dark:text-gray-100 mb-1">Getting Started</h3>
+                        <p class="text-xs text-text-secondary dark:text-gray-400">This is your first time here. Use your credentials to sign in and start managing your inventory.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3 p-3 bg-success-50 dark:bg-success-900 rounded-xl">
+                    <div class="w-8 h-8 bg-success-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-shield-alt text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-text-primary dark:text-gray-100 mb-1">Secure Access</h3>
+                        <p class="text-xs text-text-secondary dark:text-gray-400">Your data is protected with industry-standard security measures.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3 p-3 bg-accent-50 dark:bg-accent-900 rounded-xl">
+                    <div class="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-question-circle text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-text-primary dark:text-gray-100 mb-1">Need Help?</h3>
+                        <p class="text-xs text-text-secondary dark:text-gray-400">If you forgot your password, click "Forgot password?" to reset it.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between pt-4 border-t border-border-light">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="dontShowAgain" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded">
+                    <span class="ml-2 text-sm text-text-secondary">Don't show this again</span>
+                </label>
+                <button id="closeWelcomeModal" class="bg-primary hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-xl transition-all duration-200">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Sign Up Modal -->
     <div id="signUpModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animation-slide-up max-h-[90vh] overflow-y-auto">
@@ -336,6 +391,52 @@ if (isset($_SESSION['user_id'])) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
+        // Welcome Modal for New Users
+        const welcomeModal = document.getElementById('welcomeModal');
+        const closeWelcomeModal = document.getElementById('closeWelcomeModal');
+        const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+        
+        // Check if user has seen the welcome message before
+        function checkAndShowWelcomeModal() {
+            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+            
+            if (!hasSeenWelcome) {
+                // Show modal after a short delay for better UX
+                setTimeout(() => {
+                    welcomeModal.classList.remove('hidden');
+                }, 500);
+            }
+        }
+        
+        // Close welcome modal
+        if (closeWelcomeModal) {
+            closeWelcomeModal.addEventListener('click', () => {
+                welcomeModal.classList.add('hidden');
+                
+                // If "Don't show again" is checked, save to localStorage
+                if (dontShowAgainCheckbox && dontShowAgainCheckbox.checked) {
+                    localStorage.setItem('hasSeenWelcome', 'true');
+                }
+            });
+        }
+        
+        // Close on backdrop click
+        if (welcomeModal) {
+            welcomeModal.addEventListener('click', (e) => {
+                if (e.target === welcomeModal) {
+                    welcomeModal.classList.add('hidden');
+                    
+                    // If "Don't show again" is checked, save to localStorage
+                    if (dontShowAgainCheckbox && dontShowAgainCheckbox.checked) {
+                        localStorage.setItem('hasSeenWelcome', 'true');
+                    }
+                }
+            });
+        }
+        
+        // Show welcome modal on page load if user is new
+        checkAndShowWelcomeModal();
+
         // Password toggle functionality
         document.getElementById('togglePassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
@@ -423,11 +524,18 @@ if (isset($_SESSION['user_id'])) {
             signUpModal.classList.add('hidden');
         });
 
-        // Close modals on ESC key
+        // Close modals on ESC key (updated to include welcome modal)
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                forgotPasswordModal.classList.add('hidden');
-                signUpModal.classList.add('hidden');
+                if (welcomeModal && !welcomeModal.classList.contains('hidden')) {
+                    welcomeModal.classList.add('hidden');
+                    if (dontShowAgainCheckbox && dontShowAgainCheckbox.checked) {
+                        localStorage.setItem('hasSeenWelcome', 'true');
+                    }
+                } else {
+                    forgotPasswordModal.classList.add('hidden');
+                    signUpModal.classList.add('hidden');
+                }
             }
         });
 
