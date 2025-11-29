@@ -75,12 +75,24 @@ try {
         $total = (int)$row['cnt'];
     }
 
+    // Check if unit column exists
+    $checkUnit = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'unit'");
+    $hasUnit = mysqli_num_rows($checkUnit) > 0;
+    
     // Fetch page
-    $sql = "SELECT id, ndc, name, manufacturer, category, quantity, reorder_level, price, expiration_date, batch_number, status, dosage_form
-            FROM medicines
-            {$where}
-            ORDER BY name ASC
-            LIMIT {$offset}, {$pageSize}";
+    if ($hasUnit) {
+        $sql = "SELECT id, ndc, name, manufacturer, category, quantity, reorder_level, price, expiration_date, batch_number, status, dosage_form, unit
+                FROM medicines
+                {$where}
+                ORDER BY name ASC
+                LIMIT {$offset}, {$pageSize}";
+    } else {
+        $sql = "SELECT id, ndc, name, manufacturer, category, quantity, reorder_level, price, expiration_date, batch_number, status, dosage_form
+                FROM medicines
+                {$where}
+                ORDER BY name ASC
+                LIMIT {$offset}, {$pageSize}";
+    }
 
     $res = mysqli_query($conn, $sql);
 

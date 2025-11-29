@@ -999,7 +999,7 @@
                                                         <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(medicine.name || 'N/A')}</td>
                                                         <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(medicine.ndc || 'N/A')}</td>
                                                         <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(medicine.category || 'N/A')}</td>
-                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">$${(parseFloat(medicine.price) || 0).toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">₱${(parseFloat(medicine.price) || 0).toFixed(2)}</td>
                                                     </tr>
                                                 `;
                                             }).join('')}
@@ -1622,7 +1622,7 @@
                                        class="w-4 h-4 text-primary-600 border-border-medium rounded focus:ring-primary-200 cursor-pointer" />
                                 <div class="flex-1">
                                     <div class="text-sm font-medium text-text-primary">${escapeHtml(med.name || 'N/A')}</div>
-                                    <div class="text-xs text-text-secondary">NDC: ${med.ndc || 'N/A'} | Price: $${parseFloat(med.price || 0).toFixed(2)}</div>
+                                    <div class="text-xs text-text-secondary">NDC: ${med.ndc || 'N/A'} | Price: ₱${parseFloat(med.price || 0).toFixed(2)}</div>
                                 </div>
                             </label>
                         `;
@@ -1940,7 +1940,7 @@
                     <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
                     <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtmlArchive(order.supplier_name || 'N/A')}</td>
                     <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
-                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">₱${parseFloat(order.total_amount || 0).toFixed(2)}</td>
                     <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.item_count || 0} items</td>
                     <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancelled_at ? new Date(order.cancelled_at).toLocaleDateString() : 'N/A'}</td>
                     <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtmlArchive(order.cancellation_reason || 'N/A')}</td>

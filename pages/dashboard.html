@@ -614,7 +614,7 @@
                     
                     if (totalMedicinesEl) totalMedicinesEl.textContent = result.data.totalMedicines || '0';
                     if (pendingOrdersEl) pendingOrdersEl.textContent = result.data.pendingOrders || '0';
-                    if (totalValueEl) totalValueEl.textContent = `$${result.data.totalValue || '0.00'}`;
+                    if (totalValueEl) totalValueEl.textContent = `₱${result.data.totalValue || '0.00'}`;
                     if (lowStockCountEl) lowStockCountEl.textContent = `${result.data.lowStockCount || 0} items`;
                     if (lowStockPercentageEl) lowStockPercentageEl.textContent = `${result.data.lowStockPercentage || 0}%`;
                 } else {
@@ -950,7 +950,7 @@
                                     </div>
                                     <div class="flex items-center space-x-3">
                                         <div class="text-right mr-3">
-                                            <p class="text-sm font-semibold text-text-primary dark:text-gray-100">$${parseFloat(order.total_amount || 0).toFixed(2)}</p>
+                                            <p class="text-sm font-semibold text-text-primary dark:text-gray-100">₱${parseFloat(order.total_amount || 0).toFixed(2)}</p>
                                             <span class="status-badge ${statusClass} text-xs mt-1 inline-block">
                                                 ${statusIcon}
                                                 ${(order.status || '').charAt(0).toUpperCase() + (order.status || '').slice(1)}
@@ -1176,7 +1176,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Amount</label>
-                                <p class="text-text-primary dark:text-gray-100 font-semibold text-lg">$${(order.total_amount || 0).toFixed(2)}</p>
+                                <p class="text-text-primary dark:text-gray-100 font-semibold text-lg">₱${(order.total_amount || 0).toFixed(2)}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Items Count</label>
@@ -1218,8 +1218,8 @@
                                                         <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(medicineName)}</td>
                                                         <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(ndc)}</td>
                                                         <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-medium">${quantity}</td>
-                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">$${price.toFixed(2)}</td>
-                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">$${itemTotal.toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">₱${price.toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">₱${itemTotal.toFixed(2)}</td>
                                                     </tr>
                                                 `;
                                             }).join('')}

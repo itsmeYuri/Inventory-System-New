@@ -75,8 +75,28 @@ try {
     $category = isset($_POST['category']) ? trim($_POST['category']) : '';
     $category = $category !== '' ? $category : null;
     
-    $dosage_form = isset($_POST['dosageForm']) ? trim($_POST['dosageForm']) : '';
-    $dosage_form = $dosage_form !== '' ? $dosage_form : null;
+    // Get unit value from form (this will be saved to dosage_form column)
+    $unit = isset($_POST['unit']) ? trim($_POST['unit']) : '';
+    $unit = $unit !== '' ? $unit : null;
+    
+    // Validate unit value against allowed ENUM values
+    $allowedUnits = [
+        'Capsule', 'Tablet', 'Pill', 'Bottle', 'Vial', 'Ampoule', 'Syringe', 'Tube',
+        'Cream', 'Ointment', 'Gel', 'Drops', 'Spray', 'Inhaler', 'Patch',
+        'ml', 'mg', 'g', 'kg', 'L', 'mcg', 'IU'
+    ];
+    
+    // If unit is provided, validate it and use it for dosage_form
+    // If unit is not provided, set default to 'Tablet' (since dosage_form is NOT NULL)
+    if ($unit !== null && !in_array($unit, $allowedUnits)) {
+        sendJsonResponse(false, 'Invalid unit value. Please select a valid unit from the list.', null, 400);
+    }
+    
+    // Set dosage_form to the unit value (or default to 'Tablet' if not provided)
+    $dosage_form = $unit !== null ? $unit : 'Tablet';
+    
+    // Also set unit to the same value to keep both columns in sync
+    $unit = $dosage_form;
     
     // Get supplier_id if provided
     $supplier_id = isset($_POST['supplier_id']) ? (int)$_POST['supplier_id'] : null;
@@ -198,8 +218,16 @@ try {
             mysqli_stmt_close($updateStmt);
             
             // Fetch updated medicine data
-            $selectSql = "SELECT id, ndc, name, manufacturer, category, dosage_form, quantity, reorder_level, price, expiration_date, batch_number, status, created_at, updated_at
-                          FROM medicines WHERE id = ?";
+            $checkUnitForSelect = mysqli_query($conn, "SHOW COLUMNS FROM medicines WHERE Field = 'unit'");
+            $hasUnitForSelect = $checkUnitForSelect && mysqli_num_rows($checkUnitForSelect) > 0;
+            
+            if ($hasUnitForSelect) {
+                $selectSql = "SELECT id, ndc, name, manufacturer, category, dosage_form, unit, quantity, reorder_level, price, expiration_date, batch_number, status, created_at, updated_at
+                              FROM medicines WHERE id = ?";
+            } else {
+                $selectSql = "SELECT id, ndc, name, manufacturer, category, dosage_form, quantity, reorder_level, price, expiration_date, batch_number, status, created_at, updated_at
+                              FROM medicines WHERE id = ?";
+            }
             $selectStmt = mysqli_prepare($conn, $selectSql);
             mysqli_stmt_bind_param($selectStmt, 'i', $existingId);
             mysqli_stmt_execute($selectStmt);
@@ -259,14 +287,77 @@ try {
     require_once __DIR__ . '/batch_helper.php';
     $batch_number = getOrCreateBatchNumber($conn, $expiration_date);
 
-    // Check if supplier_id column exists
+    // Check if supplier_id and unit columns exist
     $checkSupplierId = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'supplier_id'");
-    $hasSupplierId = mysqli_num_rows($checkSupplierId) > 0;
-
-    // Prepare SQL INSERT statement - match database columns exactly
+    $hasSupplierId = $checkSupplierId && mysqli_num_rows($checkSupplierId) > 0;
+    
+    // Check if unit column exists
+    $checkUnit = mysqli_query($conn, "SHOW COLUMNS FROM medicines WHERE Field = 'unit'");
+    $hasUnit = $checkUnit && mysqli_num_rows($checkUnit) > 0;
+    
+    // If unit column doesn't exist, ignore unit value
+    if (!$hasUnit) {
+        $unit = null;
+    }
+    
+    // Generate next primary key ID
+    // Get the maximum ID from the medicines table
+    $maxIdQuery = "SELECT MAX(id) as max_id FROM medicines";
+    $maxIdResult = mysqli_query($conn, $maxIdQuery);
+    
+    if (!$maxIdResult) {
+        error_log("Error getting max ID: " . mysqli_error($conn));
+        sendJsonResponse(false, 'Database error while fetching next ID', null, 500);
+    }
+    
+    $maxIdRow = mysqli_fetch_assoc($maxIdResult);
+    $maxId = $maxIdRow['max_id'];
+    
+    // Calculate next ID
+    // If table is empty or max_id is NULL, start at 1
+    // Otherwise, increment by 1
+    if ($maxId === null || $maxId === '') {
+        $nextId = 1;
+    } else {
+        // Handle both numeric and formatted IDs (e.g., "MED-0005" or "5")
+        // Extract numeric portion if ID contains letters
+        if (preg_match('/\d+/', $maxId, $matches)) {
+            $numericId = (int)$matches[0];
+        } else {
+            $numericId = (int)$maxId;
+        }
+        $nextId = $numericId + 1;
+    }
+    
+    // Ensure ID is never 0
+    if ($nextId <= 0) {
+        $nextId = 1;
+    }
+    
+    error_log("Generated next medicine ID: " . $nextId . " (max was: " . ($maxId ?? 'NULL') . ")");
+    
+    // Prepare SQL INSERT statement - explicitly include id column
     // Note: created_at and updated_at are handled automatically by MySQL
-    if ($hasSupplierId) {
+    if ($hasSupplierId && $hasUnit) {
         $sql = "INSERT INTO medicines (
+            id,
+            ndc, 
+            name, 
+            manufacturer, 
+            category, 
+            dosage_form,
+            unit, 
+            quantity, 
+            reorder_level,
+            price, 
+            expiration_date,
+            batch_number,
+            supplier_id,
+            status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    } elseif ($hasSupplierId) {
+        $sql = "INSERT INTO medicines (
+            id,
             ndc, 
             name, 
             manufacturer, 
@@ -279,9 +370,26 @@ try {
             batch_number,
             supplier_id,
             status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    } elseif ($hasUnit) {
+        $sql = "INSERT INTO medicines (
+            id,
+            ndc, 
+            name, 
+            manufacturer, 
+            category, 
+            dosage_form,
+            unit, 
+            quantity, 
+            reorder_level,
+            price, 
+            expiration_date,
+            batch_number,
+            status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     } else {
         $sql = "INSERT INTO medicines (
+            id,
             ndc, 
             name, 
             manufacturer, 
@@ -293,7 +401,7 @@ try {
             expiration_date,
             batch_number,
             status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     // Prepare statement
@@ -307,10 +415,31 @@ try {
     // Bind parameters
     // Types: s=string, i=integer, d=double/decimal
     // Note: For NULL values, we need to pass actual NULL, not empty string
-    if ($hasSupplierId) {
+    // First parameter is always the id (integer)
+    if ($hasSupplierId && $hasUnit) {
         $bound = mysqli_stmt_bind_param(
             $stmt, 
-            'sssssiidsiis',  // 12 parameters: 5 strings, 4 integers, 1 double, 2 strings
+            'issssssiidsiis',  // 14 parameters: 1 integer (id), 6 strings, 4 integers, 1 double, 2 strings
+            $nextId,
+            $ndc, 
+            $name, 
+            $manufacturer, 
+            $category, 
+            $dosage_form,
+            $unit,
+            $quantity, 
+            $reorder_level,
+            $price, 
+            $expiration_date,
+            $batch_number,
+            $supplier_id,
+            $status
+        );
+    } elseif ($hasSupplierId) {
+        $bound = mysqli_stmt_bind_param(
+            $stmt, 
+            'isssssiidsiis',  // 13 parameters: 1 integer (id), 5 strings, 4 integers, 1 double, 2 strings
+            $nextId,
             $ndc, 
             $name, 
             $manufacturer, 
@@ -324,10 +453,29 @@ try {
             $supplier_id,
             $status
         );
+    } elseif ($hasUnit) {
+        $bound = mysqli_stmt_bind_param(
+            $stmt, 
+            'issssssiidsis',  // 13 parameters: 1 integer (id), 6 strings, 3 integers, 1 double, 2 strings
+            $nextId,
+            $ndc, 
+            $name, 
+            $manufacturer, 
+            $category, 
+            $dosage_form,
+            $unit,
+            $quantity, 
+            $reorder_level,
+            $price, 
+            $expiration_date,
+            $batch_number,
+            $status
+        );
     } else {
         $bound = mysqli_stmt_bind_param(
             $stmt, 
-            'sssssiidsis',  // 11 parameters: 5 strings, 3 integers, 1 double, 2 strings
+            'isssssiidsis',  // 12 parameters: 1 integer (id), 5 strings, 3 integers, 1 double, 2 strings
+            $nextId,
             $ndc, 
             $name, 
             $manufacturer, 
@@ -355,75 +503,112 @@ try {
         $error = mysqli_stmt_error($stmt);
         $errorCode = mysqli_stmt_errno($stmt);
         error_log("MySQL execute error [$errorCode]: " . $error);
+        error_log("Attempted to insert with ID: " . $nextId);
         
         mysqli_stmt_close($stmt);
         
-        // Check for specific error types - handle unique constraint violation on NDC
-        if (strpos($error, 'Duplicate') !== false || strpos($error, 'duplicate') !== false || $errorCode === 1062) {
-            // Unique constraint on NDC column was violated
-            $errorMessage = 'A medicine with this NDC Code already exists. Each NDC Code must refer to only one medicine.';
-            if (strpos($error, 'ndc') !== false) {
-                $errorMessage = 'A medicine with this NDC Code already exists with a different name. Each NDC Code must refer to only one medicine.';
+        // Check for PRIMARY KEY duplicate error (including '0' key error)
+        if ((strpos($error, 'Duplicate') !== false && strpos($error, 'PRIMARY') !== false) || 
+            (strpos($error, 'Duplicate') !== false && strpos($error, "'0'") !== false)) {
+            // ID conflict - this should not happen with our new logic, but handle it gracefully
+            error_log("Primary key conflict detected. Attempted ID: " . $nextId);
+            error_log("Error details: " . $error);
+            
+            // If the error is about '0', it means our ID calculation failed
+            if (strpos($error, "'0'") !== false || $nextId <= 0) {
+                $errorMessage = 'Primary key generation error: Invalid ID (0) was generated. This indicates a problem with ID calculation.';
+                sendJsonResponse(false, $errorMessage, [
+                    'error_code' => $errorCode, 
+                    'error' => $error,
+                    'attempted_id' => $nextId,
+                    'suggestion' => 'Please check the database and ensure AUTO_INCREMENT is properly configured, or contact support.'
+                ], 500);
+            } else {
+                // Get current max ID again (in case another process inserted a record)
+                $retryMaxIdQuery = "SELECT MAX(id) as max_id FROM medicines";
+                $retryMaxIdResult = mysqli_query($conn, $retryMaxIdQuery);
+                if ($retryMaxIdResult) {
+                    $retryMaxIdRow = mysqli_fetch_assoc($retryMaxIdResult);
+                    $retryMaxId = $retryMaxIdRow['max_id'];
+                    
+                    if ($retryMaxId === null || $retryMaxId === '') {
+                        $retryNextId = 1;
+                    } else {
+                        if (preg_match('/\d+/', $retryMaxId, $matches)) {
+                            $retryNumericId = (int)$matches[0];
+                        } else {
+                            $retryNumericId = (int)$retryMaxId;
+                        }
+                        $retryNextId = $retryNumericId + 1;
+                    }
+                    
+                    if ($retryNextId <= 0) {
+                        $retryNextId = 1;
+                    }
+                    
+                    error_log("Recalculated next ID: " . $retryNextId . " (previous was: " . $nextId . ")");
+                }
+                
+                $errorMessage = 'Primary key conflict detected. The calculated ID (' . $nextId . ') already exists. Please try again.';
+                sendJsonResponse(false, $errorMessage, [
+                    'error_code' => $errorCode, 
+                    'error' => $error,
+                    'attempted_id' => $nextId,
+                    'suggestion' => 'Please refresh and try adding the medicine again.'
+                ], 500);
             }
-            sendJsonResponse(false, $errorMessage, ['error_code' => $errorCode, 'error' => $error, 'duplicate' => true], 409);
+        }
+        
+        // Check for duplicate NDC
+        if (strpos($error, 'Duplicate') !== false || $errorCode === 1062) {
+            if (strpos($error, 'ndc') !== false || strpos($error, 'PRIMARY') === false) {
+                $errorMessage = 'A medicine with this NDC Code already exists.';
+                sendJsonResponse(false, $errorMessage, ['error_code' => $errorCode, 'error' => $error, 'duplicate' => true], 409);
+            }
+        }
+        
+        // Check for unknown column error
+        if (strpos($error, 'Unknown column') !== false) {
+            $errorMessage = 'A required database column is missing. Please run: http://localhost:3000/php/add_unit_column.php';
+            sendJsonResponse(false, $errorMessage, ['error_code' => $errorCode, 'error' => $error], 500);
         }
         
         sendJsonResponse(false, 'Database error: ' . $error, ['error_code' => $errorCode, 'error' => $error], 500);
     }
 
-    // Get the inserted ID
-    $insertedId = mysqli_insert_id($conn);
+    // Get the inserted ID (we explicitly set it, so use our calculated value)
+    // mysqli_insert_id will return 0 if we explicitly set the ID, so use our calculated nextId
+    $insertedId = $nextId;
     mysqli_stmt_close($stmt);
 
-    if (!$insertedId) {
-        sendJsonResponse(false, 'Failed to get inserted medicine ID', null, 500);
+    if (!$insertedId || $insertedId <= 0) {
+        error_log("Warning: Inserted ID is invalid: " . $insertedId);
+        // Try to get it from mysqli_insert_id as fallback
+        $insertedId = mysqli_insert_id($conn);
+        if (!$insertedId || $insertedId <= 0) {
+            sendJsonResponse(false, 'Failed to get inserted medicine ID', null, 500);
+        }
     }
+    
+    error_log("Successfully inserted medicine with ID: " . $insertedId);
 
     // Fetch the inserted medicine data to return
-    if ($hasSupplierId) {
-        $selectSql = "SELECT 
-            id, 
-            ndc, 
-            name, 
-            manufacturer, 
-            category, 
-            dosage_form, 
-            quantity, 
-            reorder_level,
-            price, 
-            expiration_date,
-            batch_number,
-            supplier_id,
-            status,
-            created_at,
-            updated_at
-        FROM medicines 
-        WHERE id = ?";
-    } else {
-        $selectSql = "SELECT 
-            id, 
-            ndc, 
-            name, 
-            manufacturer, 
-            category, 
-            dosage_form, 
-            quantity, 
-            reorder_level,
-            price, 
-            expiration_date,
-            batch_number,
-            status,
-            created_at,
-            updated_at
-        FROM medicines 
-        WHERE id = ?";
+    $selectFields = "id, ndc, name, manufacturer, category, dosage_form";
+    if ($hasUnit) {
+        $selectFields .= ", unit";
     }
+    $selectFields .= ", quantity, reorder_level, price, expiration_date, batch_number";
+    if ($hasSupplierId) {
+        $selectFields .= ", supplier_id";
+    }
+    $selectFields .= ", status, created_at, updated_at";
+    
+    $selectSql = "SELECT {$selectFields} FROM medicines WHERE id = ?";
     
     $selectStmt = mysqli_prepare($conn, $selectSql);
     if (!$selectStmt) {
         error_log("Select statement prepare error: " . mysqli_error($conn));
-        // Return success with basic data if select fails
-        sendJsonResponse(true, 'Medicine added successfully', [
+        $basicData = [
             'id' => $insertedId,
             'ndc' => $ndc,
             'name' => $name,
@@ -436,7 +621,8 @@ try {
             'expiration_date' => $expiration_date,
             'batch_number' => $batch_number,
             'status' => $status
-        ], 200);
+        ];
+        sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
 
     mysqli_stmt_bind_param($selectStmt, 'i', $insertedId);
@@ -444,8 +630,7 @@ try {
     if (!mysqli_stmt_execute($selectStmt)) {
         error_log("Select statement execute error: " . mysqli_stmt_error($selectStmt));
         mysqli_stmt_close($selectStmt);
-        // Return success with basic data if select fails
-        sendJsonResponse(true, 'Medicine added successfully', [
+        $basicData = [
             'id' => $insertedId,
             'ndc' => $ndc,
             'name' => $name,
@@ -458,7 +643,8 @@ try {
             'expiration_date' => $expiration_date,
             'batch_number' => $batch_number,
             'status' => $status
-        ], 200);
+        ];
+        sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
 
     $result = mysqli_stmt_get_result($selectStmt);
@@ -466,8 +652,7 @@ try {
     mysqli_stmt_close($selectStmt);
 
     if (!$medicine) {
-        // Return success with basic data if fetch fails
-        sendJsonResponse(true, 'Medicine added successfully', [
+        $basicData = [
             'id' => $insertedId,
             'ndc' => $ndc,
             'name' => $name,
@@ -480,7 +665,8 @@ try {
             'expiration_date' => $expiration_date,
             'batch_number' => $batch_number,
             'status' => $status
-        ], 200);
+        ];
+        sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
 
     // Format price for response

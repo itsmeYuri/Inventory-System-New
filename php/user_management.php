@@ -383,15 +383,30 @@ function updateUser() {
         }
         mysqli_stmt_close($checkStmt);
         
-        // Update user
-        $updateQuery = "UPDATE users SET full_name = ?, email = ?, username = ?, updated_at = NOW() WHERE $idColumn = ?";
-        $updateStmt = mysqli_prepare($conn, $updateQuery);
+        // Check if updated_at column exists
+        $checkUpdatedAt = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'updated_at'");
+        $hasUpdatedAt = mysqli_num_rows($checkUpdatedAt) > 0;
         
-        if (!$updateStmt) {
-            throw new Exception('Database query failed: ' . mysqli_error($conn));
+        // Update user - conditionally include updated_at if column exists
+        if ($hasUpdatedAt) {
+            $updateQuery = "UPDATE users SET full_name = ?, email = ?, username = ?, updated_at = NOW() WHERE $idColumn = ?";
+            $updateStmt = mysqli_prepare($conn, $updateQuery);
+            
+            if (!$updateStmt) {
+                throw new Exception('Database query failed: ' . mysqli_error($conn));
+            }
+            
+            mysqli_stmt_bind_param($updateStmt, "sssi", $fullName, $email, $username, $userId);
+        } else {
+            $updateQuery = "UPDATE users SET full_name = ?, email = ?, username = ? WHERE $idColumn = ?";
+            $updateStmt = mysqli_prepare($conn, $updateQuery);
+            
+            if (!$updateStmt) {
+                throw new Exception('Database query failed: ' . mysqli_error($conn));
+            }
+            
+            mysqli_stmt_bind_param($updateStmt, "sssi", $fullName, $email, $username, $userId);
         }
-        
-        mysqli_stmt_bind_param($updateStmt, "sssi", $fullName, $email, $username, $userId);
         
         if (mysqli_stmt_execute($updateStmt)) {
             mysqli_stmt_close($updateStmt);

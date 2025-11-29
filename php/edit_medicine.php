@@ -80,8 +80,28 @@ try {
     $category = isset($_POST['category']) ? trim($_POST['category']) : '';
     $category = $category !== '' ? $category : null;
     
-    $dosage_form = isset($_POST['dosageForm']) ? trim($_POST['dosageForm']) : '';
-    $dosage_form = $dosage_form !== '' ? $dosage_form : null;
+    // Get unit value from form (this will be saved to dosage_form column)
+    $unit = isset($_POST['unit']) ? trim($_POST['unit']) : '';
+    $unit = $unit !== '' ? $unit : null;
+    
+    // Validate unit value against allowed ENUM values
+    $allowedUnits = [
+        'Capsule', 'Tablet', 'Pill', 'Bottle', 'Vial', 'Ampoule', 'Syringe', 'Tube',
+        'Cream', 'Ointment', 'Gel', 'Drops', 'Spray', 'Inhaler', 'Patch',
+        'ml', 'mg', 'g', 'kg', 'L', 'mcg', 'IU'
+    ];
+    
+    // If unit is provided, validate it and use it for dosage_form
+    // If unit is not provided, set default to 'Tablet' (since dosage_form is NOT NULL)
+    if ($unit !== null && !in_array($unit, $allowedUnits)) {
+        sendJsonResponse(false, 'Invalid unit value. Please select a valid unit from the list.', null, 400);
+    }
+    
+    // Set dosage_form to the unit value (or default to 'Tablet' if not provided)
+    $dosage_form = $unit !== null ? $unit : 'Tablet';
+    
+    // Also set unit to the same value to keep both columns in sync
+    $unit = $dosage_form;
     
     $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
     $price = isset($_POST['price']) ? (float)$_POST['price'] : 0.00;
@@ -256,20 +276,41 @@ try {
         $batch_number = null;
     }
 
+    // Check if unit column exists
+    $checkUnit = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'unit'");
+    $hasUnit = mysqli_num_rows($checkUnit) > 0;
+    
     // Update SQL statement
-    $sql = "UPDATE medicines SET 
-        ndc = ?, 
-        name = ?, 
-        manufacturer = ?, 
-        category = ?, 
-        dosage_form = ?, 
-        quantity = ?, 
-        reorder_level = ?,
-        price = ?, 
-        expiration_date = ?,
-        batch_number = ?,
-        status = ?
-    WHERE id = ?";
+    if ($hasUnit) {
+        $sql = "UPDATE medicines SET 
+            ndc = ?, 
+            name = ?, 
+            manufacturer = ?, 
+            category = ?, 
+            dosage_form = ?,
+            unit = ?,
+            quantity = ?, 
+            reorder_level = ?,
+            price = ?, 
+            expiration_date = ?,
+            batch_number = ?,
+            status = ?
+        WHERE id = ?";
+    } else {
+        $sql = "UPDATE medicines SET 
+            ndc = ?, 
+            name = ?, 
+            manufacturer = ?, 
+            category = ?, 
+            dosage_form = ?, 
+            quantity = ?, 
+            reorder_level = ?,
+            price = ?, 
+            expiration_date = ?,
+            batch_number = ?,
+            status = ?
+        WHERE id = ?";
+    }
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -278,23 +319,43 @@ try {
         sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
     }
 
-    // Bind parameters: 11 values + 1 ID
-    $bound = mysqli_stmt_bind_param(
-        $stmt, 
-        'sssssiidsisi',  // 12 parameters
-        $ndc, 
-        $name, 
-        $manufacturer, 
-        $category, 
-        $dosage_form,
-        $quantity, 
-        $reorder_level,
-        $price, 
-        $expiration_date,
-        $batch_number,
-        $status,
-        $medicine_id
-    );
+    // Bind parameters
+    if ($hasUnit) {
+        $bound = mysqli_stmt_bind_param(
+            $stmt, 
+            'ssssssiidsisi',  // 13 parameters
+            $ndc, 
+            $name, 
+            $manufacturer, 
+            $category, 
+            $dosage_form,
+            $unit,
+            $quantity, 
+            $reorder_level,
+            $price, 
+            $expiration_date,
+            $batch_number,
+            $status,
+            $medicine_id
+        );
+    } else {
+        $bound = mysqli_stmt_bind_param(
+            $stmt, 
+            'sssssiidsisi',  // 12 parameters
+            $ndc, 
+            $name, 
+            $manufacturer, 
+            $category, 
+            $dosage_form,
+            $quantity, 
+            $reorder_level,
+            $price, 
+            $expiration_date,
+            $batch_number,
+            $status,
+            $medicine_id
+        );
+    }
     
     if (!$bound) {
         $error = 'Failed to bind parameters: ' . mysqli_stmt_error($stmt);

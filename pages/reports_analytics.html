@@ -163,15 +163,20 @@
                 <!-- Low Stock Table -->
                 <div id="lowStockTableContainer" class="overflow-x-auto">
                     <table class="w-full">
-                        <thead>
+                        <thead class="bg-surface-hover dark:bg-gray-800">
                             <tr class="border-b border-border-light dark:border-gray-700">
                                 <th class="text-left py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Medicine Name</th>
                                 <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Current Quantity</th>
                                 <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Minimum Required</th>
                             </tr>
                         </thead>
-                        <tbody id="lowStockTableBody" class="divide-y divide-border-light dark:divide-gray-700">
-                            <!-- Data will be populated here -->
+                        <tbody id="lowStockTableBody" class="divide-y divide-border-light dark:divide-gray-700 bg-white dark:bg-gray-900">
+                            <tr>
+                                <td colspan="3" class="py-8 text-center text-text-secondary dark:text-gray-400">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                    <p>Loading low stock data...</p>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                     
@@ -209,18 +214,30 @@
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">Seasonal Trends</h3>
-                            <p class="text-sm text-text-secondary dark:text-gray-400">Coming Soon</p>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Order trends over time</p>
                         </div>
                         <i class="fas fa-calendar-alt text-text-tertiary dark:text-gray-500"></i>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
-                            <div class="text-center">
-                                <i class="fas fa-chart-line text-4xl text-text-tertiary dark:text-gray-500 mb-3"></i>
-                                <p class="text-text-secondary dark:text-gray-400">Seasonal trends analysis</p>
-                                <p class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</p>
-                            </div>
+                    <!-- Loading State -->
+                    <div id="seasonalTrendsLoading" class="flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin text-2xl text-text-tertiary dark:text-gray-500 mb-2"></i>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Loading trends...</p>
+                        </div>
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div id="seasonalTrendsChartContainer" class="hidden" style="height: 300px; position: relative;">
+                        <canvas id="seasonalTrendsChart"></canvas>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="seasonalTrendsEmpty" class="hidden flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line text-4xl text-text-tertiary dark:text-gray-500 mb-3"></i>
+                            <p class="text-text-secondary dark:text-gray-400">No order data available</p>
+                            <p class="text-sm text-text-tertiary dark:text-gray-500">Start placing orders to see trends</p>
                         </div>
                     </div>
                 </div>
@@ -230,18 +247,43 @@
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">Top Medicines</h3>
-                            <p class="text-sm text-text-secondary dark:text-gray-400">Coming Soon</p>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Most ordered medicines</p>
                         </div>
                         <i class="fas fa-trophy text-text-tertiary dark:text-gray-500"></i>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
-                            <div class="text-center">
-                                <i class="fas fa-pills text-4xl text-text-tertiary dark:text-gray-500 mb-3"></i>
-                                <p class="text-text-secondary dark:text-gray-400">Top performing medicines</p>
-                                <p class="text-sm text-text-tertiary dark:text-gray-500">Ready for database integration</p>
-                            </div>
+                    <!-- Loading State -->
+                    <div id="topMedicinesLoading" class="flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin text-2xl text-text-tertiary dark:text-gray-500 mb-2"></i>
+                            <p class="text-sm text-text-secondary dark:text-gray-400">Loading top medicines...</p>
+                        </div>
+                    </div>
+
+                    <!-- Top Medicines Table -->
+                    <div id="topMedicinesContainer" class="hidden overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-surface-hover dark:bg-gray-800">
+                                <tr class="border-b border-border-light dark:border-gray-700">
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Rank</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Medicine Name</th>
+                                    <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Orders</th>
+                                    <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Total Ordered</th>
+                                    <th class="text-right py-3 px-4 text-sm font-semibold text-text-primary dark:text-gray-100">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topMedicinesTableBody" class="divide-y divide-border-light dark:divide-gray-700 bg-white dark:bg-gray-900">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="topMedicinesEmpty" class="hidden flex items-center justify-center p-8 bg-surface-hover dark:bg-gray-800 rounded-lg">
+                        <div class="text-center">
+                            <i class="fas fa-pills text-4xl text-text-tertiary dark:text-gray-500 mb-3"></i>
+                            <p class="text-text-secondary dark:text-gray-400">No order data available</p>
+                            <p class="text-sm text-text-tertiary dark:text-gray-500">Start placing orders to see top medicines</p>
                         </div>
                     </div>
                 </div>
@@ -375,6 +417,15 @@
                 button.classList.toggle('translate-x-6', !isDark);
                 button.classList.toggle('translate-x-1', isDark);
             });
+            
+            // Refresh chart if it exists to update colors
+            if (seasonalTrendsChart) {
+                const chartContainer = document.getElementById('seasonalTrendsChartContainer');
+                if (chartContainer && !chartContainer.classList.contains('hidden')) {
+                    // Re-fetch data to update chart with new theme colors
+                    fetchSeasonalTrends();
+                }
+            }
         }
 
         // Sidebar is loaded dynamically via load-sidebar.js
@@ -428,19 +479,34 @@
         }
 
         async function fetchLowStockMedicines() {
+            const tableBody = document.getElementById('lowStockTableBody');
+            const loadingIndicator = document.getElementById('lowStockLoading');
+            
             try {
                 const response = await fetch(`${API_BASE}?action=low-stock`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
 
                 if (result.success && result.data) {
                     updateLowStockTable(result.data);
                 } else {
-                    console.error('Failed to fetch low stock data:', result.message);
-                    showError('Failed to load low stock data');
+                    console.error('Failed to fetch low stock data:', result.message || 'Unknown error');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="3" class="py-8 text-center text-error-600 dark:text-error-400">Failed to load data: ' + (result.message || 'Unknown error') + '</td></tr>';
+                    }
+                    if (loadingIndicator) loadingIndicator.classList.add('hidden');
                 }
             } catch (error) {
                 console.error('Error fetching low stock data:', error);
-                showError('Error loading low stock data');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="3" class="py-8 text-center text-error-600 dark:text-error-400">Error loading data: ' + error.message + '</td></tr>';
+                }
+                if (loadingIndicator) loadingIndicator.classList.add('hidden');
+                showError('Error loading low stock data: ' + error.message);
             }
         }
 
@@ -456,6 +522,71 @@
                 }
             } catch (error) {
                 console.error('Error fetching stock availability:', error);
+            }
+        }
+
+        async function fetchSeasonalTrends() {
+            const loadingEl = document.getElementById('seasonalTrendsLoading');
+            const chartContainer = document.getElementById('seasonalTrendsChartContainer');
+            const emptyState = document.getElementById('seasonalTrendsEmpty');
+            
+            try {
+                const params = new URLSearchParams({
+                    action: 'seasonal-trends',
+                    dateRange: currentFilters.dateRange
+                });
+                
+                const response = await fetch(`${API_BASE}?${params}`);
+                const result = await response.json();
+
+                if (loadingEl) loadingEl.classList.add('hidden');
+
+                if (result.success && result.data && result.data.length > 0) {
+                    if (chartContainer) chartContainer.classList.remove('hidden');
+                    if (emptyState) emptyState.classList.add('hidden');
+                    updateSeasonalTrendsChart(result.data);
+                } else {
+                    if (chartContainer) chartContainer.classList.add('hidden');
+                    if (emptyState) emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching seasonal trends:', error);
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (chartContainer) chartContainer.classList.add('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
+            }
+        }
+
+        async function fetchTopMedicines() {
+            const loadingEl = document.getElementById('topMedicinesLoading');
+            const container = document.getElementById('topMedicinesContainer');
+            const emptyState = document.getElementById('topMedicinesEmpty');
+            
+            try {
+                const params = new URLSearchParams({
+                    action: 'top-medicines',
+                    dateRange: currentFilters.dateRange,
+                    category: currentFilters.category
+                });
+                
+                const response = await fetch(`${API_BASE}?${params}`);
+                const result = await response.json();
+
+                if (loadingEl) loadingEl.classList.add('hidden');
+
+                if (result.success && result.data && result.data.length > 0) {
+                    if (container) container.classList.remove('hidden');
+                    if (emptyState) emptyState.classList.add('hidden');
+                    updateTopMedicinesTable(result.data);
+                } else {
+                    if (container) container.classList.add('hidden');
+                    if (emptyState) emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching top medicines:', error);
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (container) container.classList.add('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
             }
         }
 
@@ -498,8 +629,10 @@
             if (loadingIndicator) loadingIndicator.classList.add('hidden');
 
             if (!medicines || medicines.length === 0) {
-                if (tableBody) tableBody.innerHTML = '';
-                if (tableContainer) tableContainer.classList.add('hidden');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="3" class="py-8 text-center text-text-secondary dark:text-gray-400">No low stock medicines found</td></tr>';
+                }
+                if (tableContainer) tableContainer.classList.remove('hidden');
                 if (emptyState) emptyState.classList.remove('hidden');
                 return;
             }
@@ -508,7 +641,7 @@
             if (tableContainer) tableContainer.classList.remove('hidden');
             if (emptyState) emptyState.classList.add('hidden');
 
-            // Clear existing rows
+            // Clear existing rows and populate with data
             if (tableBody) {
                 tableBody.innerHTML = '';
 
@@ -531,21 +664,34 @@
 
                     row.className += ` ${rowClass}`;
 
+                    // Escape HTML to prevent XSS
+                    const medicineName = escapeHtml(medicine.name || 'N/A');
+                    const quantity = (medicine.quantity || 0).toLocaleString();
+                    const reorderLevel = (medicine.reorderLevel || 0).toLocaleString();
+
                     row.innerHTML = `
                         <td class="py-3 px-4 text-sm text-text-primary dark:text-gray-100">
-                            ${medicine.name}
+                            ${medicineName}
                         </td>
                         <td class="py-3 px-4 text-sm text-right ${quantityClass}">
-                            ${medicine.quantity.toLocaleString()}
+                            ${quantity}
                         </td>
                         <td class="py-3 px-4 text-sm text-right text-text-secondary dark:text-gray-400">
-                            ${medicine.reorderLevel.toLocaleString()}
+                            ${reorderLevel}
                         </td>
                     `;
 
                     tableBody.appendChild(row);
                 });
             }
+        }
+        
+        // Escape HTML helper
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // Update Stock Availability Bars
@@ -621,6 +767,189 @@
             window.location.href = `inventory_management.html?category=${encodeURIComponent(category)}`;
         }
 
+        // Seasonal Trends Chart
+        let seasonalTrendsChart = null;
+
+        function updateSeasonalTrendsChart(trendsData) {
+            const canvas = document.getElementById('seasonalTrendsChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (seasonalTrendsChart) {
+                seasonalTrendsChart.destroy();
+            }
+
+            const labels = trendsData.map(item => item.monthLabel);
+            const orderCounts = trendsData.map(item => item.orderCount);
+            const totalValues = trendsData.map(item => item.totalValue);
+
+            // Determine if dark mode is active
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#9CA3AF' : '#6B7280';
+            const gridColor = isDark ? '#374151' : '#E5E7EB';
+
+            seasonalTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Order Count',
+                            data: orderCounts,
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Total Value (₱)',
+                            data: totalValues,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: textColor,
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+                            titleColor: textColor,
+                            bodyColor: textColor,
+                            borderColor: gridColor,
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: gridColor,
+                                display: true
+                            },
+                            ticks: {
+                                color: textColor
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Order Count',
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor,
+                                display: true
+                            },
+                            ticks: {
+                                color: textColor,
+                                precision: 0
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Total Value (₱)',
+                                color: textColor
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: textColor,
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Update Top Medicines Table
+        function updateTopMedicinesTable(medicines) {
+            const tableBody = document.getElementById('topMedicinesTableBody');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = '';
+
+            medicines.forEach((medicine, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? 'font-bold text-primary-600 dark:text-primary-400' : 'text-text-secondary dark:text-gray-400';
+                const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-surface-hover dark:hover:bg-gray-800 transition-colors duration-200';
+
+                const medicineName = escapeHtml(medicine.name || 'N/A');
+                const category = escapeHtml(medicine.category || 'N/A');
+                
+                // Show order data if available, otherwise show stock-based data
+                const hasOrderData = medicine.orderCount > 0 || medicine.totalOrdered > 0;
+                const orderCount = hasOrderData ? (medicine.orderCount || 0).toLocaleString() : '<span class="text-text-tertiary dark:text-gray-500">—</span>';
+                const totalOrdered = hasOrderData ? (medicine.totalOrdered || 0).toLocaleString() : '<span class="text-text-tertiary dark:text-gray-500">—</span>';
+                
+                // For value, use order value if available, otherwise use stock value
+                const displayValue = hasOrderData ? medicine.totalValue : (medicine.currentStock * medicine.price);
+                const totalValue = displayValue.toLocaleString('en-US', { 
+                    style: 'currency', 
+                    currency: 'PHP',
+                    minimumFractionDigits: 2 
+                });
+
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-sm ${rankClass}">
+                        ${rankIcon} ${rank}
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                        <div class="text-text-primary dark:text-gray-100 font-medium">${medicineName}</div>
+                        <div class="text-xs text-text-tertiary dark:text-gray-500">${category}</div>
+                        ${!hasOrderData ? '<div class="text-xs text-warning-600 dark:text-warning-400 mt-1"><i class="fas fa-info-circle mr-1"></i>Based on stock value</div>' : ''}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-right text-text-secondary dark:text-gray-400">
+                        ${orderCount}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-right text-text-secondary dark:text-gray-400">
+                        ${totalOrdered}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-right font-medium text-primary-600 dark:text-primary-400">
+                        ${totalValue}
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        }
+
         // Refresh Data
         async function refreshAllData() {
             const refreshBtn = document.getElementById('refreshBtn');
@@ -635,7 +964,9 @@
                 await Promise.all([
                     fetchDashboardData(),
                     fetchLowStockMedicines(),
-                    fetchStockAvailability()
+                    fetchStockAvailability(),
+                    fetchSeasonalTrends(),
+                    fetchTopMedicines()
                 ]);
 
                 // Hide loading indicator
@@ -644,8 +975,10 @@
                 showNotification('Data refreshed successfully!', 'success');
             } catch (error) {
                 console.error('Error refreshing data:', error);
-                showError('Error refreshing data');
+                showNotification('Error refreshing data', 'error');
             } finally {
+                const refreshBtn = document.getElementById('refreshBtn');
+                const icon = refreshBtn?.querySelector('i');
                 if (icon) icon.classList.remove('fa-spin');
             }
         }
@@ -823,9 +1156,16 @@
                 userDisplayEmailEl.textContent = userEmail;
             }
             
+            // Show loading indicator initially
+            document.getElementById('lowStockLoading')?.classList.remove('hidden');
+            
             // Fetch categories from database and populate filter, then load data
             fetchCategories().then(() => {
                 // After categories are loaded, refresh all data
+                refreshAllData();
+            }).catch(error => {
+                console.error('Error fetching categories:', error);
+                // Still try to load data even if categories fail
                 refreshAllData();
             });
             
@@ -1616,7 +1956,7 @@
                     <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
                     <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(order.supplier_name || 'N/A')}</td>
                     <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
-                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-text-secondary dark:text-gray-400">₱${parseFloat(order.total_amount || 0).toFixed(2)}</td>
                     <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.item_count || 0} items</td>
                     <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${order.cancelled_at ? new Date(order.cancelled_at).toLocaleDateString() : 'N/A'}</td>
                     <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtml(order.cancellation_reason || 'N/A')}</td>

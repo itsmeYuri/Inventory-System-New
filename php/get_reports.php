@@ -55,6 +55,12 @@ try {
         case 'category-distribution':
             getCategoryDistribution($conn);
             break;
+        case 'seasonal-trends':
+            getSeasonalTrends($conn, $dateRange);
+            break;
+        case 'top-medicines':
+            getTopMedicines($conn, $dateRange, $category);
+            break;
         default:
             http_response_code(400);
             echo json_encode([
@@ -183,9 +189,10 @@ function getTopSellingMedicines($conn, $dateRange, $category) {
 
 function getLowStockMedicines($conn) {
     // Get medicines where quantity is below reorder_level
-    $sql = "SELECT id, name, quantity, reorder_level, status
+    // Handle NULL reorder_level by using COALESCE with default value of 10
+    $sql = "SELECT id, name, quantity, COALESCE(reorder_level, 10) as reorder_level, status
             FROM medicines 
-            WHERE quantity <= reorder_level OR status IN ('low-stock', 'out-of-stock')
+            WHERE quantity <= COALESCE(reorder_level, 10) OR status IN ('low-stock', 'out-of-stock')
             ORDER BY quantity ASC, name ASC";
 
     $result = mysqli_query($conn, $sql);
@@ -198,9 +205,18 @@ function getLowStockMedicines($conn) {
                 'name' => $row['name'],
                 'quantity' => (int)$row['quantity'],
                 'reorderLevel' => (int)$row['reorder_level'],
-                'status' => $row['status']
+                'status' => $row['status'] ?? 'in-stock'
             ];
         }
+    } else {
+        // Log SQL error
+        error_log("SQL Error in getLowStockMedicines: " . mysqli_error($conn));
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database query failed: ' . mysqli_error($conn),
+            'data' => []
+        ], JSON_UNESCAPED_UNICODE);
+        return;
     }
 
     echo json_encode([
@@ -303,6 +319,156 @@ function getCategoryDistribution($conn) {
     echo json_encode([
         'success' => true,
         'data' => $distribution
+    ], JSON_UNESCAPED_UNICODE);
+}
+
+function getSeasonalTrends($conn, $dateRange) {
+    // Get order trends by month for the last 12 months
+    $currentDate = date('Y-m-d');
+    
+    // Determine date range based on parameter
+    $monthsBack = 12; // Default to 12 months
+    switch ($dateRange) {
+        case 'daily':
+            $monthsBack = 1;
+            break;
+        case 'weekly':
+            $monthsBack = 3;
+            break;
+        case 'monthly':
+            $monthsBack = 6;
+            break;
+        default:
+            $monthsBack = 12;
+    }
+    
+    $sql = "SELECT 
+                DATE_FORMAT(o.order_date, '%Y-%m') as month,
+                DATE_FORMAT(o.order_date, '%b %Y') as month_label,
+                COUNT(DISTINCT o.id) as order_count,
+                COALESCE(SUM(oi.quantity), 0) as total_quantity,
+                COALESCE(SUM(oi.quantity * oi.price), 0) as total_value,
+                COUNT(DISTINCT oi.medicine_id) as unique_medicines
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.order_date >= DATE_SUB('{$currentDate}', INTERVAL {$monthsBack} MONTH)
+                AND o.order_date <= '{$currentDate}'
+                AND o.status != 'cancelled'
+            GROUP BY DATE_FORMAT(o.order_date, '%Y-%m'), DATE_FORMAT(o.order_date, '%b %Y')
+            ORDER BY month ASC";
+    
+    $result = mysqli_query($conn, $sql);
+    $trends = [];
+    
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $trends[] = [
+                'month' => $row['month'],
+                'monthLabel' => $row['month_label'],
+                'orderCount' => (int)$row['order_count'],
+                'totalQuantity' => (float)$row['total_quantity'],
+                'totalValue' => (float)$row['total_value'],
+                'uniqueMedicines' => (int)$row['unique_medicines']
+            ];
+        }
+    } else {
+        error_log("SQL Error in getSeasonalTrends: " . mysqli_error($conn));
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database query failed: ' . mysqli_error($conn),
+            'data' => []
+        ], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $trends
+    ], JSON_UNESCAPED_UNICODE);
+}
+
+function getTopMedicines($conn, $dateRange, $category) {
+    // Build category filter
+    $categoryFilter = '';
+    if (!empty($category)) {
+        $cat = mysqli_real_escape_string($conn, $category);
+        $categoryFilter = " AND m.category = '{$cat}'";
+    }
+    
+    // Get date filter for orders
+    $orderDateFilter = getDateFilterForColumn($dateRange, 'o.order_date', $conn);
+    
+    // Get top medicines by order frequency and total quantity ordered
+    $sql = "SELECT 
+                m.id,
+                m.name,
+                m.category,
+                m.price,
+                m.quantity as current_stock,
+                COUNT(DISTINCT o.id) as order_count,
+                COALESCE(SUM(oi.quantity), 0) as total_ordered,
+                COALESCE(SUM(oi.quantity * oi.price), 0) as total_value
+            FROM medicines m
+            LEFT JOIN order_items oi ON m.id = oi.medicine_id
+            LEFT JOIN orders o ON oi.order_id = o.id AND o.status != 'cancelled' AND {$orderDateFilter}
+            WHERE m.status != 'deleted' {$categoryFilter}
+            GROUP BY m.id, m.name, m.category, m.price, m.quantity
+            HAVING order_count > 0 OR total_ordered > 0
+            ORDER BY total_ordered DESC, order_count DESC, total_value DESC
+            LIMIT 10";
+    
+    $result = mysqli_query($conn, $sql);
+    $medicines = [];
+    
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $medicines[] = [
+                'id' => (int)$row['id'],
+                'name' => $row['name'],
+                'category' => $row['category'] ?? 'N/A',
+                'price' => (float)$row['price'],
+                'currentStock' => (int)$row['current_stock'],
+                'orderCount' => (int)$row['order_count'],
+                'totalOrdered' => (float)$row['total_ordered'],
+                'totalValue' => (float)$row['total_value']
+            ];
+        }
+    } else {
+        error_log("SQL Error in getTopMedicines: " . mysqli_error($conn));
+    }
+    
+    // If no medicines with orders found, fall back to top medicines by current stock value
+    if (empty($medicines)) {
+        $fallbackSql = "SELECT 
+                    id, name, category, price, quantity,
+                    (quantity * price) as total_value
+                FROM medicines 
+                WHERE status != 'deleted' AND status != 'expired' AND quantity > 0 {$categoryFilter}
+                ORDER BY total_value DESC, quantity DESC
+                LIMIT 10";
+        
+        $fallbackResult = mysqli_query($conn, $fallbackSql);
+        if ($fallbackResult) {
+            while ($row = mysqli_fetch_assoc($fallbackResult)) {
+                $medicines[] = [
+                    'id' => (int)$row['id'],
+                    'name' => $row['name'],
+                    'category' => $row['category'] ?? 'N/A',
+                    'price' => (float)$row['price'],
+                    'currentStock' => (int)$row['quantity'],
+                    'orderCount' => 0,
+                    'totalOrdered' => 0,
+                    'totalValue' => (float)$row['total_value']
+                ];
+            }
+        } else {
+            error_log("SQL Error in getTopMedicines fallback: " . mysqli_error($conn));
+        }
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $medicines
     ], JSON_UNESCAPED_UNICODE);
 }
 

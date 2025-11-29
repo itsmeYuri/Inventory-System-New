@@ -727,7 +727,7 @@
                                 Qty: <input type="number" min="0" value="${item.quantity}" 
                                     onchange="updateOrderItemQuantity(${item.medicine_id}, this.value)" 
                                     class="w-16 px-2 py-1 border border-border-light rounded text-center">
-                                × $${item.price.toFixed(2)} = $${itemTotal.toFixed(2)}
+                                × ₱${item.price.toFixed(2)} = ₱${itemTotal.toFixed(2)}
                             </div>
                         </div>
                         <button type="button" onclick="removeMedicineFromOrder(${item.medicine_id})" 
@@ -742,7 +742,7 @@
                 <div class="border-t border-border-light pt-2 mt-2">
                     <div class="flex justify-between font-semibold text-lg">
                         <span>Total:</span>
-                        <span>$${total.toFixed(2)}</span>
+                        <span>₱${total.toFixed(2)}</span>
                     </div>
                 </div>
             `;
@@ -1232,7 +1232,7 @@
                     <div class="text-sm text-text-secondary dark:text-gray-400">${formatDate(order.date || order.order_date)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-text-primary dark:text-gray-100">$${(order.total_amount || 0).toFixed(2)}</div>
+                    <div class="text-sm font-medium text-text-primary dark:text-gray-100">₱${(order.total_amount || 0).toFixed(2)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="status-badge ${getStatusClass(order.status)}">
@@ -1275,7 +1275,7 @@
                 </div>
                 <div>
                     <div class="text-sm font-medium text-text-primary">${order.supplier_name || 'Unknown Supplier'}</div>
-                    <div class="text-xs text-text-secondary mt-1">${order.item_count || 0} item(s) • Total: $${(order.total_amount || 0).toFixed(2)} • Date: ${formatDate(order.date || order.order_date)}</div>
+                    <div class="text-xs text-text-secondary mt-1">${order.item_count || 0} item(s) • Total: ₱${(order.total_amount || 0).toFixed(2)} • Date: ${formatDate(order.date || order.order_date)}</div>
                 </div>
                 <div class="flex items-center justify-end space-x-2 pt-2 border-t border-border-light">
                     <button onclick="viewOrderDetails('${order.id}')" class="text-primary hover:text-primary-700 transition-colors duration-200 p-2" title="View Details">
@@ -1591,7 +1591,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Amount</label>
-                                <p class="text-text-primary dark:text-gray-100 font-semibold">$${(order.total_amount || 0).toFixed(2)}</p>
+                                <p class="text-text-primary dark:text-gray-100 font-semibold">₱${(order.total_amount || 0).toFixed(2)}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Items Count</label>
@@ -1632,8 +1632,8 @@
                                                         <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</td>
                                                         <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
                                                         <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-medium">${quantity}</td>
-                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">$${price.toFixed(2)}</td>
-                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">$${itemTotal.toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">₱${price.toFixed(2)}</td>
+                                                        <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100 font-semibold">₱${itemTotal.toFixed(2)}</td>
                                                     </tr>
                                                 `;
                                             }).join('')}
@@ -1690,7 +1690,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-text-secondary dark:text-gray-400 mb-1">Total Amount</label>
-                                <p class="text-text-primary dark:text-gray-100 font-semibold">$${(order.total_amount || 0).toFixed(2)}</p>
+                                <p class="text-text-primary dark:text-gray-100 font-semibold">₱${(order.total_amount || 0).toFixed(2)}</p>
                             </div>
                         </div>
                     </div>
@@ -2118,7 +2118,7 @@
                     order.supplier_name || 'Unknown',
                     order.order_date || order.date,
                     order.status,
-                    `$${parseFloat(order.total_amount || 0).toFixed(2)}`,
+                    `₱${parseFloat(order.total_amount || 0).toFixed(2)}`,
                     order.item_count || 0,
                     (order.notes || '').replace(/"/g, '""') // Escape quotes
                 ])
