@@ -214,6 +214,58 @@
 
         updateUserDisplay();
 
+        // Filter menu items based on user role
+        function filterMenuItemsByRole() {
+            // Use RoleUtils if available, otherwise fallback to localStorage
+            const getUserRole = window.RoleUtils?.getUserRole || function() {
+                return (localStorage.getItem('userRole') || '').toLowerCase();
+            };
+            
+            const role = getUserRole();
+            
+            // Get all menu items
+            const menuItems = document.querySelectorAll('.sidebar-menu-item[data-page]');
+            
+            menuItems.forEach(item => {
+                const page = item.getAttribute('data-page');
+                const listItem = item.closest('li');
+                
+                if (!listItem) return;
+                
+                // Admin: Can see all pages including suppliers
+                if (role === 'admin') {
+                    listItem.style.display = '';
+                }
+                // Employee: Can see all pages including suppliers
+                else if (role === 'employee') {
+                    listItem.style.display = '';
+                }
+                // Supplier: Hide suppliers management page (suppliers use their own portal)
+                else if (role === 'supplier') {
+                    if (page === 'suppliers') {
+                        listItem.style.display = 'none';
+                    } else {
+                        listItem.style.display = '';
+                    }
+                }
+                // Default: Show all for unknown roles
+                else {
+                    listItem.style.display = '';
+                }
+            });
+            
+            // Also hide user management button in settings modal if user is not admin
+            if (role !== 'admin') {
+                const userManagementButtons = document.querySelectorAll('button[onclick*="openUserManagementModal"], button[onclick*="User Management"]');
+                userManagementButtons.forEach(btn => {
+                    const parent = btn.closest('button, div');
+                    if (parent) {
+                        parent.style.display = 'none';
+                    }
+                });
+            }
+        }
+
         // Set active menu item based on current page
         function setActiveMenuItem() {
             const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
@@ -235,6 +287,9 @@
         }
 
         setActiveMenuItem();
+        
+        // Filter menu items by role
+        filterMenuItemsByRole();
 
         // Load theme from localStorage
         const savedTheme = localStorage.getItem('theme');

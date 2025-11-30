@@ -7,7 +7,7 @@
  * 
  * Usage:
  *   require_once __DIR__ . '/role_middleware.php';
- *   allow_roles(['admin', 'user']);
+ *   allow_roles(['admin', 'employee']);
  * 
  * @package RBAC
  * @version 1.0
@@ -108,12 +108,12 @@ function is_supplier() {
 }
 
 /**
- * Check if user is regular user
+ * Check if user is employee
  * 
- * @return bool True if user is regular user, false otherwise
+ * @return bool True if user is employee, false otherwise
  */
 function is_user() {
-    return has_role('user');
+    return has_role('employee');
 }
 
 /**
@@ -124,17 +124,17 @@ function is_user() {
  * 
  * Admin role always has access to everything (checked automatically).
  * 
- * @param array $allowed_roles Array of allowed roles (e.g., ['admin', 'user'])
+ * @param array $allowed_roles Array of allowed roles (e.g., ['admin', 'employee'])
  * @param string $redirect_url URL to redirect to if access is denied (default: '../pages/no-access.php')
  * @return void
  * 
  * @example
  *   // Allow admin and user only
- *   allow_roles(['admin', 'user']);
+ *   allow_roles(['admin', 'employee']);
  * 
  * @example
- *   // Allow admin, user, and supplier
- *   allow_roles(['admin', 'user', 'supplier']);
+ *   // Allow admin, employee, and supplier
+ *   allow_roles(['admin', 'employee', 'supplier']);
  * 
  * @example
  *   // Admin only (explicit)

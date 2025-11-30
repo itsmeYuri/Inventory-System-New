@@ -6,6 +6,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
+// Start output buffering to catch any accidental output
+ob_start();
+
 // Enhanced CORS headers
 $allowed_origins = [
     'http://localhost:3000',
@@ -28,8 +31,18 @@ header('Content-Type: application/json; charset=utf-8');
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    ob_clean();
     http_response_code(200);
     exit(0);
+}
+
+// Validate request method
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    ob_clean();
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed. Use POST.'], JSON_UNESCAPED_UNICODE);
+    ob_end_flush();
+    exit;
 }
 
 // Helper function to send JSON response
@@ -92,17 +105,63 @@ try {
         $status = 'pending';
     }
 
+    // Check if tables exist
+    $checkOrdersTable = mysqli_query($conn, "SHOW TABLES LIKE 'orders'");
+    if (!$checkOrdersTable || mysqli_num_rows($checkOrdersTable) === 0) {
+        sendJsonResponse(false, 'Orders table does not exist. Please create it first.', null, 500);
+    }
+    
+    $checkOrderItemsTable = mysqli_query($conn, "SHOW TABLES LIKE 'order_items'");
+    if (!$checkOrderItemsTable || mysqli_num_rows($checkOrderItemsTable) === 0) {
+        sendJsonResponse(false, 'Order items table does not exist. Please create it first.', null, 500);
+    }
+
+    // Fix AUTO_INCREMENT issues in orders table (similar to medicines/suppliers fix)
+    // Delete any rows with id=0
+    @mysqli_query($conn, "DELETE FROM orders WHERE id = 0");
+    
+    // Get max ID and fix AUTO_INCREMENT
+    $maxIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM orders");
+    $maxId = 0;
+    if ($maxIdQuery) {
+        $maxRow = mysqli_fetch_assoc($maxIdQuery);
+        $maxId = (int)($maxRow['max_id'] ?? 0);
+    }
+    $nextId = max(1, $maxId + 1);
+    
+    // Fix AUTO_INCREMENT
+    @mysqli_query($conn, "ALTER TABLE orders AUTO_INCREMENT = {$nextId}");
+    
+    // Check if id column has AUTO_INCREMENT
+    $checkIdColumn = mysqli_query($conn, "SHOW COLUMNS FROM orders WHERE Field = 'id'");
+    if ($checkIdColumn) {
+        $idColumn = mysqli_fetch_assoc($checkIdColumn);
+        $hasAutoIncrement = strpos($idColumn['Extra'] ?? '', 'auto_increment') !== false;
+        $isPrimary = strpos($idColumn['Key'] ?? '', 'PRI') !== false;
+        
+        if (!$hasAutoIncrement) {
+            if ($isPrimary) {
+                @mysqli_query($conn, "ALTER TABLE orders MODIFY id INT UNSIGNED NOT NULL AUTO_INCREMENT");
+            } else {
+                @mysqli_query($conn, "ALTER TABLE orders MODIFY id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY");
+            }
+        }
+    }
+
     // Start transaction
-    mysqli_begin_transaction($conn);
+    if (!function_exists('mysqli_begin_transaction') || !mysqli_begin_transaction($conn)) {
+        // Fallback for older MySQL versions
+        mysqli_query($conn, "START TRANSACTION");
+    }
 
     try {
         // Check if total_amount column exists
         $checkTotalAmount = mysqli_query($conn, "SHOW COLUMNS FROM orders LIKE 'total_amount'");
-        $hasTotalAmount = mysqli_num_rows($checkTotalAmount) > 0;
+        $hasTotalAmount = $checkTotalAmount && mysqli_num_rows($checkTotalAmount) > 0;
         
         // Check if notes column exists
         $checkNotes = mysqli_query($conn, "SHOW COLUMNS FROM orders LIKE 'notes'");
-        $hasNotes = mysqli_num_rows($checkNotes) > 0;
+        $hasNotes = $checkNotes && mysqli_num_rows($checkNotes) > 0;
         
         // Calculate total amount
         $total_amount = 0.00;
@@ -144,19 +203,101 @@ try {
         }
         
         if (!mysqli_stmt_execute($orderStmt)) {
-            throw new Exception('Failed to create order: ' . mysqli_stmt_error($orderStmt));
+            $error = mysqli_stmt_error($orderStmt);
+            mysqli_stmt_close($orderStmt);
+            
+            // Check if it's the "Duplicate entry '0'" error
+            if (strpos($error, "Duplicate entry '0'") !== false) {
+                // Fix AUTO_INCREMENT and try again with raw SQL
+                @mysqli_query($conn, "DELETE FROM orders WHERE id = 0");
+                $maxIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM orders");
+                $maxId = 0;
+                if ($maxIdQuery) {
+                    $maxRow = mysqli_fetch_assoc($maxIdQuery);
+                    $maxId = (int)($maxRow['max_id'] ?? 0);
+                }
+                $nextId = max(1, $maxId + 1);
+                @mysqli_query($conn, "ALTER TABLE orders AUTO_INCREMENT = {$nextId}");
+                
+                // Retry with raw SQL (more reliable)
+                $supplier_id_escaped = (int)$supplier_id;
+                $order_date_escaped = mysqli_real_escape_string($conn, $order_date);
+                $status_escaped = mysqli_real_escape_string($conn, $status);
+                
+                if ($hasTotalAmount && $hasNotes) {
+                    $notes_escaped = mysqli_real_escape_string($conn, $notes ?? '');
+                    $total_amount_escaped = (float)$total_amount;
+                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status, total_amount, notes) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', {$total_amount_escaped}, '{$notes_escaped}')";
+                } elseif ($hasTotalAmount) {
+                    $total_amount_escaped = (float)$total_amount;
+                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status, total_amount) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', {$total_amount_escaped})";
+                } elseif ($hasNotes) {
+                    $notes_escaped = mysqli_real_escape_string($conn, $notes ?? '');
+                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status, notes) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', '{$notes_escaped}')";
+                } else {
+                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}')";
+                }
+                
+                if (!mysqli_query($conn, $rawSql)) {
+                    throw new Exception('Failed to create order after fix: ' . mysqli_error($conn));
+                }
+            } else {
+                throw new Exception('Failed to create order: ' . $error);
+            }
         }
 
         $order_id = mysqli_insert_id($conn);
+        
+        // Verify we got a valid ID
+        if ($order_id <= 0) {
+            // Fallback: get the last inserted ID manually
+            $lastIdQuery = mysqli_query($conn, "SELECT MAX(id) as last_id FROM orders");
+            if ($lastIdQuery) {
+                $lastRow = mysqli_fetch_assoc($lastIdQuery);
+                $order_id = (int)($lastRow['last_id'] ?? 0);
+            }
+            
+            if ($order_id <= 0) {
+                mysqli_stmt_close($orderStmt);
+                throw new Exception('Failed to get order ID after insert');
+            }
+        }
+        
         mysqli_stmt_close($orderStmt);
 
-        // Insert order items and update medicine quantities
-        $itemSql = "INSERT INTO order_items (order_id, medicine_id, quantity, price) VALUES (?, ?, ?, ?)";
-        $itemStmt = mysqli_prepare($conn, $itemSql);
-        if (!$itemStmt) {
-            throw new Exception('Database preparation error for items: ' . mysqli_error($conn));
+        // Fix AUTO_INCREMENT issues in order_items table before inserting items
+        // Delete any rows with id=0
+        @mysqli_query($conn, "DELETE FROM order_items WHERE id = 0");
+        
+        // Get max ID and fix AUTO_INCREMENT
+        $maxItemIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM order_items");
+        $maxItemId = 0;
+        if ($maxItemIdQuery) {
+            $maxItemRow = mysqli_fetch_assoc($maxItemIdQuery);
+            $maxItemId = (int)($maxItemRow['max_id'] ?? 0);
+        }
+        $nextItemId = max(1, $maxItemId + 1);
+        
+        // Fix AUTO_INCREMENT
+        @mysqli_query($conn, "ALTER TABLE order_items AUTO_INCREMENT = {$nextItemId}");
+        
+        // Check if id column has AUTO_INCREMENT
+        $checkItemIdColumn = mysqli_query($conn, "SHOW COLUMNS FROM order_items WHERE Field = 'id'");
+        if ($checkItemIdColumn) {
+            $itemIdColumn = mysqli_fetch_assoc($checkItemIdColumn);
+            $hasItemAutoIncrement = strpos($itemIdColumn['Extra'] ?? '', 'auto_increment') !== false;
+            $isItemPrimary = strpos($itemIdColumn['Key'] ?? '', 'PRI') !== false;
+            
+            if (!$hasItemAutoIncrement) {
+                if ($isItemPrimary) {
+                    @mysqli_query($conn, "ALTER TABLE order_items MODIFY id INT UNSIGNED NOT NULL AUTO_INCREMENT");
+                } else {
+                    @mysqli_query($conn, "ALTER TABLE order_items MODIFY id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY");
+                }
+            }
         }
 
+        // Insert order items and update medicine quantities
         foreach ($items as $item) {
             $medicine_id = isset($item['medicine_id']) ? (int)$item['medicine_id'] : 0;
             $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
@@ -166,10 +307,47 @@ try {
                 continue; // Skip invalid items
             }
 
-            // Insert order item
+            // Insert order item - prepare new statement for each item to avoid reuse issues
+            $itemSql = "INSERT INTO order_items (order_id, medicine_id, quantity, price) VALUES (?, ?, ?, ?)";
+            $itemStmt = mysqli_prepare($conn, $itemSql);
+            if (!$itemStmt) {
+                throw new Exception('Database preparation error for items: ' . mysqli_error($conn));
+            }
+            
             mysqli_stmt_bind_param($itemStmt, 'iidd', $order_id, $medicine_id, $quantity, $price);
             if (!mysqli_stmt_execute($itemStmt)) {
-                throw new Exception('Failed to add order item: ' . mysqli_stmt_error($itemStmt));
+                $error = mysqli_stmt_error($itemStmt);
+                mysqli_stmt_close($itemStmt);
+                
+                // Check if it's the "Duplicate entry '0'" error
+                if (strpos($error, "Duplicate entry '0'") !== false) {
+                    // Fix AUTO_INCREMENT and try again with raw SQL
+                    @mysqli_query($conn, "DELETE FROM order_items WHERE id = 0");
+                    $maxItemIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM order_items");
+                    $maxItemId = 0;
+                    if ($maxItemIdQuery) {
+                        $maxItemRow = mysqli_fetch_assoc($maxItemIdQuery);
+                        $maxItemId = (int)($maxItemRow['max_id'] ?? 0);
+                    }
+                    $nextItemId = max(1, $maxItemId + 1);
+                    @mysqli_query($conn, "ALTER TABLE order_items AUTO_INCREMENT = {$nextItemId}");
+                    
+                    // Retry with raw SQL (more reliable)
+                    $order_id_escaped = (int)$order_id;
+                    $medicine_id_escaped = (int)$medicine_id;
+                    $quantity_escaped = (int)$quantity;
+                    $price_escaped = (float)$price;
+                    
+                    $rawItemSql = "INSERT INTO order_items (order_id, medicine_id, quantity, price) VALUES ({$order_id_escaped}, {$medicine_id_escaped}, {$quantity_escaped}, {$price_escaped})";
+                    
+                    if (!mysqli_query($conn, $rawItemSql)) {
+                        throw new Exception('Failed to add order item after fix: ' . mysqli_error($conn));
+                    }
+                } else {
+                    throw new Exception('Failed to add order item: ' . $error);
+                }
+            } else {
+                mysqli_stmt_close($itemStmt);
             }
 
             // Update medicine quantity and recalculate status (increment when order is completed)
@@ -225,45 +403,33 @@ try {
                 }
             }
         }
-        mysqli_stmt_close($itemStmt);
 
-        // Create batch for this order
-        // Prepare items with expiration dates for batch creation
-        $batchItems = [];
-        foreach ($items as $item) {
-            $medicine_id = isset($item['medicine_id']) ? (int)$item['medicine_id'] : 0;
-            if ($medicine_id <= 0) continue;
-            
-            // Get expiration date from medicine if not provided
-            $expiration_date = null;
-            if (isset($item['expiration_date']) && !empty($item['expiration_date'])) {
-                $expiration_date = trim($item['expiration_date']);
-            } else {
-                $medSql = "SELECT expiration_date FROM medicines WHERE id = ?";
-                $medStmt = mysqli_prepare($conn, $medSql);
-                if ($medStmt) {
-                    mysqli_stmt_bind_param($medStmt, 'i', $medicine_id);
-                    mysqli_stmt_execute($medStmt);
-                    $medResult = mysqli_stmt_get_result($medStmt);
-                    if ($medRow = mysqli_fetch_assoc($medResult)) {
-                        $expiration_date = $medRow['expiration_date'];
+        // Create batch for this order date (one batch per day, grouped by order_date)
+        // Items will be added to batch_items when order is confirmed
+        try {
+            require_once __DIR__ . '/order_batch_helper.php';
+            if (function_exists('getOrCreateDailyBatch')) {
+                $batch_id = getOrCreateDailyBatch($conn, $order_date);
+                if ($batch_id === false) {
+                    error_log("ERROR: Failed to create/get batch for order date {$order_date} for order {$order_id}");
+                    // Try to get more details about the failure
+                    $errorCheck = mysqli_error($conn);
+                    if ($errorCheck) {
+                        error_log("MySQL Error: " . $errorCheck);
                     }
-                    mysqli_stmt_close($medStmt);
+                } else {
+                    error_log("SUCCESS: Batch {$batch_id} created/retrieved for order {$order_id} with order date {$order_date}");
                 }
+            } else {
+                error_log("ERROR: getOrCreateDailyBatch function not found in order_batch_helper.php");
             }
-            
-            $batchItems[] = [
-                'medicine_id' => $medicine_id,
-                'quantity' => isset($item['quantity']) ? (int)$item['quantity'] : 0,
-                'expiration_date' => $expiration_date,
-                'received_quantity' => isset($item['quantity']) ? (int)$item['quantity'] : 0
-            ];
-        }
-        
-        // Create batch
-        $batch_id = createOrderBatch($conn, $order_id, $supplier_id, $order_date, $batchItems);
-        if ($batch_id === false) {
-            error_log("Warning: Failed to create batch for order {$order_id}");
+        } catch (Exception $batchException) {
+            error_log("EXCEPTION creating batch: " . $batchException->getMessage());
+            error_log("Stack trace: " . $batchException->getTraceAsString());
+            // Don't fail the order creation if batch creation fails
+        } catch (Error $batchError) {
+            error_log("FATAL ERROR creating batch: " . $batchError->getMessage());
+            // Don't fail the order creation if batch creation fails
         }
 
         // Commit transaction

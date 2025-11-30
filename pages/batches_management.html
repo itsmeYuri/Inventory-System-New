@@ -1339,7 +1339,7 @@
                         <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.employee_id || 'N/A')}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'user').toUpperCase())}</span>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'employee').toUpperCase())}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-center">
                         ${user.status !== undefined ? `
@@ -1570,7 +1570,7 @@
 
         // Change user role
         async function changeUserRoleModal(userId, currentRole) {
-            const roles = ['user', 'supplier', 'admin'];
+            const roles = ['employee', 'supplier', 'admin'];
             const currentIndex = roles.indexOf(currentRole);
             const nextIndex = (currentIndex + 1) % roles.length;
             const newRole = roles[nextIndex];
@@ -2070,4 +2070,3 @@
     </script>
 </body>
 </html>
-

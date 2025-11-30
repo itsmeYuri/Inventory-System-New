@@ -5,7 +5,11 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/php_errors.log');
+
+// Start output buffering to catch any unexpected output
+if (ob_get_level() == 0) {
+    ob_start();
+}
 
 // Enhanced CORS headers
 $allowed_origins = [
@@ -27,26 +31,46 @@ header('Access-Control-Allow-Headers: Content-Type, Accept');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json; charset=utf-8');
 
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit(0);
-}
-
 // Helper function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $httpCode = 200) {
-    // Clear any previous output
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
     http_response_code($httpCode);
-    header('Content-Type: application/json; charset=utf-8');
+    
+    // Clean output buffer if it exists
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+    
+    // Ensure no output has been sent
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    
     echo json_encode([
         'success' => $success,
         'message' => $message,
         'data' => $data
     ], JSON_UNESCAPED_UNICODE);
+    
+    // End output buffering if it exists
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    
     exit;
+}
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    if (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    exit(0);
+}
+
+// Only allow POST requests
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    sendJsonResponse(false, 'Method not allowed. Only POST requests are accepted.', null, 405);
 }
 
 try {
@@ -114,6 +138,8 @@ try {
             email VARCHAR(255) NULL COMMENT 'Email address',
             phone VARCHAR(50) NULL COMMENT 'Phone number',
             address VARCHAR(255) NULL COMMENT 'Address/Location',
+            website VARCHAR(255) NULL COMMENT 'Website URL',
+            notes TEXT NULL COMMENT 'Additional notes',
             archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'When supplier was archived',
             archived_by VARCHAR(255) NULL COMMENT 'User who archived the supplier',
             reason TEXT NULL COMMENT 'Reason for archiving',
@@ -130,7 +156,54 @@ try {
         error_log("archived_suppliers table created successfully");
     } else {
         error_log("archived_suppliers table already exists");
+        
+        // Check if contact_person column exists, if not add it
+        $checkColumn = mysqli_query($conn, "SHOW COLUMNS FROM archived_suppliers LIKE 'contact_person'");
+        if (!$checkColumn || mysqli_num_rows($checkColumn) == 0) {
+            error_log("Adding contact_person column to archived_suppliers table...");
+            $alterSql = "ALTER TABLE archived_suppliers ADD COLUMN contact_person VARCHAR(255) NULL COMMENT 'Contact person' AFTER name";
+            if (!mysqli_query($conn, $alterSql)) {
+                $error = mysqli_error($conn);
+                error_log("Error adding contact_person column: " . $error);
+                // Continue anyway, we'll handle it in the INSERT
+            } else {
+                error_log("contact_person column added successfully");
+            }
+        }
+        
+        // Check for other missing columns and add them if needed
+        $requiredColumns = [
+            'email' => "ADD COLUMN email VARCHAR(255) NULL COMMENT 'Email address' AFTER contact_person",
+            'phone' => "ADD COLUMN phone VARCHAR(50) NULL COMMENT 'Phone number' AFTER email",
+            'address' => "ADD COLUMN address VARCHAR(255) NULL COMMENT 'Address/Location' AFTER phone",
+            'website' => "ADD COLUMN website VARCHAR(255) NULL COMMENT 'Website URL' AFTER address",
+            'notes' => "ADD COLUMN notes TEXT NULL COMMENT 'Additional notes' AFTER website",
+            'archived_by' => "ADD COLUMN archived_by VARCHAR(255) NULL COMMENT 'User who archived the supplier' AFTER notes",
+            'reason' => "ADD COLUMN reason TEXT NULL COMMENT 'Reason for archiving' AFTER archived_by"
+        ];
+        
+        foreach ($requiredColumns as $column => $alterSql) {
+            $checkCol = mysqli_query($conn, "SHOW COLUMNS FROM archived_suppliers LIKE '$column'");
+            if (!$checkCol || mysqli_num_rows($checkCol) == 0) {
+                error_log("Adding $column column to archived_suppliers table...");
+                $alterQuery = "ALTER TABLE archived_suppliers " . $alterSql;
+                if (!mysqli_query($conn, $alterQuery)) {
+                    error_log("Warning: Failed to add $column column: " . mysqli_error($conn));
+                }
+            }
+        }
     }
+    
+    // Check what columns actually exist in the table
+    $columnsQuery = "SHOW COLUMNS FROM archived_suppliers";
+    $columnsResult = mysqli_query($conn, $columnsQuery);
+    $existingColumns = [];
+    if ($columnsResult) {
+        while ($row = mysqli_fetch_assoc($columnsResult)) {
+            $existingColumns[] = $row['Field'];
+        }
+    }
+    error_log("Existing columns in archived_suppliers: " . implode(', ', $existingColumns));
 
     // Start transaction
     mysqli_begin_transaction($conn);
@@ -140,9 +213,86 @@ try {
         $archived_by = isset($_POST['archived_by']) ? $_POST['archived_by'] : null;
         $reason = isset($_POST['reason']) ? $_POST['reason'] : 'Supplier archived';
 
-        $archiveSql = "INSERT INTO archived_suppliers 
-                        (original_id, name, contact_person, email, phone, address, archived_by, reason)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        // Prepare values from supplier data
+        $original_id = (int)$supplier['id'];
+        $name = $supplier['name'] ?? '';
+        $contact_person = isset($supplier['contact_person']) && $supplier['contact_person'] !== '' ? $supplier['contact_person'] : null;
+        $email = isset($supplier['email']) && $supplier['email'] !== '' ? $supplier['email'] : null;
+        $phone = isset($supplier['phone']) && $supplier['phone'] !== '' ? $supplier['phone'] : null;
+        $address = isset($supplier['address']) && $supplier['address'] !== '' ? $supplier['address'] : null;
+        $website = isset($supplier['website']) && $supplier['website'] !== '' ? $supplier['website'] : null;
+        $notes = isset($supplier['notes']) && $supplier['notes'] !== '' ? $supplier['notes'] : null;
+        $archived_by_value = $archived_by ?? null;
+        $reason_value = $reason ?? 'Supplier archived';
+        
+        // Build INSERT statement dynamically based on existing columns
+        $insertColumns = ['original_id', 'name'];
+        $insertValues = ['?', '?'];
+        $bindTypes = 'is';
+        $bindValues = [&$original_id, &$name];
+        
+        // Add optional columns if they exist in the table
+        if (in_array('contact_person', $existingColumns)) {
+            $insertColumns[] = 'contact_person';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$contact_person;
+        }
+        
+        if (in_array('email', $existingColumns)) {
+            $insertColumns[] = 'email';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$email;
+        }
+        
+        if (in_array('phone', $existingColumns)) {
+            $insertColumns[] = 'phone';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$phone;
+        }
+        
+        if (in_array('address', $existingColumns)) {
+            $insertColumns[] = 'address';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$address;
+        }
+        
+        if (in_array('website', $existingColumns)) {
+            $insertColumns[] = 'website';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$website;
+        }
+        
+        if (in_array('notes', $existingColumns)) {
+            $insertColumns[] = 'notes';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$notes;
+        }
+        
+        if (in_array('archived_by', $existingColumns)) {
+            $insertColumns[] = 'archived_by';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$archived_by_value;
+        }
+        
+        if (in_array('reason', $existingColumns)) {
+            $insertColumns[] = 'reason';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+            $bindValues[] = &$reason_value;
+        }
+        
+        $archiveSql = "INSERT INTO archived_suppliers (" . implode(', ', $insertColumns) . ") VALUES (" . implode(', ', $insertValues) . ")";
+        
+        error_log("Archive SQL: " . $archiveSql);
+        error_log("Bind types: " . $bindTypes);
+        error_log("Columns being inserted: " . implode(', ', $insertColumns));
         
         $archiveStmt = mysqli_prepare($conn, $archiveSql);
         if (!$archiveStmt) {
@@ -150,56 +300,15 @@ try {
             error_log("Archive prepare error: " . $error);
             throw new Exception('Database error during archiving: ' . $error);
         }
-
-<<<<<<< HEAD
-        // Map supplier fields correctly (suppliers table uses contact_person and address)
-        // The archived_suppliers table uses 'contact' and 'location' fields
-        $contact = isset($supplier['contact_person']) ? $supplier['contact_person'] : (isset($supplier['contact']) ? $supplier['contact'] : null);
-        $location = isset($supplier['address']) ? $supplier['address'] : (isset($supplier['location']) ? $supplier['location'] : null);
-        // Note: suppliers table may not have website/notes, so these will be null
-        $website = isset($supplier['website']) ? $supplier['website'] : null;
-        $notes = isset($supplier['notes']) ? $supplier['notes'] : null;
-        $email = isset($supplier['email']) ? $supplier['email'] : null;
-        $phone = isset($supplier['phone']) ? $supplier['phone'] : null;
         
-        error_log("Archiving supplier - ID: {$supplier['id']}, Name: {$supplier['name']}, Contact: " . ($contact ?? 'NULL') . ", Location: " . ($location ?? 'NULL'));
-        
-        mysqli_stmt_bind_param($archiveStmt, 'isssssssss',
-            $supplier['id'],
-            $supplier['name'],
-            $contact,
-            $email,
-            $phone,
-            $location,
-            $website,
-            $notes,
-            $archived_by,
-            $reason
-=======
-        // Use correct column names from suppliers table
-        // Prepare values - convert null to empty string for mysqli
-        $original_id = (int)$supplier['id'];
-        $name = $supplier['name'] ?? '';
-        $contact_person = isset($supplier['contact_person']) && $supplier['contact_person'] !== '' ? $supplier['contact_person'] : '';
-        $email = isset($supplier['email']) && $supplier['email'] !== '' ? $supplier['email'] : '';
-        $phone = isset($supplier['phone']) && $supplier['phone'] !== '' ? $supplier['phone'] : '';
-        $address = isset($supplier['address']) && $supplier['address'] !== '' ? $supplier['address'] : '';
-        $archived_by_value = $archived_by ?? '';
-        $reason_value = $reason ?? 'Supplier archived';
-        
-        error_log("Archive bind values: id=$original_id, name=$name, contact=$contact_person, email=$email, phone=$phone, address=$address");
-        
-        mysqli_stmt_bind_param($archiveStmt, 'isssssss',
-            $original_id,
-            $name,
-            $contact_person,
-            $email,
-            $phone,
-            $address,
-            $archived_by_value,
-            $reason_value
->>>>>>> 161e38a227494c55204d8dff817d57a62f8276cf
-        );
+        // Bind parameters - use call_user_func_array with proper references
+        $bindArgs = array_merge([$archiveStmt, $bindTypes], $bindValues);
+        if (!call_user_func_array('mysqli_stmt_bind_param', $bindArgs)) {
+            $error = mysqli_stmt_error($archiveStmt);
+            error_log("Bind parameter error: " . $error);
+            mysqli_stmt_close($archiveStmt);
+            throw new Exception('Failed to bind parameters: ' . $error);
+        }
 
         if (!mysqli_stmt_execute($archiveStmt)) {
             $error = mysqli_stmt_error($archiveStmt);

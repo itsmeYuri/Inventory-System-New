@@ -41,7 +41,7 @@ try {
 
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-    // Build where clause safely
+    // Build where clause safely for suppliers table
     $where = " WHERE 1=1 ";
 
     if ($search !== '') {
@@ -49,30 +49,166 @@ try {
         $where .= " AND (name LIKE '%{$s}%' OR contact_person LIKE '%{$s}%' OR email LIKE '%{$s}%' OR phone LIKE '%{$s}%' OR address LIKE '%{$s}%') ";
     }
 
-    // Get total count
+    // Get total count from suppliers table
     $countSql = "SELECT COUNT(*) AS cnt FROM suppliers" . $where;
     $countRes = mysqli_query($conn, $countSql);
-    $total = 0;
+    $totalSuppliers = 0;
     if ($countRes) {
         $row = mysqli_fetch_assoc($countRes);
-        $total = (int)$row['cnt'];
+        $totalSuppliers = (int)$row['cnt'];
     }
 
-    // Fetch page
-    $sql = "SELECT id, name, contact_person, phone, email, address, created_at, updated_at
-            FROM suppliers
-            {$where}
-            ORDER BY name ASC
-            LIMIT {$offset}, {$pageSize}";
-
-    $res = mysqli_query($conn, $sql);
-
-    $data = [];
-    if ($res) {
-        while ($r = mysqli_fetch_assoc($res)) {
-            $data[] = $r;
+    // Get total count from users table with supplier role
+    $userWhere = " WHERE role = 'supplier' ";
+    if ($search !== '') {
+        $s = mysqli_real_escape_string($conn, $search);
+        $userWhere .= " AND (full_name LIKE '%{$s}%' OR email LIKE '%{$s}%' OR username LIKE '%{$s}%') ";
+    }
+    
+    // Check if role column exists in users table
+    $checkRole = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'role'");
+    $hasRole = $checkRole && mysqli_num_rows($checkRole) > 0;
+    
+    $totalUsers = 0;
+    if ($hasRole) {
+        $userCountSql = "SELECT COUNT(*) AS cnt FROM users" . $userWhere;
+        $userCountRes = mysqli_query($conn, $userCountSql);
+        if ($userCountRes) {
+            $userRow = mysqli_fetch_assoc($userCountRes);
+            $totalUsers = (int)$userRow['cnt'];
         }
     }
+    
+    $total = $totalSuppliers + $totalUsers;
+
+    // Check if website and notes columns exist
+    $checkWebsite = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'website'");
+    $hasWebsite = $checkWebsite && mysqli_num_rows($checkWebsite) > 0;
+    
+    $checkNotes = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'notes'");
+    $hasNotes = $checkNotes && mysqli_num_rows($checkNotes) > 0;
+    
+    // Check if authentication fields exist
+    $checkUsername = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'username'");
+    $hasUsername = $checkUsername && mysqli_num_rows($checkUsername) > 0;
+    
+    $checkStatus = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'status'");
+    $hasStatus = $checkStatus && mysqli_num_rows($checkStatus) > 0;
+    
+    $checkPasswordHash = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'password_hash'");
+    $hasPasswordHash = $checkPasswordHash && mysqli_num_rows($checkPasswordHash) > 0;
+    
+    // Check if timestamp columns exist
+    $checkCreatedAt = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'created_at'");
+    $hasCreatedAt = $checkCreatedAt && mysqli_num_rows($checkCreatedAt) > 0;
+    
+    $checkUpdatedAt = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'updated_at'");
+    $hasUpdatedAt = $checkUpdatedAt && mysqli_num_rows($checkUpdatedAt) > 0;
+    
+    // Build SELECT statement
+    $selectFields = "id, name, contact_person, phone, email, address";
+    if ($hasWebsite) {
+        $selectFields .= ", website";
+    }
+    if ($hasNotes) {
+        $selectFields .= ", notes";
+    }
+    if ($hasUsername) {
+        $selectFields .= ", username";
+    }
+    if ($hasStatus) {
+        $selectFields .= ", status";
+    }
+    if ($hasPasswordHash) {
+        // Include password_hash to check if account is set up (but don't expose the hash value)
+        $selectFields .= ", CASE WHEN password_hash IS NOT NULL AND password_hash != '' THEN 1 ELSE 0 END AS has_login_account";
+    }
+    if ($hasCreatedAt) {
+        $selectFields .= ", created_at";
+    }
+    if ($hasUpdatedAt) {
+        $selectFields .= ", updated_at";
+    }
+    
+    // Fetch suppliers from suppliers table
+    $sql = "SELECT {$selectFields}
+            FROM suppliers
+            {$where}
+            ORDER BY name ASC";
+    
+    // For pagination, we need to fetch all and then merge with users
+    // This is not ideal for large datasets, but necessary for merging
+    $res = mysqli_query($conn, $sql);
+    
+    $suppliersData = [];
+    if ($res) {
+        while ($r = mysqli_fetch_assoc($res)) {
+            $r['source'] = 'suppliers_table'; // Mark as from suppliers table
+            $suppliersData[] = $r;
+        }
+    }
+    
+    // Fetch users with supplier role
+    $usersData = [];
+    if ($hasRole) {
+        $userSelectFields = "user_id AS id, full_name AS name, email, username, status";
+        
+        // Check if password_hash exists in users table
+        $checkUserPasswordHash = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'password_hash'");
+        $hasUserPasswordHash = $checkUserPasswordHash && mysqli_num_rows($checkUserPasswordHash) > 0;
+        
+        if ($hasUserPasswordHash) {
+            $userSelectFields .= ", CASE WHEN password_hash IS NOT NULL AND password_hash != '' THEN 1 ELSE 0 END AS has_login_account";
+        } else {
+            $userSelectFields .= ", 0 AS has_login_account";
+        }
+        
+        $userSelectFields .= ", full_name AS contact_person, '' AS phone, '' AS address";
+        if ($hasWebsite) {
+            $userSelectFields .= ", '' AS website";
+        }
+        if ($hasNotes) {
+            $userSelectFields .= ", '' AS notes";
+        }
+        
+        // Check if timestamp columns exist in users table
+        $checkUserCreatedAt = mysqli_query($conn, "SHOW COLUMNS FROM users WHERE Field = 'created_at'");
+        $hasUserCreatedAt = $checkUserCreatedAt && mysqli_num_rows($checkUserCreatedAt) > 0;
+        
+        $checkUserUpdatedAt = mysqli_query($conn, "SHOW COLUMNS FROM users WHERE Field = 'updated_at'");
+        $hasUserUpdatedAt = $checkUserUpdatedAt && mysqli_num_rows($checkUserUpdatedAt) > 0;
+        
+        if ($hasUserCreatedAt) {
+            $userSelectFields .= ", created_at";
+        }
+        if ($hasUserUpdatedAt) {
+            $userSelectFields .= ", updated_at";
+        }
+        
+        $userSql = "SELECT {$userSelectFields}
+                    FROM users
+                    {$userWhere}
+                    ORDER BY full_name ASC";
+        
+        $userRes = mysqli_query($conn, $userSql);
+        if ($userRes) {
+            while ($ur = mysqli_fetch_assoc($userRes)) {
+                $ur['source'] = 'users_table'; // Mark as from users table
+                $usersData[] = $ur;
+            }
+        }
+    }
+    
+    // Merge suppliers and users
+    $allData = array_merge($suppliersData, $usersData);
+    
+    // Sort by name
+    usort($allData, function($a, $b) {
+        return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
+    });
+    
+    // Apply pagination after merging
+    $data = array_slice($allData, $offset, $pageSize);
 
     echo json_encode([
         'success' => true,

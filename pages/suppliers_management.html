@@ -26,6 +26,8 @@
 <script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
 </head>
 <body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Role Utilities - Load first -->
+    <script src="../js/role-utils.js"></script>
     <!-- Sidebar will be loaded here -->
     <script src="../js/load-sidebar.js"></script>
     <!-- Top Bar will be loaded here -->
@@ -34,6 +36,8 @@
     <script src="../js/load-archive-modal.js" defer></script>
     <!-- User Management Modal will be loaded here -->
     <script src="../js/load-user-management-modal.js" defer></script>
+    <!-- Page Protection -->
+    <script src="../js/page-protection.js" defer></script>
 
     <!-- Main Content -->
     <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
@@ -125,6 +129,11 @@
                                     <div class="flex items-center space-x-1">
                                         <span>Location</span>
                                         <i class="fas fa-sort text-xs"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Login Account</span>
                                     </div>
                                 </th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
@@ -247,6 +256,38 @@
                         <textarea id="notes" name="notes" rows="3" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 resize-none" placeholder="Additional notes about the supplier..."></textarea>
                     </div>
 
+                    <!-- Login Account Section -->
+                    <div class="md:col-span-2 border-t border-border-light pt-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-text-primary mb-1">Login Account Setup</h3>
+                                <p class="text-xs text-text-secondary">Set up login credentials for this supplier to access the supplier portal</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="enableLoginAccount" class="sr-only peer" onchange="toggleLoginFields()">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+                        <div id="loginAccountFields" class="hidden space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="username" class="block text-sm font-medium text-text-primary mb-2">
+                                        Username <span class="text-error-600">*</span>
+                                    </label>
+                                    <input type="text" id="username" name="username" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter username for login" />
+                                    <p class="text-xs text-text-secondary mt-1">Username must be unique</p>
+                                </div>
+                                <div>
+                                    <label for="password" class="block text-sm font-medium text-text-primary mb-2">
+                                        Password <span class="text-error-600">*</span>
+                                    </label>
+                                    <input type="password" id="password" name="password" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter password (min 8 chars)" />
+                                    <p class="text-xs text-text-secondary mt-1">Leave empty to use default: supplier123</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Medicines Section -->
                     <div class="md:col-span-2 border-t border-border-light pt-4">
                         <label class="block text-sm font-medium text-text-primary mb-2">
@@ -348,6 +389,38 @@
                             Notes (Optional)
                         </label>
                         <textarea id="editNotes" name="notes" rows="3" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 resize-none"></textarea>
+                    </div>
+
+                    <!-- Login Account Section -->
+                    <div class="md:col-span-2 border-t border-border-light pt-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-text-primary mb-1">Login Account Setup</h3>
+                                <p class="text-xs text-text-secondary">Set up or update login credentials for this supplier</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="editEnableLoginAccount" class="sr-only peer" onchange="toggleEditLoginFields()">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+                        <div id="editLoginAccountFields" class="hidden space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="editUsername" class="block text-sm font-medium text-text-primary mb-2">
+                                        Username <span class="text-error-600">*</span>
+                                    </label>
+                                    <input type="text" id="editUsername" name="username" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter username for login" />
+                                    <p class="text-xs text-text-secondary mt-1">Username must be unique</p>
+                                </div>
+                                <div>
+                                    <label for="editPassword" class="block text-sm font-medium text-text-primary mb-2">
+                                        New Password (Optional)
+                                    </label>
+                                    <input type="password" id="editPassword" name="password" class="w-full px-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200" placeholder="Enter new password (min 8 chars)" />
+                                    <p class="text-xs text-text-secondary mt-1">Leave empty to keep current password</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Medicines Section -->
@@ -529,7 +602,10 @@
                     phone: supplier.phone || '',
                     location: supplier.address || '',
                     website: supplier.website || '',
-                    notes: supplier.notes || ''
+                    notes: supplier.notes || '',
+                    username: supplier.username || null,
+                    status: supplier.status || null,
+                    has_login_account: supplier.has_login_account || (supplier.username && supplier.password_hash ? 1 : 0)
                 }));
                 
                 filteredSuppliers = [...suppliersData];
@@ -562,6 +638,8 @@
                 // Reset form and selected medicines
                 selectedMedicines = [];
                 document.getElementById('addSupplierForm').reset();
+                document.getElementById('enableLoginAccount').checked = false;
+                toggleLoginFields();
                 // Refresh medicines list when opening modal
                 fetchMedicinesByCategory();
                 addSupplierModal.classList.remove('hidden');
@@ -708,6 +786,20 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-text-primary dark:text-gray-100">${supplier.location}</div>
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${supplier.has_login_account ? `
+                            <div class="flex flex-col space-y-1">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white dark:bg-green-600">
+                                    <i class="fas fa-check-circle mr-1.5 text-[10px]"></i> Active
+                                </span>
+                                <span class="text-xs text-text-secondary dark:text-gray-400">${supplier.username || 'N/A'}</span>
+                            </div>
+                        ` : `
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-400 text-white dark:bg-slate-500">
+                                <i class="fas fa-times-circle mr-1.5 text-[10px]"></i> No Account
+                            </span>
+                        `}
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex items-center justify-end space-x-2">
                             <button class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 p-1" onclick="viewSupplier(${supplier.id})" title="View Details">
@@ -732,9 +824,20 @@
                             <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
                                 <i class="fas fa-capsules text-primary-600"></i>
                             </div>
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-medium text-text-primary">${supplier.name}</div>
                                 <div class="text-sm text-text-tertiary">${supplier.contact}</div>
+                                <div class="mt-1">
+                                    ${supplier.has_login_account ? `
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white">
+                                            <i class="fas fa-check-circle mr-1 text-[8px]"></i> Account Active
+                                        </span>
+                                    ` : `
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-400 text-white">
+                                            <i class="fas fa-times-circle mr-1 text-[8px]"></i> No Account
+                                        </span>
+                                    `}
+                                </div>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -962,6 +1065,35 @@
                                 </p>
                             </div>
                         ` : ''}
+                        
+                        <!-- Login Account Information -->
+                        <div class="pt-4 border-t border-border-light dark:border-gray-700">
+                            <h3 class="text-sm font-semibold text-text-primary dark:text-gray-100 mb-3">Login Account Status</h3>
+                            ${supplier.has_login_account ? `
+                                <div class="flex items-center space-x-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-green-900 dark:text-green-200">Login Account Active</p>
+                                        <p class="text-xs text-green-700 dark:text-green-300">Username: <span class="font-mono">${escapeHtml(supplier.username || 'N/A')}</span></p>
+                                        ${supplier.status ? `
+                                            <p class="text-xs text-green-700 dark:text-green-300 mt-1">Status: <span class="font-semibold capitalize">${escapeHtml(supplier.status)}</span></p>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-times-circle text-slate-400 dark:text-slate-500 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-slate-700 dark:text-slate-300">No Login Account</p>
+                                        <p class="text-xs text-slate-600 dark:text-slate-400">This supplier does not have login credentials set up. Edit the supplier to enable login access.</p>
+                                    </div>
+                                </div>
+                            `}
+                        </div>
 
                         ${supplier.created_at ? `
                             <div class="grid grid-cols-2 gap-4">
@@ -1066,7 +1198,10 @@
                                 phone: s.phone || '',
                                 location: s.address || '',
                                 website: s.website || '',
-                                notes: s.notes || ''
+                                notes: s.notes || '',
+                                username: s.username || null,
+                                status: s.status || null,
+                                has_login_account: s.has_login_account || (s.username && s.password_hash ? 1 : 0)
                             }));
                             
                             console.log('Updated suppliersData length:', suppliersData.length);
@@ -1101,6 +1236,20 @@
             document.getElementById('editLocation').value = supplier.location || '';
             document.getElementById('editWebsite').value = supplier.website || '';
             document.getElementById('editNotes').value = supplier.notes || '';
+            
+            // Set up login account fields
+            const hasLoginAccount = supplier.has_login_account || (supplier.username && supplier.username !== '');
+            if (hasLoginAccount) {
+                document.getElementById('editEnableLoginAccount').checked = true;
+                document.getElementById('editUsername').value = supplier.username || '';
+                document.getElementById('editPassword').value = ''; // Don't show password
+                toggleEditLoginFields();
+            } else {
+                document.getElementById('editEnableLoginAccount').checked = false;
+                document.getElementById('editUsername').value = '';
+                document.getElementById('editPassword').value = '';
+                toggleEditLoginFields();
+            }
 
             // Load existing medicines for this supplier
             selectedMedicines = [];
@@ -1236,9 +1385,41 @@
             }
         }
 
+        // Toggle login account fields
+        function toggleLoginFields() {
+            const checkbox = document.getElementById('enableLoginAccount');
+            const fields = document.getElementById('loginAccountFields');
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                document.getElementById('username').required = true;
+                // Password is optional (will use default if not provided)
+            } else {
+                fields.classList.add('hidden');
+                document.getElementById('username').required = false;
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }
+        }
+        
+        function toggleEditLoginFields() {
+            const checkbox = document.getElementById('editEnableLoginAccount');
+            const fields = document.getElementById('editLoginAccountFields');
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                document.getElementById('editUsername').required = true;
+            } else {
+                fields.classList.add('hidden');
+                document.getElementById('editUsername').required = false;
+                document.getElementById('editUsername').value = '';
+                document.getElementById('editPassword').value = '';
+            }
+        }
+        
         // Make functions globally accessible for onclick handlers
         window.viewSupplier = viewSupplier;
         window.archiveSupplier = archiveSupplier;
+        window.toggleLoginFields = toggleLoginFields;
+        window.toggleEditLoginFields = toggleEditLoginFields;
 
         // Form submissions
         document.getElementById('addSupplierForm').addEventListener('submit', async function(e) {
@@ -1251,6 +1432,21 @@
             
             try {
                 const formData = new FormData(this);
+                
+                // Add login account fields if enabled
+                const enableLogin = document.getElementById('enableLoginAccount').checked;
+                if (enableLogin) {
+                    const username = document.getElementById('username').value.trim();
+                    const password = document.getElementById('password').value;
+                    
+                    if (username) {
+                        formData.append('username', username);
+                    }
+                    if (password && password.length >= 8) {
+                        formData.append('password', password);
+                    }
+                }
+                
                 const baseUrl = getApiBaseUrl();
                 const url = `${baseUrl}/add_supplier.php`;
                 
@@ -1286,19 +1482,21 @@
                             
                             const linkResult = await linkResponse.json();
                             if (linkResult.success) {
-                                showSuccess(`✓ Supplier added successfully! Linked ${selectedMedicines.length} medicine(s) to this supplier. These medicines are now available when creating orders with this supplier.`);
+                                showSuccess(`✓ Supplier added successfully! Linked ${selectedMedicines.length} medicine(s) to this supplier.`);
                             } else {
                                 showSuccess('✓ Supplier added successfully, but some medicines could not be linked: ' + (linkResult.message || 'Unknown error'));
                             }
                         } catch (linkError) {
                             console.error('Error linking medicines:', linkError);
-                            showSuccess('✓ Supplier added successfully, but there was an error linking medicines: ' + linkError.message);
+                            showSuccess('✓ Supplier added successfully, but there was an error linking medicines.');
                         }
                     } else {
-                        showSuccess('✓ Supplier added successfully! You can link medicines later by editing this supplier.');
+                        showSuccess('✓ Supplier added successfully!');
                     }
                     
                     this.reset();
+                    document.getElementById('enableLoginAccount').checked = false;
+                    toggleLoginFields();
                     selectedMedicines = [];
                     renderMedicinesByCategory();
                     addSupplierModal.classList.add('hidden');
@@ -1329,6 +1527,20 @@
             try {
                 const formData = new FormData(this);
                 formData.append('id', currentEditId);
+                
+                // Add login account fields if enabled
+                const enableLogin = document.getElementById('editEnableLoginAccount').checked;
+                if (enableLogin) {
+                    const username = document.getElementById('editUsername').value.trim();
+                    const password = document.getElementById('editPassword').value;
+                    
+                    if (username) {
+                        formData.append('username', username);
+                    }
+                    if (password && password.length >= 8) {
+                        formData.append('password', password);
+                    }
+                }
                 
                 const baseUrl = getApiBaseUrl();
                 const url = `${baseUrl}/edit_supplier.php`;
@@ -1367,7 +1579,7 @@
                             if (linkResult.success) {
                                 showSuccess(`Supplier updated successfully! Linked ${selectedMedicines.length} medicine(s) to this supplier.`);
                             } else {
-                                showSuccess('Supplier updated successfully, but some medicines could not be linked.');
+                                showSuccess('Supplier updated successfully, but some medicines could not be linked: ' + (linkResult.message || 'Unknown error'));
                             }
                         } catch (linkError) {
                             console.error('Error linking medicines:', linkError);

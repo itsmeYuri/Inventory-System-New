@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Products - Supplier Portal</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* Main Content Wrapper - Padding handled by sidebar component */
+        .main-content-wrapper {
+            margin-left: 0;
+            padding-left: 60px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 1023px) {
+            .main-content-wrapper {
+                padding-left: 0;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Supplier Sidebar will be loaded here -->
+    <script src="../js/load-supplier-sidebar.js"></script>
+    <!-- Top Bar will be loaded here -->
+    <script src="../js/load-topbar.js" data-title="My Products" data-description="Manage your product catalog"></script>
+
+    <!-- Main Content -->
+    <main class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
+        <div class="p-6 space-y-6">
+            <!-- Products List -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 overflow-hidden">
+                <div class="p-6 border-b border-border-light dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100">
+                            <i class="fas fa-box mr-2 text-primary-600 dark:text-primary-400"></i>My Products
+                        </h2>
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="searchProducts" placeholder="Search products..." class="px-4 py-2 border border-border-light dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100 focus:ring-2 focus:ring-primary-200" />
+                        </div>
+                    </div>
+                </div>
+                <div id="productsList" class="divide-y divide-border-light dark:divide-gray-700">
+                    <div class="text-center py-8 text-text-secondary dark:text-gray-400">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>Loading products...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check authentication
+        let supplierId = localStorage.getItem('supplierId');
+        const supplierLoggedIn = localStorage.getItem('supplierLoggedIn') === 'true' || 
+                                 sessionStorage.getItem('supplierLoggedIn') === 'true';
+        
+        if (!supplierId || !supplierLoggedIn) {
+            window.location.href = 'login.html';
+        }
+
+        // Load products
+        async function loadProducts() {
+            try {
+                const response = await fetch(`../php/get_supplier_medicines.php?supplier_id=${supplierId}`);
+                const result = await response.json();
+                
+                const productsList = document.getElementById('productsList');
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    productsList.innerHTML = result.data.map(product => `
+                        <div class="p-6 hover:bg-surface-hover dark:hover:bg-gray-800 transition-colors duration-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-capsules text-primary-600 dark:text-primary-400 text-2xl"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">${escapeHtml(product.name || 'N/A')}</h3>
+                                            <div class="flex items-center space-x-4 mt-2 text-sm text-text-secondary dark:text-gray-400">
+                                                <span><i class="fas fa-building mr-1"></i>${escapeHtml(product.manufacturer || 'N/A')}</span>
+                                                <span><i class="fas fa-tag mr-1"></i>${escapeHtml(product.category || 'N/A')}</span>
+                                                <span><i class="fas fa-barcode mr-1"></i>${escapeHtml(product.ndc || 'N/A')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ml-6 text-right">
+                                    <div class="text-2xl font-bold text-text-primary dark:text-gray-100">₱${parseFloat(product.price || 0).toFixed(2)}</div>
+                                    <div class="text-sm text-text-secondary dark:text-gray-400 mt-1">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${parseInt(product.quantity || 0) <= parseInt(product.reorder_level || 0) ? 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200' : 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'}">
+                                            <i class="fas fa-box mr-1"></i>${product.quantity || 0} units
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    productsList.innerHTML = '<div class="text-center py-8 text-text-secondary dark:text-gray-400">No products found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('productsList').innerHTML = '<div class="text-center py-8 text-error-600 dark:text-error-400">Error loading products</div>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Search functionality
+        document.getElementById('searchProducts')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const products = document.querySelectorAll('#productsList > div');
+            products.forEach(product => {
+                const text = product.textContent.toLowerCase();
+                product.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Initialize
+        loadProducts();
+    </script>
+</body>
+</html>
+

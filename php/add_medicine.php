@@ -166,11 +166,12 @@ try {
     
     if ($ndcCheckResult && mysqli_num_rows($ndcCheckResult) > 0) {
         $existing = mysqli_fetch_assoc($ndcCheckResult);
-        mysqli_stmt_close($ndcCheckStmt);
         
         // Check if name matches
         if (strcasecmp($existing['name'], $name) === 0) {
             // Same NDC + Same Name → Increment quantity
+            mysqli_stmt_close($ndcCheckStmt);
+            
             $existingId = (int)$existing['id'];
             $existingQuantity = (int)$existing['quantity'];
             $newQuantity = $existingQuantity + $quantity;

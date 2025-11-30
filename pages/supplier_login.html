@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Supplier Login - Inventory Management System</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-100 flex items-center justify-center p-4">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-10">
+        <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" stroke-width="0.5"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" class="text-primary-300"/>
+        </svg>
+    </div>
+
+    <!-- Main Login Container -->
+    <div class="relative w-full max-w-md">
+        <!-- Security Badge -->
+        <div class="flex justify-center mb-6">
+            <div class="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-border-light">
+                <i class="fas fa-shield-alt text-success-600 text-sm"></i>
+                <span class="text-xs font-medium text-text-secondary">SSL Secured</span>
+            </div>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 animation-slide-up">
+            <!-- Logo and Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-accent-100 rounded-2xl mb-4">
+                    <i class="fas fa-truck text-accent-600 text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-semibold text-text-primary mb-2">Supplier Portal</h1>
+                <p class="text-text-secondary">Sign in to manage your orders and products</p>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div id="messageContainer" class="hidden mb-4"></div>
+
+            <!-- Login Form -->
+            <form id="supplierLoginForm" class="space-y-6">
+                <!-- Username/Email Field -->
+                <div class="space-y-2">
+                    <label for="loginInput" class="block text-sm font-medium text-text-primary">
+                        Username or Email
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-text-tertiary text-sm"></i>
+                        </div>
+                        <input type="text" id="loginInput" name="loginInput" required 
+                            class="w-full pl-10 pr-4 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white/50" 
+                            placeholder="Enter your username or email" />
+                    </div>
+                    <div id="loginInput-error" class="text-sm text-error-600 hidden" role="alert"></div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="space-y-2">
+                    <label for="password" class="block text-sm font-medium text-text-primary">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-text-tertiary text-sm"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required 
+                            class="w-full pl-10 pr-12 py-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white/50" 
+                            placeholder="Enter your password" />
+                        <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye text-text-tertiary text-sm hover:text-text-secondary transition-colors duration-200"></i>
+                        </button>
+                    </div>
+                    <div id="password-error" class="text-sm text-error-600 hidden" role="alert"></div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember" name="remember" type="checkbox" 
+                            class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" />
+                        <label for="remember" class="ml-2 block text-sm text-text-secondary">
+                            Remember me
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit" id="loginBtn" class="w-full bg-accent hover:bg-accent-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-accent-200 focus:ring-offset-2 shadow-lg">
+                    <span class="flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        <span id="loginBtnText">Sign In</span>
+                    </span>
+                </button>
+
+                <!-- Back to Admin Login -->
+                <div class="text-center pt-4 border-t border-border-light">
+                    <p class="text-text-secondary text-sm">
+                        Admin? <a href="login.html" class="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">Login here</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8">
+            <p class="text-xs text-text-tertiary">
+                © 2025 Inventory Management System. All Rights Reserved.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('supplierLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loginInput = document.getElementById('loginInput').value.trim();
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            
+            // Clear previous errors
+            clearErrors();
+            hideMessage();
+            
+            // Validate inputs
+            if (!loginInput || !password) {
+                showError('Please enter both username/email and password');
+                return;
+            }
+            
+            // Disable submit button
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            loginBtn.disabled = true;
+            loginBtnText.textContent = 'Signing in...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('loginInput', loginInput);
+                formData.append('password', password);
+                if (remember) {
+                    formData.append('remember', '1');
+                }
+                
+                const response = await fetch('../php/supplier_login.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('Login successful! Redirecting...');
+                    
+                    // Store supplier session data
+                    if (result.supplier) {
+                        localStorage.setItem('supplierLoggedIn', 'true');
+                        localStorage.setItem('supplierId', result.supplier.id);
+                        localStorage.setItem('supplierName', result.supplier.name);
+                        localStorage.setItem('supplierEmail', result.supplier.email || '');
+                    }
+                    
+                    // Redirect to supplier dashboard
+                    setTimeout(() => {
+                        window.location.href = 'supplier_dashboard.html';
+                    }, 1000);
+                } else {
+                    showError(result.message || 'Invalid credentials. Please try again.');
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = 'Sign In';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('An error occurred. Please try again.');
+                loginBtn.disabled = false;
+                loginBtnText.textContent = 'Sign In';
+            }
+        });
+        
+        function clearErrors() {
+            document.getElementById('loginInput-error').classList.add('hidden');
+            document.getElementById('password-error').classList.add('hidden');
+        }
+        
+        function showError(message) {
+            const container = document.getElementById('messageContainer');
+            container.className = 'mb-4 p-4 bg-error-50 border border-error-200 rounded-xl';
+            container.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-error-600 mr-2"></i>
+                    <span class="text-sm text-error-700">${message}</span>
+                </div>
+            `;
+            container.classList.remove('hidden');
+        }
+        
+        function showSuccess(message) {
+            const container = document.getElementById('messageContainer');
+            container.className = 'mb-4 p-4 bg-success-50 border border-success-200 rounded-xl';
+            container.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-success-600 mr-2"></i>
+                    <span class="text-sm text-success-700">${message}</span>
+                </div>
+            `;
+            container.classList.remove('hidden');
+        }
+        
+        function hideMessage() {
+            document.getElementById('messageContainer').classList.add('hidden');
+        }
+        
+        // Check if already logged in
+        if (localStorage.getItem('supplierLoggedIn') === 'true') {
+            window.location.href = 'supplier_dashboard.html';
+        }
+    </script>
+</body>
+</html>
+

@@ -481,6 +481,11 @@
         async function fetchLowStockMedicines() {
             const tableBody = document.getElementById('lowStockTableBody');
             const loadingIndicator = document.getElementById('lowStockLoading');
+            const tableContainer = document.getElementById('lowStockTableContainer');
+            
+            // Show loading indicator
+            if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+            if (tableContainer) tableContainer.classList.add('hidden');
             
             try {
                 const response = await fetch(`${API_BASE}?action=low-stock`);
@@ -499,6 +504,7 @@
                         tableBody.innerHTML = '<tr><td colspan="3" class="py-8 text-center text-error-600 dark:text-error-400">Failed to load data: ' + (result.message || 'Unknown error') + '</td></tr>';
                     }
                     if (loadingIndicator) loadingIndicator.classList.add('hidden');
+                    if (tableContainer) tableContainer.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('Error fetching low stock data:', error);
@@ -506,6 +512,7 @@
                     tableBody.innerHTML = '<tr><td colspan="3" class="py-8 text-center text-error-600 dark:text-error-400">Error loading data: ' + error.message + '</td></tr>';
                 }
                 if (loadingIndicator) loadingIndicator.classList.add('hidden');
+                if (tableContainer) tableContainer.classList.remove('hidden');
                 showError('Error loading low stock data: ' + error.message);
             }
         }
@@ -652,32 +659,48 @@
                     // Determine row color based on quantity
                     let rowClass = '';
                     let quantityClass = '';
-                    if (medicine.quantity <= 2) {
-                        // Critical - Red
-                        rowClass = 'bg-error-50 dark:bg-error-900/20';
-                        quantityClass = 'text-error-600 dark:text-error-400 font-semibold';
-                    } else if (medicine.quantity < medicine.reorderLevel) {
-                        // Below minimum - Orange
-                        rowClass = 'bg-warning-50 dark:bg-warning-900/20';
-                        quantityClass = 'text-warning-600 dark:text-warning-400 font-semibold';
+                    let quantityStyle = '';
+                    const quantity = medicine.quantity || 0;
+                    const reorderLevel = medicine.reorderLevel || 10;
+                    
+                    if (quantity === 0) {
+                        // Out of stock - Dark Red/Pink
+                        rowClass = 'bg-red-100 dark:bg-red-900/30';
+                        quantityClass = 'text-red-700 dark:!text-white font-bold';
+                    } else if (quantity <= 2) {
+                        // Critical - Light Red/Pink
+                        rowClass = 'bg-pink-100 dark:bg-pink-900/30';
+                        quantityClass = 'text-red-600 dark:!text-white font-semibold';
+                    } else if (quantity < reorderLevel) {
+                        // Below minimum - Orange/Yellow
+                        rowClass = 'bg-yellow-100 dark:bg-yellow-900/30';
+                        quantityClass = 'text-orange-600 dark:!text-white font-semibold';
+                    } else {
+                        // Normal stock - visible text
+                        quantityClass = 'text-text-primary dark:!text-white';
                     }
 
                     row.className += ` ${rowClass}`;
 
                     // Escape HTML to prevent XSS
                     const medicineName = escapeHtml(medicine.name || 'N/A');
-                    const quantity = (medicine.quantity || 0).toLocaleString();
-                    const reorderLevel = (medicine.reorderLevel || 0).toLocaleString();
+                    const quantityDisplay = (medicine.quantity || 0).toLocaleString();
+                    const reorderLevelDisplay = (medicine.reorderLevel || 0).toLocaleString();
+
+                    // Check if dark mode is active and force white text for visibility
+                    const isDarkMode = document.documentElement.classList.contains('dark') || 
+                                      window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const quantityStyleAttr = isDarkMode ? ' style="color: #ffffff !important;"' : '';
 
                     row.innerHTML = `
                         <td class="py-3 px-4 text-sm text-text-primary dark:text-gray-100">
                             ${medicineName}
                         </td>
-                        <td class="py-3 px-4 text-sm text-right ${quantityClass}">
-                            ${quantity}
+                        <td class="py-3 px-4 text-sm text-right ${quantityClass}"${quantityStyleAttr}>
+                            ${quantityDisplay}
                         </td>
                         <td class="py-3 px-4 text-sm text-right text-text-secondary dark:text-gray-400">
-                            ${reorderLevel}
+                            ${reorderLevelDisplay}
                         </td>
                     `;
 
@@ -1305,7 +1328,7 @@
                         <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.employee_id || 'N/A')}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'user').toUpperCase())}</span>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'employee').toUpperCase())}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-center">
                         ${user.status !== undefined ? `
@@ -1536,7 +1559,7 @@
 
         // Change user role
         async function changeUserRoleModal(userId, currentRole) {
-            const roles = ['user', 'supplier', 'admin'];
+            const roles = ['employee', 'supplier', 'admin'];
             const currentIndex = roles.indexOf(currentRole);
             const nextIndex = (currentIndex + 1) % roles.length;
             const newRole = roles[nextIndex];

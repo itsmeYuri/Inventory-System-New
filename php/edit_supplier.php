@@ -6,6 +6,11 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
+// Start output buffering to catch any unexpected output
+if (ob_get_level() == 0) {
+    ob_start();
+}
+
 // Enhanced CORS headers
 $allowed_origins = [
     'http://localhost:3000',
@@ -26,23 +31,46 @@ header('Access-Control-Allow-Headers: Content-Type, Accept');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json; charset=utf-8');
 
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit(0);
-}
-
 // Helper function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $httpCode = 200) {
     http_response_code($httpCode);
-    ob_clean();
+    
+    // Clean output buffer if it exists
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+    
+    // Ensure no output has been sent
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    
     echo json_encode([
         'success' => $success,
         'message' => $message,
         'data' => $data
     ], JSON_UNESCAPED_UNICODE);
-    ob_end_flush();
+    
+    // End output buffering if it exists
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    
     exit;
+}
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    if (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    exit(0);
+}
+
+// Only allow POST/PUT requests
+if (!in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT'])) {
+    sendJsonResponse(false, 'Method not allowed. Only POST/PUT requests are accepted.', null, 405);
 }
 
 try {
@@ -51,6 +79,12 @@ try {
     // Check database connection
     if (!isset($conn) || !$conn) {
         sendJsonResponse(false, 'Database connection failed', null, 500);
+    }
+    
+    // Check if suppliers table exists
+    $tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'suppliers'");
+    if (!$tableCheck || mysqli_num_rows($tableCheck) == 0) {
+        sendJsonResponse(false, 'Suppliers table does not exist. Please run database setup first.', null, 500);
     }
 
     // Get supplier ID
@@ -76,6 +110,12 @@ try {
     $address = isset($_POST['address']) ? trim($_POST['address']) : (isset($_POST['location']) ? trim($_POST['location']) : '');
     $address = $address !== '' ? $address : null;
     
+    $website = isset($_POST['website']) ? trim($_POST['website']) : '';
+    $website = $website !== '' ? $website : null;
+    
+    $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
+    $notes = $notes !== '' ? $notes : null;
+    
     // Validate required fields
     if (empty($name)) {
         sendJsonResponse(false, 'Supplier Name is required', null, 400);
@@ -85,16 +125,103 @@ try {
     if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         sendJsonResponse(false, 'Invalid email address format', null, 400);
     }
+    
+    // Validate website URL format if provided
+    if ($website !== null && $website !== '' && !filter_var($website, FILTER_VALIDATE_URL)) {
+        sendJsonResponse(false, 'Invalid website URL format', null, 400);
+    }
+    
+    // Check if website and notes columns exist
+    $checkWebsite = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'website'");
+    $hasWebsite = $checkWebsite && mysqli_num_rows($checkWebsite) > 0;
+    
+    $checkNotes = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'notes'");
+    $hasNotes = $checkNotes && mysqli_num_rows($checkNotes) > 0;
+    
+    // Check if authentication fields exist
+    $checkUsername = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'username'");
+    $hasUsername = $checkUsername && mysqli_num_rows($checkUsername) > 0;
+    
+    $checkPasswordHash = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'password_hash'");
+    $hasPasswordHash = $checkPasswordHash && mysqli_num_rows($checkPasswordHash) > 0;
+    
+    $checkStatus = mysqli_query($conn, "SHOW COLUMNS FROM suppliers WHERE Field = 'status'");
+    $hasStatus = $checkStatus && mysqli_num_rows($checkStatus) > 0;
+    
+    // Get authentication fields if provided
+    $username = isset($_POST['username']) ? trim($_POST['username']) : null;
+    $password = isset($_POST['password']) ? trim($_POST['password']) : null;
+    $password_hash = null;
+    $updatePassword = false;
+    
+    // If username is provided and changed, validate it
+    if ($username !== null && $username !== '') {
+        // Check if username already exists for another supplier
+        if ($hasUsername) {
+            $checkUsernameQuery = "SELECT id FROM suppliers WHERE username = ? AND id != ?";
+            $checkStmt = mysqli_prepare($conn, $checkUsernameQuery);
+            if ($checkStmt) {
+                mysqli_stmt_bind_param($checkStmt, "si", $username, $supplier_id);
+                mysqli_stmt_execute($checkStmt);
+                $checkResult = mysqli_stmt_get_result($checkStmt);
+                if ($checkResult && mysqli_num_rows($checkResult) > 0) {
+                    mysqli_stmt_close($checkStmt);
+                    sendJsonResponse(false, 'Username already exists. Please choose a different username.', null, 400);
+                }
+                mysqli_stmt_close($checkStmt);
+            }
+        }
+        
+        // If password is provided, hash it
+        if ($password !== null && $password !== '') {
+            if (strlen($password) < 8) {
+                sendJsonResponse(false, 'Password must be at least 8 characters long', null, 400);
+            }
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $updatePassword = true;
+        }
+    }
 
-    // Update SQL statement
-    $sql = "UPDATE suppliers SET 
-        name = ?, 
-        contact_person = ?, 
-        phone = ?, 
-        email = ?, 
-        address = ?,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?";
+    // Build UPDATE SQL statement dynamically
+    $updateFields = ['name = ?', 'contact_person = ?', 'phone = ?', 'email = ?', 'address = ?'];
+    $updateValues = [$name, $contact_person, $phone, $email, $address];
+    $updateTypes = 'sssss';
+    
+    if ($hasWebsite) {
+        $updateFields[] = 'website = ?';
+        $updateValues[] = $website;
+        $updateTypes .= 's';
+    }
+    
+    if ($hasNotes) {
+        $updateFields[] = 'notes = ?';
+        $updateValues[] = $notes;
+        $updateTypes .= 's';
+    }
+    
+    if ($hasUsername && $username !== null) {
+        $updateFields[] = 'username = ?';
+        $updateValues[] = $username;
+        $updateTypes .= 's';
+    }
+    
+    if ($hasPasswordHash && $updatePassword) {
+        $updateFields[] = 'password_hash = ?';
+        $updateValues[] = $password_hash;
+        $updateTypes .= 's';
+    }
+    
+    if ($hasStatus && $username !== null && $username !== '') {
+        $updateFields[] = 'status = ?';
+        $updateValues[] = 'active';
+        $updateTypes .= 's';
+    }
+    
+    $updateFields[] = 'updated_at = CURRENT_TIMESTAMP';
+    $updateValues[] = $supplier_id; // For WHERE clause
+    $updateTypes .= 'i';
+    
+    $sql = "UPDATE suppliers SET " . implode(', ', $updateFields) . " WHERE id = ?";
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -103,17 +230,8 @@ try {
         sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
     }
 
-    // Bind parameters: 5 values + 1 ID
-    $bound = mysqli_stmt_bind_param(
-        $stmt, 
-        'sssssi',  // 6 parameters
-        $name, 
-        $contact_person, 
-        $phone, 
-        $email, 
-        $address,
-        $supplier_id
-    );
+    // Bind parameters dynamically
+    $bound = mysqli_stmt_bind_param($stmt, $updateTypes, ...$updateValues);
     
     if (!$bound) {
         $error = 'Failed to bind parameters: ' . mysqli_stmt_error($stmt);
@@ -146,9 +264,16 @@ try {
         contact_person, 
         phone, 
         email, 
-        address,
-        created_at,
-        updated_at
+        address";
+    
+    if ($hasWebsite) {
+        $selectSql .= ", website";
+    }
+    if ($hasNotes) {
+        $selectSql .= ", notes";
+    }
+    
+    $selectSql .= ", created_at, updated_at
     FROM suppliers 
     WHERE id = ?";
     

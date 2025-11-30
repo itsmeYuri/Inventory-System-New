@@ -29,6 +29,8 @@
 <script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
 </head>
 <body class="min-h-screen bg-background transition-colors duration-300">
+    <!-- Role Utilities - Load first -->
+    <script src="../js/role-utils.js"></script>
     <!-- Sidebar will be loaded here -->
     <script src="../js/load-sidebar.js"></script>
     <!-- Top Bar will be loaded here -->
@@ -37,6 +39,8 @@
     <script src="../js/load-archive-modal.js" defer></script>
     <!-- User Management Modal will be loaded here -->
     <script src="../js/load-user-management-modal.js" defer></script>
+    <!-- Page Protection -->
+    <script src="../js/page-protection.js" defer></script>
 
     <!-- Main Content -->
     <main class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
@@ -64,7 +68,7 @@
                         <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Create Order</span>
                     </button>
 
-                    <button onclick="window.location.href='suppliers_management.html'" class="flex flex-col items-center justify-center p-6 bg-accent-50 dark:bg-accent-900 hover:bg-accent-100 dark:hover:bg-accent-800 border-2 border-accent-200 dark:border-accent-700 hover:border-accent-300 dark:hover:border-accent-600 rounded-xl transition-all duration-200 group">
+                    <button id="addSupplierBtn" onclick="window.location.href='suppliers_management.html'" class="flex flex-col items-center justify-center p-6 bg-accent-50 dark:bg-accent-900 hover:bg-accent-100 dark:hover:bg-accent-800 border-2 border-accent-200 dark:border-accent-700 hover:border-accent-300 dark:hover:border-accent-600 rounded-xl transition-all duration-200 group" data-hide-for-roles="supplier">
                         <div class="w-12 h-12 bg-accent-600 dark:bg-accent-500 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                             <i class="fas fa-truck-medical text-white"></i>
                         </div>
@@ -111,7 +115,7 @@
                         <!-- Inventory Value -->
                         <button onclick="window.location.href='reports_analytics.html'" class="text-center p-4 bg-success-50 dark:bg-success-900 rounded-xl hover:bg-success-100 dark:hover:bg-success-800 transition-all duration-200 cursor-pointer">
                             <div class="w-12 h-12 bg-success-600 dark:bg-success-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-dollar-sign text-white"></i>
+                                <i class="fas fa-coins text-white"></i>
                             </div>
                             <div class="text-2xl font-bold text-success-700 dark:text-success-300 mb-1" id="totalValue">--</div>
                             <div class="text-sm text-success-600 dark:text-success-400">Total Value</div>
@@ -1447,6 +1451,27 @@
         window.viewAllActivities = viewAllActivities;
         window.viewOrderDetails = viewOrderDetails;
         window.showCalendarEventModal = showCalendarEventModal;
+
+        // Redirect suppliers to supplier dashboard
+        function checkSupplierRedirect() {
+            if (typeof window.RoleUtils !== 'undefined') {
+                const role = window.RoleUtils.getUserRole();
+                if (role === 'supplier') {
+                    // Redirect supplier to their dashboard
+                    window.location.href = 'supplier_dashboard.html';
+                    return;
+                }
+                
+                // Hide supplier button for supplier role (suppliers use their own portal)
+                const addSupplierBtn = document.getElementById('addSupplierBtn');
+                if (addSupplierBtn && role === 'supplier') {
+                    addSupplierBtn.style.display = 'none';
+                }
+            }
+        }
+
+        // Run after a short delay to ensure RoleUtils is loaded
+        setTimeout(checkSupplierRedirect, 500);
     </script>
 <!-- dhws-data-injector.js removed - file not found -->
 </body>

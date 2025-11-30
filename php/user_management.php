@@ -150,7 +150,7 @@ function getAllUsers() {
                 'email' => $row['email'] ?? '',
                 'username' => $row['username'] ?? '',
                 'employee_id' => $row['employee_id'] ?? $row['employeeId'] ?? $row['emp_id'] ?? null,
-                'role' => $row['role'] ?? 'user',
+                'role' => $row['role'] ?? 'employee',
                 'status' => $row['status'] ?? 'active',
                 'created_at' => $row['created_at'] ?? null,
                 'updated_at' => $row['updated_at'] ?? null
@@ -239,7 +239,7 @@ function getUser() {
                 'email' => $user['email'] ?? '',
                 'username' => $user['username'] ?? '',
                 'employee_id' => $user['employee_id'] ?? $user['employeeId'] ?? $user['emp_id'] ?? null,
-                'role' => $user['role'] ?? 'user',
+                'role' => $user['role'] ?? 'employee',
                 'status' => $user['status'] ?? 'active'
             ]
         ], JSON_UNESCAPED_UNICODE);
@@ -261,7 +261,7 @@ function createUser() {
     $fullName = $_POST['full_name'] ?? '';
     $email = $_POST['email'] ?? '';
     $username = $_POST['username'] ?? '';
-    $role = $_POST['role'] ?? 'user';
+    $role = $_POST['role'] ?? 'employee';
     
     if (empty($email) || empty($username)) {
         echo json_encode([
@@ -550,7 +550,7 @@ function updateUserRole() {
     global $conn;
     
     $userId = $_POST['user_id'] ?? null;
-    $role = $_POST['role'] ?? 'user';
+    $role = $_POST['role'] ?? 'employee';
     
     if (!$userId) {
         echo json_encode([
@@ -561,7 +561,7 @@ function updateUserRole() {
     }
     
     // Validate role
-    $validRoles = ['user', 'supplier', 'admin'];
+    $validRoles = ['employee', 'supplier', 'admin'];
     if (!in_array($role, $validRoles)) {
         echo json_encode([
             'success' => false,
@@ -574,7 +574,7 @@ function updateUserRole() {
         // Check if role column exists, create if not
         $checkRole = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'role'");
         if (mysqli_num_rows($checkRole) === 0) {
-            $alterQuery = "ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user'";
+            $alterQuery = "ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'employee'";
             mysqli_query($conn, $alterQuery);
         }
         

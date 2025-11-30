@@ -2,8 +2,12 @@
 session_start();
 
 // Redirect if already logged in
-if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+if (isset($_SESSION['loggedin'])) {
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'supplier') {
+        header('Location: supplier_dashboard.html');
+    } else {
+        header('Location: dashboard.html');
+    }
     exit;
 }
 ?>
@@ -57,15 +61,7 @@ if (isset($_SESSION['user_id'])) {
                 <p class="text-text-secondary">Sign in to your inventory account</p>
             </div>
 
-            <!-- Password Reset Success Message -->
-            <?php if (isset($_GET['reset']) && $_GET['reset'] === 'success'): ?>
-                <div class="mb-6 p-4 bg-success-50 border border-success-200 rounded-xl">
-                    <div class="flex items-center">
-                        <i class="fas fa-check-circle text-success-600 mr-2"></i>
-                        <span class="text-sm text-success-700">Password reset successful! Please log in with your new password.</span>
-                    </div>
-                </div>
-            <?php endif; ?>
+            
 
             <!-- Login Form -->
             <form id="loginForm" class="space-y-6">
@@ -612,9 +608,18 @@ if (isset($_SESSION['user_id'])) {
                     errorDiv.classList.remove('text-error-600');
                     errorDiv.classList.add('text-success-600');
                     
-                    // Redirect to dashboard
+                    // Store supplier data if supplier
+                    if (data.user.role === 'supplier') {
+                        localStorage.setItem('supplierLoggedIn', 'true');
+                        localStorage.setItem('supplierId', data.user.supplier_id || data.user.id);
+                        localStorage.setItem('supplierName', data.user.name || 'Supplier');
+                        localStorage.setItem('supplierEmail', data.user.email || '');
+                    }
+                    
+                    // Redirect based on role (from server response or default to dashboard)
+                    const redirectUrl = data.redirect || 'dashboard.html';
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                        window.location.href = redirectUrl;
                     }, 500);
                 } else {
                     // Show error message

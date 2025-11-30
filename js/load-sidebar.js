@@ -60,6 +60,14 @@
                 document.body.insertBefore(sidebar, document.body.firstChild);
                 console.log('Sidebar inserted into DOM');
                 
+                // Load role utilities first if not already loaded
+                if (!document.querySelector('script[src="../js/role-utils.js"]')) {
+                    const roleUtilsScript = document.createElement('script');
+                    roleUtilsScript.src = '../js/role-utils.js';
+                    roleUtilsScript.async = false; // Load synchronously before sidebar
+                    document.head.appendChild(roleUtilsScript);
+                }
+
                 // Load sidebar JavaScript (only if not already loaded)
                 if (!document.querySelector('script[src="../js/sidebar.js"]')) {
                     const script = document.createElement('script');

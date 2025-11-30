@@ -1,77 +1,89 @@
 <?php
 /**
  * Order Batch Helper Functions
- * Handles batch creation for orders
+ * Handles batch creation for orders - groups orders by date (one batch per day)
  */
 
 /**
- * Generate a unique batch number for an order
- * Format: BATCH-YYYYMMDD-XXX (e.g., BATCH-20241215-001)
+ * Generate a unique batch number for a date
+ * Format: BATCH-YYYYMMDD (e.g., BATCH-20241215)
  * 
  * @param mysqli $conn Database connection
- * @param int $order_id Order ID
+ * @param string $order_date Order date in YYYY-MM-DD format
  * @return string Unique batch number
  */
-function generateOrderBatchNumber($conn, $order_id) {
-    $datePrefix = date('Ymd'); // YYYYMMDD format
-    
-    // Find the highest sequence number for today
-    $checkSql = "SELECT batch_number FROM batches 
-                 WHERE batch_number LIKE ? 
-                 ORDER BY batch_number DESC 
-                 LIMIT 1";
-    $pattern = "BATCH-{$datePrefix}-%";
-    $checkStmt = mysqli_prepare($conn, $checkSql);
-    
-    if (!$checkStmt) {
-        error_log("Batch number check prepare error: " . mysqli_error($conn));
-        // Fallback to simple format
-        return "BATCH-{$datePrefix}-{$order_id}";
-    }
-    
-    mysqli_stmt_bind_param($checkStmt, 's', $pattern);
-    mysqli_stmt_execute($checkStmt);
-    $result = mysqli_stmt_get_result($checkStmt);
-    
-    $sequence = 1;
-    if ($result && mysqli_num_rows($result) > 0) {
-        $row = mysqli_fetch_assoc($result);
-        $lastBatch = $row['batch_number'];
-        // Extract sequence number from format BATCH-YYYYMMDD-XXX
-        if (preg_match('/BATCH-\d+-(\d+)$/', $lastBatch, $matches)) {
-            $sequence = (int)$matches[1] + 1;
-        }
-    }
-    mysqli_stmt_close($checkStmt);
-    
-    // Format: BATCH-YYYYMMDD-XXX (3-digit sequence)
-    return sprintf("BATCH-%s-%03d", $datePrefix, $sequence);
+function generateDailyBatchNumber($conn, $order_date) {
+    // Format: BATCH-YYYYMMDD
+    $datePrefix = date('Ymd', strtotime($order_date));
+    return "BATCH-{$datePrefix}";
 }
 
 /**
- * Create a batch for an order
+ * Get or create a batch for a specific date
+ * One batch per day - all orders from the same day share the same batch
  * 
  * @param mysqli $conn Database connection
- * @param int $order_id Order ID
- * @param int $supplier_id Supplier ID
- * @param string $order_date Order date
- * @param array $items Order items with medicine_id, quantity, expiration_date
+ * @param string $order_date Order date in YYYY-MM-DD format
  * @return int|false Batch ID on success, false on failure
  */
-function createOrderBatch($conn, $order_id, $supplier_id, $order_date, $items) {
+function getOrCreateDailyBatch($conn, $order_date) {
     // Check if batches table exists
     $checkTable = mysqli_query($conn, "SHOW TABLES LIKE 'batches'");
-    if (mysqli_num_rows($checkTable) === 0) {
+    if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
         error_log("Batches table does not exist. Please run create_batches_tables.php first.");
         return false;
     }
     
-    // Generate unique batch number
-    $batch_number = generateOrderBatchNumber($conn, $order_id);
+    // Fix AUTO_INCREMENT issues in batches table
+    @mysqli_query($conn, "DELETE FROM batches WHERE id = 0");
+    $maxBatchIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batches");
+    $maxBatchId = 0;
+    if ($maxBatchIdQuery) {
+        $maxBatchRow = mysqli_fetch_assoc($maxBatchIdQuery);
+        $maxBatchId = (int)($maxBatchRow['max_id'] ?? 0);
+    }
+    $nextBatchId = max(1, $maxBatchId + 1);
+    @mysqli_query($conn, "ALTER TABLE batches AUTO_INCREMENT = {$nextBatchId}");
     
-    // Insert batch
+    // Generate batch number for this date
+    $batch_number = generateDailyBatchNumber($conn, $order_date);
+    
+    // Check if batch already exists for this date (check by batch_number or by date)
+    $checkBatchSql = "SELECT id FROM batches WHERE batch_number = ? OR DATE(created_date) = DATE(?) LIMIT 1";
+    $checkBatchStmt = mysqli_prepare($conn, $checkBatchSql);
+    
+    if ($checkBatchStmt) {
+        mysqli_stmt_bind_param($checkBatchStmt, 'ss', $batch_number, $order_date);
+        mysqli_stmt_execute($checkBatchStmt);
+        $checkResult = mysqli_stmt_get_result($checkBatchStmt);
+        
+        if ($checkResult && mysqli_num_rows($checkResult) > 0) {
+            $batchRow = mysqli_fetch_assoc($checkResult);
+            mysqli_stmt_close($checkBatchStmt);
+            return (int)$batchRow['id'];
+        }
+        mysqli_stmt_close($checkBatchStmt);
+    }
+    
+    // Batch doesn't exist, create it
+    // Get the first supplier_id from orders on this date (or use 0 if none)
+    $supplierSql = "SELECT supplier_id FROM orders WHERE DATE(order_date) = ? LIMIT 1";
+    $supplierStmt = mysqli_prepare($conn, $supplierSql);
+    $supplier_id = 0;
+    
+    if ($supplierStmt) {
+        mysqli_stmt_bind_param($supplierStmt, 's', $order_date);
+        mysqli_stmt_execute($supplierStmt);
+        $supplierResult = mysqli_stmt_get_result($supplierStmt);
+        if ($supplierRow = mysqli_fetch_assoc($supplierResult)) {
+            $supplier_id = (int)$supplierRow['supplier_id'];
+        }
+        mysqli_stmt_close($supplierStmt);
+    }
+    
+    // Insert new batch for this date
     $batchSql = "INSERT INTO batches (batch_number, order_id, supplier_id, created_date, status) 
-                 VALUES (?, ?, ?, ?, 'active')";
+                 VALUES (?, NULL, ?, ?, 'active')";
     $batchStmt = mysqli_prepare($conn, $batchSql);
     
     if (!$batchStmt) {
@@ -79,57 +91,374 @@ function createOrderBatch($conn, $order_id, $supplier_id, $order_date, $items) {
         return false;
     }
     
-    mysqli_stmt_bind_param($batchStmt, 'siis', $batch_number, $order_id, $supplier_id, $order_date);
+    mysqli_stmt_bind_param($batchStmt, 'sis', $batch_number, $supplier_id, $order_date);
     
     if (!mysqli_stmt_execute($batchStmt)) {
-        error_log("Failed to create batch: " . mysqli_stmt_error($batchStmt));
+        $error = mysqli_stmt_error($batchStmt);
+        error_log("Failed to create daily batch with prepared statement: " . $error);
         mysqli_stmt_close($batchStmt);
-        return false;
+        
+        // Always try raw SQL as fallback
+        // Fix AUTO_INCREMENT first
+        @mysqli_query($conn, "DELETE FROM batches WHERE id = 0");
+        $maxBatchIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batches");
+        $maxBatchId = 0;
+        if ($maxBatchIdQuery) {
+            $maxBatchRow = mysqli_fetch_assoc($maxBatchIdQuery);
+            $maxBatchId = (int)($maxBatchRow['max_id'] ?? 0);
+        }
+        $nextBatchId = max(1, $maxBatchId + 1);
+        @mysqli_query($conn, "ALTER TABLE batches AUTO_INCREMENT = {$nextBatchId}");
+        
+        // Retry with raw SQL
+        $batch_number_escaped = mysqli_real_escape_string($conn, $batch_number);
+        $supplier_id_escaped = (int)$supplier_id;
+        $order_date_escaped = mysqli_real_escape_string($conn, $order_date);
+        
+        $rawBatchSql = "INSERT INTO batches (batch_number, order_id, supplier_id, created_date, status) 
+                       VALUES ('{$batch_number_escaped}', NULL, {$supplier_id_escaped}, '{$order_date_escaped}', 'active')";
+        
+        if (!mysqli_query($conn, $rawBatchSql)) {
+            $rawError = mysqli_error($conn);
+            error_log("Failed to create daily batch with raw SQL: " . $rawError);
+            return false;
+        }
+        $batch_id = mysqli_insert_id($conn);
+    } else {
+        $batch_id = mysqli_insert_id($conn);
     }
     
-    $batch_id = mysqli_insert_id($conn);
     mysqli_stmt_close($batchStmt);
     
-    // Insert batch items
-    if (!empty($items) && $batch_id > 0) {
-        $itemSql = "INSERT INTO batch_items (batch_id, medicine_id, quantity, expiration_date, received_quantity) 
-                    VALUES (?, ?, ?, ?, ?)";
-        $itemStmt = mysqli_prepare($conn, $itemSql);
+    // Verify we got a valid batch ID
+    if ($batch_id <= 0) {
+        $lastBatchIdQuery = mysqli_query($conn, "SELECT MAX(id) as last_id FROM batches WHERE batch_number = '{$batch_number}'");
+        if ($lastBatchIdQuery) {
+            $lastBatchRow = mysqli_fetch_assoc($lastBatchIdQuery);
+            $batch_id = (int)($lastBatchRow['last_id'] ?? 0);
+        }
         
-        if ($itemStmt) {
-            foreach ($items as $item) {
-                $medicine_id = isset($item['medicine_id']) ? (int)$item['medicine_id'] : 0;
-                $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
-                $expiration_date = isset($item['expiration_date']) ? trim($item['expiration_date']) : null;
-                $received_quantity = isset($item['received_quantity']) ? (int)$item['received_quantity'] : $quantity;
-                
-                if ($medicine_id <= 0 || $quantity <= 0) {
-                    continue;
-                }
-                
-                // If expiration_date is empty, try to get it from medicines table
-                if (empty($expiration_date)) {
-                    $medSql = "SELECT expiration_date FROM medicines WHERE id = ?";
-                    $medStmt = mysqli_prepare($conn, $medSql);
-                    if ($medStmt) {
-                        mysqli_stmt_bind_param($medStmt, 'i', $medicine_id);
-                        mysqli_stmt_execute($medStmt);
-                        $medResult = mysqli_stmt_get_result($medStmt);
-                        if ($medRow = mysqli_fetch_assoc($medResult)) {
-                            $expiration_date = $medRow['expiration_date'];
-                        }
-                        mysqli_stmt_close($medStmt);
-                    }
-                }
-                
-                mysqli_stmt_bind_param($itemStmt, 'iiisi', $batch_id, $medicine_id, $quantity, $expiration_date, $received_quantity);
-                mysqli_stmt_execute($itemStmt);
-            }
-            mysqli_stmt_close($itemStmt);
+        if ($batch_id <= 0) {
+            error_log("Failed to get batch ID after insert");
+            return false;
         }
     }
     
     return $batch_id;
+}
+
+/**
+ * Add order items to the daily batch for the order date
+ * Groups all orders from the same day into one batch
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $order_id Order ID
+ * @param int $supplier_id Supplier ID
+ * @param string $order_date Order date in YYYY-MM-DD format
+ * @param array $items Order items with medicine_id, quantity
+ * @return bool True on success, false on failure
+ */
+function addOrderToDailyBatch($conn, $order_id, $supplier_id, $order_date, $items) {
+    // Validate inputs
+    if (!$conn) {
+        error_log("addOrderToDailyBatch: Invalid database connection");
+        return false;
+    }
+    
+    if ($order_id <= 0) {
+        error_log("addOrderToDailyBatch: Invalid order_id: {$order_id}");
+        return false;
+    }
+    
+    if (empty($order_date)) {
+        error_log("addOrderToDailyBatch: Empty order_date");
+        return false;
+    }
+    
+    if (empty($items) || !is_array($items)) {
+        error_log("addOrderToDailyBatch: No items provided or items is not an array");
+        return false;
+    }
+    
+    // Check if batch_items table exists
+    $checkBatchItemsTable = mysqli_query($conn, "SHOW TABLES LIKE 'batch_items'");
+    if (!$checkBatchItemsTable || mysqli_num_rows($checkBatchItemsTable) === 0) {
+        error_log("Batch_items table does not exist. Please run create_batches_tables.php first.");
+        return false;
+    }
+    
+    // Get or create batch for this date
+    try {
+        $batch_id = getOrCreateDailyBatch($conn, $order_date);
+        if ($batch_id === false) {
+            error_log("Failed to get or create daily batch for date {$order_date}");
+            return false;
+        }
+    } catch (Exception $e) {
+        error_log("Exception in getOrCreateDailyBatch: " . $e->getMessage());
+        return false;
+    }
+    
+    // Fix AUTO_INCREMENT issues in batch_items table
+    @mysqli_query($conn, "DELETE FROM batch_items WHERE id = 0");
+    $maxBatchItemIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batch_items");
+    $maxBatchItemId = 0;
+    if ($maxBatchItemIdQuery) {
+        $maxBatchItemRow = mysqli_fetch_assoc($maxBatchItemIdQuery);
+        $maxBatchItemId = (int)($maxBatchItemRow['max_id'] ?? 0);
+    }
+    $nextBatchItemId = max(1, $maxBatchItemId + 1);
+    @mysqli_query($conn, "ALTER TABLE batch_items AUTO_INCREMENT = {$nextBatchItemId}");
+    
+    $itemSql = "INSERT INTO batch_items (batch_id, medicine_id, quantity, expiration_date, received_quantity) 
+                VALUES (?, ?, ?, ?, ?)";
+    
+    $itemsInserted = 0;
+    foreach ($items as $item) {
+        $medicine_id = isset($item['medicine_id']) ? (int)$item['medicine_id'] : 0;
+        $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+        $expiration_date = isset($item['expiration_date']) ? trim($item['expiration_date']) : null;
+        $received_quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+        
+        if ($medicine_id <= 0 || $quantity <= 0) {
+            error_log("Skipping invalid batch item: medicine_id={$medicine_id}, quantity={$quantity}");
+            continue;
+        }
+        
+        // If expiration_date is empty, try to get it from medicines table
+        if (empty($expiration_date)) {
+            $medSql = "SELECT expiration_date FROM medicines WHERE id = ?";
+            $medStmt = mysqli_prepare($conn, $medSql);
+            if ($medStmt) {
+                mysqli_stmt_bind_param($medStmt, 'i', $medicine_id);
+                mysqli_stmt_execute($medStmt);
+                $medResult = mysqli_stmt_get_result($medStmt);
+                if ($medRow = mysqli_fetch_assoc($medResult)) {
+                    $expiration_date = $medRow['expiration_date'];
+                }
+                mysqli_stmt_close($medStmt);
+            }
+        }
+        
+        // Prepare a new statement for each item to avoid reuse issues
+        $itemStmt = mysqli_prepare($conn, $itemSql);
+        if (!$itemStmt) {
+            error_log("Failed to prepare batch item statement for medicine_id={$medicine_id}: " . mysqli_error($conn));
+            continue;
+        }
+        
+        mysqli_stmt_bind_param($itemStmt, 'iiisi', $batch_id, $medicine_id, $quantity, $expiration_date, $received_quantity);
+        if (!mysqli_stmt_execute($itemStmt)) {
+            $error = mysqli_stmt_error($itemStmt);
+            error_log("Failed to insert batch item for medicine_id={$medicine_id}: " . $error);
+            
+            // Check if it's the "Duplicate entry '0'" error
+            if (strpos($error, "Duplicate entry '0'") !== false) {
+                // Fix AUTO_INCREMENT and try again with raw SQL
+                @mysqli_query($conn, "DELETE FROM batch_items WHERE id = 0");
+                $maxBatchItemIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batch_items");
+                $maxBatchItemId = 0;
+                if ($maxBatchItemIdQuery) {
+                    $maxBatchItemRow = mysqli_fetch_assoc($maxBatchItemIdQuery);
+                    $maxBatchItemId = (int)($maxBatchItemRow['max_id'] ?? 0);
+                }
+                $nextBatchItemId = max(1, $maxBatchItemId + 1);
+                @mysqli_query($conn, "ALTER TABLE batch_items AUTO_INCREMENT = {$nextBatchItemId}");
+                
+                // Retry with raw SQL
+                $batch_id_escaped = (int)$batch_id;
+                $medicine_id_escaped = (int)$medicine_id;
+                $quantity_escaped = (int)$quantity;
+                $expiration_date_escaped = $expiration_date ? "'" . mysqli_real_escape_string($conn, $expiration_date) . "'" : "NULL";
+                $received_quantity_escaped = (int)$received_quantity;
+                
+                $rawItemSql = "INSERT INTO batch_items (batch_id, medicine_id, quantity, expiration_date, received_quantity) 
+                              VALUES ({$batch_id_escaped}, {$medicine_id_escaped}, {$quantity_escaped}, {$expiration_date_escaped}, {$received_quantity_escaped})";
+                
+                if (mysqli_query($conn, $rawItemSql)) {
+                    $itemsInserted++;
+                    error_log("Successfully inserted batch item using raw SQL for medicine_id={$medicine_id}");
+                } else {
+                    error_log("Failed to insert batch item using raw SQL for medicine_id={$medicine_id}: " . mysqli_error($conn));
+                }
+            }
+            
+            mysqli_stmt_close($itemStmt);
+            continue;
+        }
+        
+        $itemsInserted++;
+        mysqli_stmt_close($itemStmt);
+    }
+    
+    error_log("Added {$itemsInserted} items from order {$order_id} to daily batch {$batch_id} for date {$order_date}");
+    return true;
+}
+
+/**
+ * Add order items to batch when order is confirmed
+ * Items are added to the batch for the order_date (not confirmation date)
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $order_id Order ID
+ * @param string $order_date Order date in YYYY-MM-DD format (used to find the batch)
+ * @param array $items Order items with medicine_id, quantity, expiration_date, received_quantity
+ * @return bool True on success, false on failure
+ */
+function addOrderItemsToBatch($conn, $order_id, $order_date, $items) {
+    // Validate inputs
+    if (!$conn) {
+        error_log("addOrderItemsToBatch: Invalid database connection");
+        return false;
+    }
+    
+    if ($order_id <= 0) {
+        error_log("addOrderItemsToBatch: Invalid order_id: {$order_id}");
+        return false;
+    }
+    
+    if (empty($order_date)) {
+        error_log("addOrderItemsToBatch: Empty order_date");
+        return false;
+    }
+    
+    if (empty($items) || !is_array($items)) {
+        error_log("addOrderItemsToBatch: No items provided or items is not an array");
+        return false;
+    }
+    
+    // Check if batch_items table exists
+    $checkBatchItemsTable = mysqli_query($conn, "SHOW TABLES LIKE 'batch_items'");
+    if (!$checkBatchItemsTable || mysqli_num_rows($checkBatchItemsTable) === 0) {
+        error_log("Batch_items table does not exist. Please run create_batches_tables.php first.");
+        return false;
+    }
+    
+    // Get batch for this order date (batch is created when order is created, grouped by order_date)
+    try {
+        $batch_id = getOrCreateDailyBatch($conn, $order_date);
+        if ($batch_id === false) {
+            error_log("Failed to get or create daily batch for date {$order_date}");
+            return false;
+        }
+    } catch (Exception $e) {
+        error_log("Exception in getOrCreateDailyBatch: " . $e->getMessage());
+        return false;
+    }
+    
+    // Check if items from this order are already in the batch (avoid duplicates)
+    $checkExistingSql = "SELECT COUNT(*) as count FROM batch_items bi
+                        INNER JOIN batches b ON bi.batch_id = b.id
+                        WHERE b.id = ? AND bi.medicine_id = ?";
+    
+    // Fix AUTO_INCREMENT issues in batch_items table
+    @mysqli_query($conn, "DELETE FROM batch_items WHERE id = 0");
+    $maxBatchItemIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batch_items");
+    $maxBatchItemId = 0;
+    if ($maxBatchItemIdQuery) {
+        $maxBatchItemRow = mysqli_fetch_assoc($maxBatchItemIdQuery);
+        $maxBatchItemId = (int)($maxBatchItemRow['max_id'] ?? 0);
+    }
+    $nextBatchItemId = max(1, $maxBatchItemId + 1);
+    @mysqli_query($conn, "ALTER TABLE batch_items AUTO_INCREMENT = {$nextBatchItemId}");
+    
+    $itemSql = "INSERT INTO batch_items (batch_id, medicine_id, quantity, expiration_date, received_quantity) 
+                VALUES (?, ?, ?, ?, ?)";
+    
+    $itemsInserted = 0;
+    foreach ($items as $item) {
+        $medicine_id = isset($item['medicine_id']) ? (int)$item['medicine_id'] : 0;
+        $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+        $expiration_date = isset($item['expiration_date']) ? trim($item['expiration_date']) : null;
+        $received_quantity = isset($item['received_quantity']) ? (int)$item['received_quantity'] : $quantity;
+        
+        if ($medicine_id <= 0 || $quantity <= 0) {
+            error_log("Skipping invalid batch item: medicine_id={$medicine_id}, quantity={$quantity}");
+            continue;
+        }
+        
+        // Check if this item from this order is already in the batch
+        $checkExistingStmt = mysqli_prepare($conn, $checkExistingSql);
+        $alreadyExists = false;
+        if ($checkExistingStmt) {
+            mysqli_stmt_bind_param($checkExistingStmt, 'ii', $batch_id, $medicine_id);
+            mysqli_stmt_execute($checkExistingStmt);
+            $checkExistingResult = mysqli_stmt_get_result($checkExistingStmt);
+            if ($checkExistingRow = mysqli_fetch_assoc($checkExistingResult)) {
+                // Note: We allow multiple items with same medicine_id from different orders in same batch
+                // So we don't check for duplicates - each order's items are added separately
+            }
+            mysqli_stmt_close($checkExistingStmt);
+        }
+        
+        // If expiration_date is empty, try to get it from medicines table
+        if (empty($expiration_date)) {
+            $medSql = "SELECT expiration_date FROM medicines WHERE id = ?";
+            $medStmt = mysqli_prepare($conn, $medSql);
+            if ($medStmt) {
+                mysqli_stmt_bind_param($medStmt, 'i', $medicine_id);
+                mysqli_stmt_execute($medStmt);
+                $medResult = mysqli_stmt_get_result($medStmt);
+                if ($medRow = mysqli_fetch_assoc($medResult)) {
+                    $expiration_date = $medRow['expiration_date'];
+                }
+                mysqli_stmt_close($medStmt);
+            }
+        }
+        
+        // Prepare a new statement for each item to avoid reuse issues
+        $itemStmt = mysqli_prepare($conn, $itemSql);
+        if (!$itemStmt) {
+            error_log("Failed to prepare batch item statement for medicine_id={$medicine_id}: " . mysqli_error($conn));
+            continue;
+        }
+        
+        mysqli_stmt_bind_param($itemStmt, 'iiisi', $batch_id, $medicine_id, $quantity, $expiration_date, $received_quantity);
+        if (!mysqli_stmt_execute($itemStmt)) {
+            $error = mysqli_stmt_error($itemStmt);
+            error_log("Failed to insert batch item for medicine_id={$medicine_id}: " . $error);
+            
+            // Check if it's the "Duplicate entry '0'" error
+            if (strpos($error, "Duplicate entry '0'") !== false) {
+                // Fix AUTO_INCREMENT and try again with raw SQL
+                @mysqli_query($conn, "DELETE FROM batch_items WHERE id = 0");
+                $maxBatchItemIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batch_items");
+                $maxBatchItemId = 0;
+                if ($maxBatchItemIdQuery) {
+                    $maxBatchItemRow = mysqli_fetch_assoc($maxBatchItemIdQuery);
+                    $maxBatchItemId = (int)($maxBatchItemRow['max_id'] ?? 0);
+                }
+                $nextBatchItemId = max(1, $maxBatchItemId + 1);
+                @mysqli_query($conn, "ALTER TABLE batch_items AUTO_INCREMENT = {$nextBatchItemId}");
+                
+                // Retry with raw SQL
+                $batch_id_escaped = (int)$batch_id;
+                $medicine_id_escaped = (int)$medicine_id;
+                $quantity_escaped = (int)$quantity;
+                $expiration_date_escaped = $expiration_date ? "'" . mysqli_real_escape_string($conn, $expiration_date) . "'" : "NULL";
+                $received_quantity_escaped = (int)$received_quantity;
+                
+                $rawItemSql = "INSERT INTO batch_items (batch_id, medicine_id, quantity, expiration_date, received_quantity) 
+                              VALUES ({$batch_id_escaped}, {$medicine_id_escaped}, {$quantity_escaped}, {$expiration_date_escaped}, {$received_quantity_escaped})";
+                
+                if (mysqli_query($conn, $rawItemSql)) {
+                    $itemsInserted++;
+                    error_log("Successfully inserted batch item using raw SQL for medicine_id={$medicine_id}");
+                } else {
+                    error_log("Failed to insert batch item using raw SQL for medicine_id={$medicine_id}: " . mysqli_error($conn));
+                }
+            }
+            
+            mysqli_stmt_close($itemStmt);
+            continue;
+        }
+        
+        $itemsInserted++;
+        mysqli_stmt_close($itemStmt);
+    }
+    
+    error_log("Added {$itemsInserted} items from confirmed order {$order_id} to batch {$batch_id} for order date {$order_date}");
+    return true;
 }
 
 /**
@@ -217,4 +546,3 @@ function processExpiredBatchItems($conn) {
 }
 
 ?>
-

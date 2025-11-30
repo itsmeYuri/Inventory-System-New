@@ -149,10 +149,17 @@ $user_name = $_SESSION['full_name'] ?? 'User';
             </div>
             
             <div class="btn-group">
-                <a href="dashboard.php" class="btn btn-primary">
-                    <i class="fas fa-home"></i>
-                    Go to Dashboard
-                </a>
+                <?php if ($user_role === 'supplier'): ?>
+                    <a href="supplier_dashboard.html" class="btn btn-primary">
+                        <i class="fas fa-home"></i>
+                        Go to Supplier Dashboard
+                    </a>
+                <?php else: ?>
+                    <a href="dashboard.html" class="btn btn-primary">
+                        <i class="fas fa-home"></i>
+                        Go to Dashboard
+                    </a>
+                <?php endif; ?>
                 <a href="../php/logout.php" class="btn btn-secondary">
                     <i class="fas fa-sign-out-alt"></i>
                     Logout

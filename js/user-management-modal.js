@@ -113,7 +113,7 @@
                     <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(user.employee_id || 'N/A')}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'user').toUpperCase())}</span>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : user.role === 'supplier' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}">${escapeHtml((user.role || 'employee').toUpperCase())}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     ${user.status !== undefined ? `
@@ -141,7 +141,7 @@
                         <button onclick="editUserModal(${user.user_id})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Edit User" ${user.status === 'locked' ? 'disabled' : ''}>
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="changeUserRoleModal(${user.user_id}, '${user.role || 'user'}')" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Change Role" ${user.status === 'locked' ? 'disabled' : ''}>
+                        <button onclick="changeUserRoleModal(${user.user_id}, '${user.role || 'employee'}')" class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded-lg transition-colors ${user.status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}" title="Change Role" ${user.status === 'locked' ? 'disabled' : ''}>
                             <i class="fas fa-user-tag"></i>
                         </button>
                         ${user.status === 'locked' ? `
@@ -177,7 +177,7 @@
                 (user.email && user.email.toLowerCase().includes(searchTerm)) ||
                 (user.username && user.username.toLowerCase().includes(searchTerm));
             
-            const matchesRole = !roleFilter || (user.role || 'user') === roleFilter;
+            const matchesRole = !roleFilter || (user.role || 'employee') === roleFilter;
             const matchesStatus = !statusFilter || (user.status || 'active') === statusFilter;
             
             return matchesSearch && matchesRole && matchesStatus;
@@ -364,7 +364,7 @@
 
     // Change user role
     async function changeUserRoleModal(userId, currentRole) {
-        const roles = ['user', 'supplier', 'admin'];
+        const roles = ['employee', 'supplier', 'admin'];
         const currentIndex = roles.indexOf(currentRole);
         const nextIndex = (currentIndex + 1) % roles.length;
         const newRole = roles[nextIndex];

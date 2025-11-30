@@ -51,7 +51,7 @@ $hardcodedUsers = [
         'email' => 'test@test.com',
         'username' => 'test',
         'password' => 'test123',
-        'role' => 'user',
+        'role' => 'employee',
         'user_id' => 2,
         'full_name' => 'Test User'
     ]
@@ -85,10 +85,16 @@ foreach ($hardcodedUsers as $hardcodedUser) {
             updateUserStatus($conn, $user, 'active');
         }
         setUserSession($user);
+        
+        // Determine redirect based on role
+        $role = strtolower($user['role'] ?? 'employee');
+        $redirect = 'dashboard.html'; // Default for admin and employee
+        
         echo json_encode([
             'success' => true,
             'message' => 'Login successful',
-            'user' => getUserData($user)
+            'user' => getUserData($user),
+            'redirect' => $redirect
         ]);
         exit;
     }
@@ -120,8 +126,72 @@ if (!$result || mysqli_num_rows($result) === 0) {
     }
 }
 
-if (!$result || mysqli_num_rows($result) !== 1) {
+// If not found in users table, check suppliers table
+if (!$result || mysqli_num_rows($result) === 0) {
     mysqli_stmt_close($stmt);
+    
+    // Check suppliers table
+    $checkSupplierAuth = mysqli_query($conn, "SHOW COLUMNS FROM suppliers LIKE 'username'");
+    $hasSupplierAuth = $checkSupplierAuth && mysqli_num_rows($checkSupplierAuth) > 0;
+    
+    if ($hasSupplierAuth) {
+        $supplierQuery = "SELECT * FROM suppliers WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND status != 'locked'";
+        $supplierStmt = mysqli_prepare($conn, $supplierQuery);
+        
+        if ($supplierStmt) {
+            mysqli_stmt_bind_param($supplierStmt, "ss", $loginInputLower, $loginInputLower);
+            mysqli_stmt_execute($supplierStmt);
+            $supplierResult = mysqli_stmt_get_result($supplierStmt);
+            
+            if ($supplierResult && mysqli_num_rows($supplierResult) === 1) {
+                $supplier = mysqli_fetch_assoc($supplierResult);
+                mysqli_stmt_close($supplierStmt);
+                
+                // Check supplier status
+                if (isset($supplier['status'])) {
+                    $status = strtolower($supplier['status']);
+                    if ($status === 'locked') {
+                        echo json_encode(['success' => false, 'message' => 'Account Locked. Please contact administrator.']);
+                        exit;
+                    }
+                    if ($status === 'inactive') {
+                        echo json_encode(['success' => false, 'message' => 'Your account is inactive. Please contact administrator.']);
+                        exit;
+                    }
+                }
+                
+                // Verify password
+                $storedPassword = $supplier['password_hash'] ?? '';
+                if (empty($storedPassword)) {
+                    echo json_encode(['success' => false, 'message' => 'Account not configured for login. Please contact administrator.']);
+                    exit;
+                }
+                
+                $passwordValid = verifyPassword($password, $storedPassword);
+                
+                if ($passwordValid) {
+                    // Update supplier status to active
+                    updateSupplierStatus($conn, $supplier['id'], 'active');
+                    
+                    // Set supplier session
+                    setSupplierSession($supplier);
+                    
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Login successful',
+                        'user' => getSupplierData($supplier),
+                        'redirect' => 'supplier_dashboard.html'
+                    ]);
+                    exit;
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Invalid email/username or password']);
+                    exit;
+                }
+            }
+            mysqli_stmt_close($supplierStmt);
+        }
+    }
+    
     echo json_encode(['success' => false, 'message' => 'Invalid email/username or password']);
     exit;
 }
@@ -163,13 +233,33 @@ if ($passwordValid) {
     // Update user status to 'active' when logging in
     updateUserStatus($conn, $user, 'active');
     setUserSession($user);
+    
+    // Get user data (this will include supplier_id if user is a supplier)
+    $userData = getUserData($user, $loginInput);
+    
+    // Determine redirect based on role
+    $role = strtolower($user['role'] ?? 'employee');
+    $redirect = 'dashboard.html'; // Default for admin and employee
+    
+    // If supplier, redirect to supplier dashboard
+    if ($role === 'supplier') {
+        $redirect = 'supplier_dashboard.html';
+    }
+    
+    // Ensure supplier_id is set for suppliers (fallback to user_id if matching failed)
+    if ($role === 'supplier' && !isset($userData['supplier_id'])) {
+        $userData['supplier_id'] = $userData['user_id'] ?? $userData['id'] ?? null;
+        error_log("login.php: Supplier ID not found via matching, using user_id as fallback: " . $userData['supplier_id']);
+    }
+    
     echo json_encode([
         'success' => true,
         'message' => 'Login successful',
-        'user' => getUserData($user, $loginInput)
-    ]);
+        'user' => $userData,
+        'redirect' => $redirect
+    ], JSON_UNESCAPED_UNICODE);
 } else {
-    echo json_encode(['success' => false, 'message' => 'Invalid email/username or password']);
+    echo json_encode(['success' => false, 'message' => 'Invalid email/username or password'], JSON_UNESCAPED_UNICODE);
 }
 
 /**
@@ -222,7 +312,7 @@ function setUserSession($user) {
     $_SESSION['loggedin'] = true;
     $_SESSION['user_email'] = $user['email'] ?? null;
     $_SESSION['username'] = $user['username'] ?? null;
-    $_SESSION['role'] = $user['role'] ?? 'user';
+    $_SESSION['role'] = $user['role'] ?? 'employee';
     $_SESSION['user_id'] = $user['user_id'] ?? $user['id'] ?? null;
     $_SESSION['full_name'] = $user['full_name'] ?? null;
 }
@@ -231,13 +321,14 @@ function setUserSession($user) {
  * Get user data for response
  */
 function getUserData($user, $loginInput = null) {
+    global $conn;
+    
     // Check if must_change_password column exists and get its value
     $mustChangePassword = 0;
     if (isset($user['must_change_password'])) {
         $mustChangePassword = (int)$user['must_change_password'];
     } else {
         // Check if column exists in database
-        global $conn;
         if (isset($conn) && $conn) {
             $checkColumn = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'must_change_password'");
             if (mysqli_num_rows($checkColumn) > 0 && isset($user['user_id'])) {
@@ -259,14 +350,57 @@ function getUserData($user, $loginInput = null) {
         }
     }
     
-    return [
+    $userData = [
         'email' => $user['email'] ?? $loginInput,
         'username' => $user['username'] ?? null,
-        'role' => $user['role'] ?? 'user',
+        'role' => $user['role'] ?? 'employee',
         'user_id' => $user['user_id'] ?? $user['id'] ?? null,
         'full_name' => $user['full_name'] ?? null,
         'must_change_password' => $mustChangePassword === 1
     ];
+    
+    // If user is a supplier, find their corresponding suppliers.id
+    $role = strtolower($user['role'] ?? 'employee');
+    if ($role === 'supplier' && isset($conn) && $conn) {
+        $userEmail = $user['email'] ?? '';
+        $userName = $user['full_name'] ?? '';
+        
+        // Try to find matching supplier by email first (most reliable)
+        if (!empty($userEmail)) {
+            $supplierQuery = "SELECT id, name FROM suppliers WHERE email = ? LIMIT 1";
+            $supplierStmt = mysqli_prepare($conn, $supplierQuery);
+            if ($supplierStmt) {
+                mysqli_stmt_bind_param($supplierStmt, "s", $userEmail);
+                mysqli_stmt_execute($supplierStmt);
+                $supplierResult = mysqli_stmt_get_result($supplierStmt);
+                if ($supplierRow = mysqli_fetch_assoc($supplierResult)) {
+                    $userData['supplier_id'] = (int)$supplierRow['id'];
+                    $userData['name'] = $supplierRow['name'];
+                    mysqli_stmt_close($supplierStmt);
+                    return $userData;
+                }
+                mysqli_stmt_close($supplierStmt);
+            }
+        }
+        
+        // If email didn't match, try by name
+        if (!empty($userName) && !isset($userData['supplier_id'])) {
+            $supplierQuery = "SELECT id, name FROM suppliers WHERE name = ? LIMIT 1";
+            $supplierStmt = mysqli_prepare($conn, $supplierQuery);
+            if ($supplierStmt) {
+                mysqli_stmt_bind_param($supplierStmt, "s", $userName);
+                mysqli_stmt_execute($supplierStmt);
+                $supplierResult = mysqli_stmt_get_result($supplierStmt);
+                if ($supplierRow = mysqli_fetch_assoc($supplierResult)) {
+                    $userData['supplier_id'] = (int)$supplierRow['id'];
+                    $userData['name'] = $supplierRow['name'];
+                }
+                mysqli_stmt_close($supplierStmt);
+            }
+        }
+    }
+    
+    return $userData;
 }
 
 /**
@@ -314,5 +448,47 @@ function updateUserStatus($conn, $user, $status) {
     }
     
     return false;
+}
+
+/**
+ * Update supplier status
+ */
+function updateSupplierStatus($conn, $supplierId, $status) {
+    $query = "UPDATE suppliers SET status = ? WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $query);
+    
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "si", $status, $supplierId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+}
+
+/**
+ * Set supplier session variables
+ */
+function setSupplierSession($supplier) {
+    $_SESSION['supplier_loggedin'] = true;
+    $_SESSION['supplier_id'] = $supplier['id'];
+    $_SESSION['supplier_name'] = $supplier['name'];
+    $_SESSION['supplier_email'] = $supplier['email'] ?? '';
+    $_SESSION['supplier_username'] = $supplier['username'] ?? '';
+    $_SESSION['role'] = 'supplier';
+    $_SESSION['loggedin'] = true; // Also set for compatibility
+    $_SESSION['user_id'] = $supplier['id']; // For compatibility
+}
+
+/**
+ * Get supplier data for response
+ */
+function getSupplierData($supplier) {
+    return [
+        'id' => (int)$supplier['id'],
+        'name' => $supplier['name'],
+        'email' => $supplier['email'] ?? '',
+        'username' => $supplier['username'] ?? '',
+        'role' => 'supplier',
+        'supplier_id' => (int)$supplier['id']
+    ];
 }
 ?>

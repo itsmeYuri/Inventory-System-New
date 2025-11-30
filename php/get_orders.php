@@ -45,12 +45,27 @@ try {
     $dateFrom = isset($_GET['dateFrom']) ? trim($_GET['dateFrom']) : '';
     $dateTo = isset($_GET['dateTo']) ? trim($_GET['dateTo']) : '';
 
+    // Check if role column exists in users table (do this first, before building WHERE clause)
+    $checkRole = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'role'");
+    $hasRole = $checkRole && mysqli_num_rows($checkRole) > 0;
+    
+    // Check if user_id column exists in users table
+    $checkUserId = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'user_id'");
+    $hasUserId = $checkUserId && mysqli_num_rows($checkUserId) > 0;
+    $userIdColumn = $hasUserId ? 'user_id' : 'id';
+    
     // Build where clause safely
     $where = " WHERE 1=1 ";
 
     if ($search !== '') {
         $s = mysqli_real_escape_string($conn, $search);
-        $where .= " AND (o.id LIKE '%{$s}%' OR s.name LIKE '%{$s}%') ";
+        if ($hasRole) {
+            // Search in both suppliers table and users table (for supplier role)
+            $where .= " AND (o.id LIKE '%{$s}%' OR s.name LIKE '%{$s}%' OR u.full_name LIKE '%{$s}%') ";
+        } else {
+            // Only search in suppliers table if role column doesn't exist
+            $where .= " AND (o.id LIKE '%{$s}%' OR s.name LIKE '%{$s}%') ";
+        }
     }
 
     if ($status !== '') {
@@ -71,10 +86,13 @@ try {
         $dt = mysqli_real_escape_string($conn, $dateTo);
         $where .= " AND o.order_date <= '{$dt}' ";
     }
-
+    
     // Get total count (need to join suppliers if search is used)
     if ($search !== '') {
-        $countSql = "SELECT COUNT(*) AS cnt FROM orders o LEFT JOIN suppliers s ON o.supplier_id = s.id" . $where;
+        $countSql = "SELECT COUNT(*) AS cnt FROM orders o 
+                     LEFT JOIN suppliers s ON o.supplier_id = s.id" . 
+                    ($hasRole ? " LEFT JOIN users u ON o.supplier_id = u.{$userIdColumn} AND u.role = 'supplier'" : "") . 
+                    $where;
     } else {
         $countSql = "SELECT COUNT(*) AS cnt FROM orders o" . $where;
     }
@@ -91,8 +109,12 @@ try {
     $checkNotes = mysqli_query($conn, "SHOW COLUMNS FROM orders LIKE 'notes'");
     $hasNotes = mysqli_num_rows($checkNotes) > 0;
     
+    // Build SELECT with supplier name from both suppliers table and users table
+    // Use COALESCE to get name from suppliers table first, then from users table if not found
+    $supplierNameSelect = "COALESCE(s.name, u.full_name, 'Unknown Supplier') as supplier_name";
+    
     // Build SELECT based on what columns exist
-    $selectFields = "o.id, o.supplier_id, s.name as supplier_name, o.order_date, o.status";
+    $selectFields = "o.id, o.supplier_id, {$supplierNameSelect}, o.order_date, o.status";
     
     if ($hasTotalAmount) {
         $selectFields .= ", o.total_amount";
@@ -108,22 +130,38 @@ try {
     
     $selectFields .= ", o.created_at, o.updated_at, (SELECT COUNT(*) FROM order_items oi2 WHERE oi2.order_id = o.id) as item_count";
     
+    // Build JOIN clause for suppliers and users
+    $joinClause = "LEFT JOIN suppliers s ON o.supplier_id = s.id";
+    if ($hasRole) {
+        $joinClause .= " LEFT JOIN users u ON o.supplier_id = u.{$userIdColumn} AND u.role = 'supplier'";
+    }
+    
     // Fetch page with supplier info
     if ($hasTotalAmount && $hasNotes) {
         $sql = "SELECT {$selectFields}
                 FROM orders o
-                LEFT JOIN suppliers s ON o.supplier_id = s.id
+                {$joinClause}
                 {$where}
                 ORDER BY o.order_date DESC, o.id DESC
                 LIMIT {$offset}, {$pageSize}";
     } else {
         // Need GROUP BY if calculating total_amount
+        $groupByFields = "o.id, o.supplier_id, o.order_date, o.status, o.created_at, o.updated_at";
+        if ($hasNotes) {
+            $groupByFields .= ", o.notes";
+        }
+        if ($hasRole) {
+            $groupByFields .= ", s.name, u.full_name";
+        } else {
+            $groupByFields .= ", s.name";
+        }
+        
         $sql = "SELECT {$selectFields}
                 FROM orders o
-                LEFT JOIN suppliers s ON o.supplier_id = s.id
+                {$joinClause}
                 LEFT JOIN order_items oi ON oi.order_id = o.id
                 {$where}
-                GROUP BY o.id, o.supplier_id, s.name, o.order_date, o.status, o.created_at, o.updated_at" . ($hasNotes ? ", o.notes" : "") . "
+                GROUP BY {$groupByFields}
                 ORDER BY o.order_date DESC, o.id DESC
                 LIMIT {$offset}, {$pageSize}";
     }

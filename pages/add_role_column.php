@@ -17,7 +17,7 @@ $result = $mysqli->query("SHOW COLUMNS FROM users LIKE 'role'");
 
 if ($result->num_rows == 0) {
     // Column doesn't exist, add it
-    $alter_query = "ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' AFTER status";
+    $alter_query = "ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'employee' AFTER status";
     
     if ($mysqli->query($alter_query)) {
         echo "✓ Role column added successfully to users table\n";
