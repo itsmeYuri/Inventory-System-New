@@ -36,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/conn.php';
 require_once __DIR__ . '/archive_helper.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
+require_once __DIR__ . '/pos_sync_helper.php';
 
 // Function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
@@ -64,21 +66,35 @@ try {
         sendJsonResponse(false, 'Database connection failed', null, 500);
     }
 
+    // Check which structure we're using
+    $hasNewStructure = hasNewMedicineStructure($conn);
+
     // Get medicine ID
-    $medicine_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($medicine_id <= 0) {
+    $medicine_id = isset($_POST['id']) ? trim($_POST['id']) : '';
+    if (empty($medicine_id)) {
         sendJsonResponse(false, 'Invalid medicine ID', null, 400);
     }
 
     // First, check if medicine exists
+    if ($hasNewStructure) {
+        $checkSql = "SELECT medicine_id, medicine_name as name FROM medicines WHERE medicine_id = ?";
+        $checkStmt = mysqli_prepare($conn, $checkSql);
+        if (!$checkStmt) {
+            error_log("Check statement prepare error: " . mysqli_error($conn));
+            sendJsonResponse(false, 'Database error', null, 500);
+        }
+        mysqli_stmt_bind_param($checkStmt, 's', $medicine_id);
+    } else {
     $checkSql = "SELECT id, name FROM medicines WHERE id = ?";
     $checkStmt = mysqli_prepare($conn, $checkSql);
     if (!$checkStmt) {
         error_log("Check statement prepare error: " . mysqli_error($conn));
         sendJsonResponse(false, 'Database error', null, 500);
+        }
+        $medicine_id_int = (int)$medicine_id;
+        mysqli_stmt_bind_param($checkStmt, 'i', $medicine_id_int);
     }
     
-    mysqli_stmt_bind_param($checkStmt, 'i', $medicine_id);
     mysqli_stmt_execute($checkStmt);
     $checkResult = mysqli_stmt_get_result($checkStmt);
     
@@ -100,6 +116,16 @@ try {
     }
 
     // Delete the medicine
+    if ($hasNewStructure) {
+        $sql = "DELETE FROM medicines WHERE medicine_id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            $error = mysqli_error($conn);
+            error_log("MySQL prepare error: " . $error);
+            sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
+        }
+        mysqli_stmt_bind_param($stmt, 's', $medicine_id);
+    } else {
     $sql = "DELETE FROM medicines WHERE id = ?";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -107,8 +133,9 @@ try {
         error_log("MySQL prepare error: " . $error);
         sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
     }
-
-    mysqli_stmt_bind_param($stmt, 'i', $medicine_id);
+        $medicine_id_int = (int)$medicine_id;
+        mysqli_stmt_bind_param($stmt, 'i', $medicine_id_int);
+    }
 
     if (!mysqli_stmt_execute($stmt)) {
         $error = mysqli_stmt_error($stmt);
@@ -124,6 +151,18 @@ try {
 
     if ($affectedRows === 0) {
         sendJsonResponse(false, 'No medicine was deleted', null, 404);
+    }
+
+    // Delete from POS system (non-blocking)
+    try {
+        $posDeleteResult = deleteMedicineFromPOS($medicine_id);
+        if ($posDeleteResult['success']) {
+            error_log("Medicine successfully deleted from POS system: " . $medicine_id);
+        } else {
+            error_log("POS delete failed for medicine ID " . $medicine_id . ": " . $posDeleteResult['message']);
+        }
+    } catch (Exception $e) {
+        error_log("POS delete exception for medicine ID " . $medicine_id . ": " . $e->getMessage());
     }
 
     // Success response

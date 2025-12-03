@@ -69,38 +69,26 @@
         <!-- Archive Content -->
         <div class="p-6 space-y-6">
             <!-- Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Expired Items</p>
-                            <p class="text-3xl font-bold text-error-600 dark:text-error-400" id="expiredCount">0</p>
-                        </div>
-                        <div class="w-12 h-12 bg-error-100 dark:bg-error-900 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-exclamation-triangle text-error-600 dark:text-error-400 text-xl"></i>
-                        </div>
+            <div class="metric-cards">
+                <div class="metric-card metric-card--danger">
+                    <div class="metric-card__top"></div>
+                    <div class="metric-card__body">
+                        <div class="metric-card__label">Expired Items</div>
+                        <div class="metric-card__value" id="expiredCount">0</div>
                     </div>
                 </div>
-                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Cancelled Orders</p>
-                            <p class="text-3xl font-bold text-warning-600 dark:text-warning-400" id="cancelledCount">0</p>
-                        </div>
-                        <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-ban text-warning-600 dark:text-warning-400 text-xl"></i>
-                        </div>
+                <div class="metric-card metric-card--warning">
+                    <div class="metric-card__top"></div>
+                    <div class="metric-card__body">
+                        <div class="metric-card__label">Cancelled Orders</div>
+                        <div class="metric-card__value" id="cancelledCount">0</div>
                     </div>
                 </div>
-                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Deleted Items</p>
-                            <p class="text-3xl font-bold text-text-secondary dark:text-gray-400" id="deletedCount">0</p>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-trash text-text-secondary dark:text-gray-400 text-xl"></i>
-                        </div>
+                <div class="metric-card metric-card--primary">
+                    <div class="metric-card__top"></div>
+                    <div class="metric-card__body">
+                        <div class="metric-card__label">Deleted Items</div>
+                        <div class="metric-card__value" id="deletedCount">0</div>
                     </div>
                 </div>
             </div>
@@ -128,7 +116,7 @@
                 <div class="p-6">
                     <!-- Expired Items Tab -->
                     <div id="contentExpired" class="tab-content">
-                        <div class="overflow-x-auto">
+                        <div class="component__table overflow-x-auto">
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b border-border-light dark:border-gray-700">
@@ -151,7 +139,7 @@
 
                     <!-- Cancelled Orders Tab -->
                     <div id="contentCancelled" class="tab-content hidden">
-                        <div class="overflow-x-auto">
+                        <div class="component__table overflow-x-auto">
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b border-border-light dark:border-gray-700">
@@ -175,7 +163,7 @@
 
                     <!-- Deleted Items Tab -->
                     <div id="contentDeleted" class="tab-content hidden">
-                        <div class="overflow-x-auto">
+                        <div class="component__table overflow-x-auto">
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b border-border-light dark:border-gray-700">

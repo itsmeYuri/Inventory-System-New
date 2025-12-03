@@ -35,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
+require_once __DIR__ . '/pos_sync_helper.php';
 
 // Function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
@@ -63,9 +65,12 @@ try {
         sendJsonResponse(false, 'Database connection failed', null, 500);
     }
 
+    // Check which structure we're using
+    $hasNewStructure = hasNewMedicineStructure($conn);
+
     // Get medicine ID
-    $medicine_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($medicine_id <= 0) {
+    $medicine_id = isset($_POST['id']) ? trim($_POST['id']) : '';
+    if (empty($medicine_id)) {
         sendJsonResponse(false, 'Invalid medicine ID', null, 400);
     }
 
@@ -78,32 +83,35 @@ try {
     $manufacturer = $manufacturer !== '' ? $manufacturer : null;
     
     $category = isset($_POST['category']) ? trim($_POST['category']) : '';
-    $category = $category !== '' ? $category : null;
+    $category = $category !== '' ? $category : 'Uncategorized';
     
-    // Get unit value from form (this will be saved to dosage_form column)
+    // Get generic_name (new field for POS)
+    $generic_name = isset($_POST['genericName']) ? trim($_POST['genericName']) : '';
+    $generic_name = $generic_name !== '' ? $generic_name : '';
+    
+    // Get unit/dosage value from form
     $unit = isset($_POST['unit']) ? trim($_POST['unit']) : '';
-    $unit = $unit !== '' ? $unit : null;
+    $unit = $unit !== '' ? $unit : 'Tablet';
     
-    // Validate unit value against allowed ENUM values
+    // Validate unit value
     $allowedUnits = [
         'Capsule', 'Tablet', 'Pill', 'Bottle', 'Vial', 'Ampoule', 'Syringe', 'Tube',
         'Cream', 'Ointment', 'Gel', 'Drops', 'Spray', 'Inhaler', 'Patch',
         'ml', 'mg', 'g', 'kg', 'L', 'mcg', 'IU'
     ];
     
-    // If unit is provided, validate it and use it for dosage_form
-    // If unit is not provided, set default to 'Tablet' (since dosage_form is NOT NULL)
     if ($unit !== null && !in_array($unit, $allowedUnits)) {
         sendJsonResponse(false, 'Invalid unit value. Please select a valid unit from the list.', null, 400);
     }
     
-    // Set dosage_form to the unit value (or default to 'Tablet' if not provided)
-    $dosage_form = $unit !== null ? $unit : 'Tablet';
-    
-    // Also set unit to the same value to keep both columns in sync
-    $unit = $dosage_form;
+    // For new structure: dosage and form are separate
+    // For old structure: dosage_form is used
+    $dosage = $unit;
+    $form = $unit;
+    $dosage_form = $unit;
     
     $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
+    $stock = $quantity; // New structure uses 'stock'
     $price = isset($_POST['price']) ? (float)$_POST['price'] : 0.00;
     
     $expiration_date = isset($_POST['expirationDate']) ? trim($_POST['expirationDate']) : '';
@@ -112,11 +120,19 @@ try {
     $reorder_level = isset($_POST['reorderLevel']) ? (int)$_POST['reorderLevel'] : 10;
     
     // Validate required fields
-    if (empty($ndc)) {
-        sendJsonResponse(false, 'NDC Code is required', null, 400);
-    }
     if (empty($name)) {
         sendJsonResponse(false, 'Medicine Name is required', null, 400);
+    }
+    if (empty($category)) {
+        $category = 'Uncategorized';
+    }
+    if (empty($generic_name)) {
+        $generic_name = '';
+    }
+    
+    // NDC only required for old structure
+    if (!$hasNewStructure && empty($ndc)) {
+        sendJsonResponse(false, 'NDC Code is required', null, 400);
     }
     if ($quantity < 0) {
         sendJsonResponse(false, 'Quantity cannot be negative', null, 400);
@@ -142,7 +158,41 @@ try {
         $expiration_date = null;
     }
 
-    // Get current medicine data to check if NDC is being changed
+    // Check for duplicate names (new structure) or NDC (old structure)
+    if ($hasNewStructure) {
+        // New structure: Check by medicine_name
+        $checkSql = "SELECT medicine_id, medicine_name FROM medicines WHERE medicine_name = ? AND medicine_id != ? LIMIT 1";
+        $checkStmt = mysqli_prepare($conn, $checkSql);
+        
+        if ($checkStmt) {
+            mysqli_stmt_bind_param($checkStmt, 'ss', $name, $medicine_id);
+            mysqli_stmt_execute($checkStmt);
+            $checkResult = mysqli_stmt_get_result($checkStmt);
+            
+            if ($checkResult && mysqli_num_rows($checkResult) > 0) {
+                $existing = mysqli_fetch_assoc($checkResult);
+                mysqli_stmt_close($checkStmt);
+                
+                ob_clean();
+                http_response_code(409);
+                echo json_encode([
+                    'success' => false,
+                    'duplicate' => true,
+                    'message' => "A medicine with name '{$name}' already exists.",
+                    'data' => [
+                        'duplicate' => true,
+                        'field' => 'Medicine Name',
+                        'existing_id' => $existing['medicine_id'],
+                        'existing_name' => $existing['medicine_name']
+                    ]
+                ], JSON_UNESCAPED_UNICODE);
+                ob_end_flush();
+                exit;
+            }
+            mysqli_stmt_close($checkStmt);
+        }
+    } else {
+        // Old structure: Check by NDC
     $currentSql = "SELECT ndc, name FROM medicines WHERE id = ?";
     $currentStmt = mysqli_prepare($conn, $currentSql);
     $currentNdc = null;
@@ -162,7 +212,6 @@ try {
     
     // Check if NDC is being changed
     if ($currentNdc !== null && strcasecmp($currentNdc, $ndc) !== 0) {
-        // NDC is being changed - check if new NDC already exists
         $ndcCheckSql = "SELECT id, ndc, name FROM medicines WHERE ndc = ? AND id != ? LIMIT 1";
         $ndcCheckStmt = mysqli_prepare($conn, $ndcCheckSql);
         
@@ -175,15 +224,13 @@ try {
                 $existing = mysqli_fetch_assoc($ndcCheckResult);
                 mysqli_stmt_close($ndcCheckStmt);
                 
-                // New NDC already exists - check if name matches
                 if (strcasecmp($existing['name'], $name) !== 0) {
-                    // Same NDC + Different Name → Error
                     ob_clean();
                     http_response_code(409);
                     echo json_encode([
                         'success' => false,
                         'duplicate' => true,
-                        'message' => "Cannot change NDC Code. A medicine with NDC Code '{$ndc}' already exists with a different name ('{$existing['name']}'). Each NDC Code must refer to only one medicine.",
+                            'message' => "Cannot change NDC Code. A medicine with NDC Code '{$ndc}' already exists with a different name ('{$existing['name']}').",
                         'data' => [
                             'duplicate' => true, 
                             'field' => 'NDC Code',
@@ -195,13 +242,10 @@ try {
                     ob_end_flush();
                     exit;
                 }
-                // If name matches, it's the same medicine - allow the update
             }
             mysqli_stmt_close($ndcCheckStmt);
         }
     } else {
-        // NDC not being changed - check if another medicine with same NDC has different name
-        // (This handles the case where name is being changed but NDC stays the same)
         $ndcCheckSql = "SELECT id, ndc, name FROM medicines WHERE ndc = ? AND name != ? AND id != ? LIMIT 1";
         $ndcCheckStmt = mysqli_prepare($conn, $ndcCheckSql);
         
@@ -214,13 +258,12 @@ try {
                 $existing = mysqli_fetch_assoc($ndcCheckResult);
                 mysqli_stmt_close($ndcCheckStmt);
                 
-                // Same NDC exists with different name → Error
                 ob_clean();
                 http_response_code(409);
                 echo json_encode([
                     'success' => false,
                     'duplicate' => true,
-                    'message' => "Cannot change medicine name. A medicine with NDC Code '{$ndc}' already exists with a different name ('{$existing['name']}'). Each NDC Code must refer to only one medicine.",
+                        'message' => "Cannot change medicine name. A medicine with NDC Code '{$ndc}' already exists with a different name ('{$existing['name']}').",
                     'data' => [
                         'duplicate' => true, 
                         'field' => 'NDC Code',
@@ -235,8 +278,13 @@ try {
             mysqli_stmt_close($ndcCheckStmt);
         }
     }
+    }
 
-    // Calculate status based on quantity, reorder_level, and expiration date
+    // Calculate status (only for old structure)
+    $status = null;
+    $batch_number = null;
+
+    if (!$hasNewStructure) {
     $currentDate = date('Y-m-d');
     $status = 'in-stock';
     
@@ -266,21 +314,50 @@ try {
         mysqli_stmt_close($currentStmt);
     }
 
-    // Get or create batch number based on new expiration date
     require_once __DIR__ . '/batch_helper.php';
     $batch_number = getOrCreateBatchNumber($conn, $expiration_date);
     
-    // If expiration_date changed, update batch_number
-    // If expiration_date is being set to NULL, set batch_number to NULL
     if ($expiration_date === null) {
         $batch_number = null;
     }
+    }
 
-    // Check if unit column exists
+    // Update SQL statement based on structure
+    if ($hasNewStructure) {
+        $sql = "UPDATE medicines SET 
+            medicine_group = ?,
+            medicine_name = ?,
+            generic_name = ?,
+            dosage = ?,
+            form = ?,
+            stock = ?,
+            price = ?
+        WHERE medicine_id = ?";
+        
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            $error = mysqli_error($conn);
+            error_log("MySQL prepare error: " . $error);
+            sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
+        }
+        
+        $bound = mysqli_stmt_bind_param(
+            $stmt,
+            'sssssids',  // 8 parameters
+            $category,
+            $name,
+            $generic_name,
+            $dosage,
+            $form,
+            $stock,
+            $price,
+            $medicine_id
+        );
+    } else {
+        // Old structure
     $checkUnit = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'unit'");
     $hasUnit = mysqli_num_rows($checkUnit) > 0;
     
-    // Update SQL statement
     if ($hasUnit) {
         $sql = "UPDATE medicines SET 
             ndc = ?, 
@@ -319,7 +396,6 @@ try {
         sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
     }
 
-    // Bind parameters
     if ($hasUnit) {
         $bound = mysqli_stmt_bind_param(
             $stmt, 
@@ -355,6 +431,7 @@ try {
             $status,
             $medicine_id
         );
+        }
     }
     
     if (!$bound) {
@@ -393,6 +470,18 @@ try {
     }
 
     // Fetch the updated medicine data
+    if ($hasNewStructure) {
+        $selectSql = "SELECT medicine_id as id, medicine_name as name, medicine_group as category, 
+                     generic_name, dosage, form, stock as quantity, price
+                     FROM medicines 
+                     WHERE medicine_id = ?";
+        $selectStmt = mysqli_prepare($conn, $selectSql);
+        if (!$selectStmt) {
+            error_log("Select statement prepare error: " . mysqli_error($conn));
+            sendJsonResponse(true, 'Medicine updated successfully', ['id' => $medicine_id], 200);
+        }
+        mysqli_stmt_bind_param($selectStmt, 's', $medicine_id);
+    } else {
     $selectSql = "SELECT 
         id, 
         ndc, 
@@ -416,8 +505,8 @@ try {
         error_log("Select statement prepare error: " . mysqli_error($conn));
         sendJsonResponse(true, 'Medicine updated successfully', ['id' => $medicine_id], 200);
     }
-
     mysqli_stmt_bind_param($selectStmt, 'i', $medicine_id);
+    }
     
     if (!mysqli_stmt_execute($selectStmt)) {
         error_log("Select statement execute error: " . mysqli_stmt_error($selectStmt));
@@ -436,6 +525,18 @@ try {
     // Format price for response
     if (isset($medicine['price'])) {
         $medicine['price'] = number_format((float)$medicine['price'], 2, '.', '');
+    }
+
+    // Sync updated medicine to POS system
+    try {
+        $posSyncResult = updateMedicineInPOS($medicine);
+        if ($posSyncResult['success']) {
+            error_log("Updated medicine successfully synced to POS system: " . $medicine_id);
+        } else {
+            error_log("POS sync failed for updated medicine ID " . $medicine_id . ": " . $posSyncResult['message']);
+        }
+    } catch (Exception $e) {
+        error_log("POS sync exception for updated medicine ID " . $medicine_id . ": " . $e->getMessage());
     }
 
     // Success response

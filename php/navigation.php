@@ -15,6 +15,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+$isLoggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
+if (!$isLoggedIn) {
+    header('Location: ../pages/login.html');
+    exit;
+}
+
 $user_role = $_SESSION['role'] ?? null;
 $user_name = $_SESSION['full_name'] ?? 'User';
 $user_email = $_SESSION['user_email'] ?? $_SESSION['email'] ?? 'user@example.com';

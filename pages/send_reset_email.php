@@ -30,53 +30,9 @@ if (!$email) {
 
 // Include PHPMailer
 $phpmailerBase = realpath(__DIR__ . '/../PHPMailer/src');
-<<<<<<< Updated upstream
-$phpex = $phpmailerBase ? $phpmailerBase . '/Exception.php' : null;
-$phpmailer = $phpmailerBase ? $phpmailerBase . '/PHPMailer.php' : null;
-$phpsmtp = $phpmailerBase ? $phpmailerBase . '/SMTP.php' : null;
 
-if (!$phpex || !file_exists($phpex) || !file_exists($phpmailer) || !file_exists($phpsmtp)) {
-    $err = 'PHPMailer files not found at expected path: ' . (__DIR__ . '/../PHPMailer/src');
-    log_msg($err);
-    if ($DEBUG) {
-        http_response_code(500);
-        echo json_encode(['error' => $err]);
-    } else {
-        echo json_encode(['success' => true, 'message' => 'If your email is registered you will receive instructions.']);
-    }
-    exit;
-}
-
-require_once $phpex;
-require_once $phpmailer;
-require_once $phpsmtp;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-// DB connect — adjust credentials for your setup
-$DB_HOST = '127.0.0.1';
-$DB_USER = 'root';
-$DB_PASS = '';
-$DB_NAME = 'Inventory_system_db';
-
-$mysqli = @new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-if ($mysqli->connect_errno) {
-    $err = 'DB connect error: ' . $mysqli->connect_error;
-    log_msg($err);
-    if ($DEBUG) { http_response_code(500); echo json_encode(['error' => $err]); } 
-    else { echo json_encode(['success' => true, 'message' => 'If your email is registered you will receive instructions.']); }
-    exit;
-}
-$mysqli->set_charset('utf8mb4');
-
-// Lookup user (active)
-$stmt = $mysqli->prepare('SELECT user_id, full_name, email FROM users WHERE email = ? AND status = "active" LIMIT 1');
-if (!$stmt) {
-    log_msg('Prepare failed (select): ' . $mysqli->error);
-=======
 if (!$phpmailerBase || !file_exists($phpmailerBase . '/PHPMailer.php')) {
     error_log('PHPMailer files not found');
->>>>>>> Stashed changes
     echo json_encode(['success' => true, 'message' => 'If your email is registered you will receive instructions.']);
     exit;
 }

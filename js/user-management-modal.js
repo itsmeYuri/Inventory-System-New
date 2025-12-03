@@ -96,7 +96,7 @@
         }
         
         tbody.innerHTML = users.map(user => `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+            <tr>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <input type="checkbox" class="user-checkbox-modal h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" data-user-id="${user.user_id}" onchange="updateSelectedCountModal()">
                 </td>

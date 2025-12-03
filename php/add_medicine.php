@@ -36,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
+require_once __DIR__ . '/pos_sync_helper.php';
 
 // Function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
@@ -64,173 +66,117 @@ try {
         sendJsonResponse(false, 'Database connection failed', null, 500);
     }
 
-    // Get and sanitize form data - match form field names exactly
-    $ndc = isset($_POST['ndcCode']) ? trim($_POST['ndcCode']) : '';
+    // Check which structure we're using
+    $hasNewStructure = hasNewMedicineStructure($conn);
+    
+    if (!$hasNewStructure) {
+        sendJsonResponse(false, 'Database table has not been migrated to the new POS structure. Please run the migration script first: php/migrate_medicines_to_pos_structure.php', [
+            'migration_required' => true,
+            'migration_script' => 'php/migrate_medicines_to_pos_structure.php'
+        ], 500);
+    }
+
+    // Always use new POS structure - Get and sanitize form data
     $name = isset($_POST['medicineName']) ? trim($_POST['medicineName']) : '';
     
-    // For nullable fields, convert empty strings to NULL
-    $manufacturer = isset($_POST['manufacturer']) ? trim($_POST['manufacturer']) : '';
-    $manufacturer = $manufacturer !== '' ? $manufacturer : null;
-    
     $category = isset($_POST['category']) ? trim($_POST['category']) : '';
-    $category = $category !== '' ? $category : null;
+    $category = $category !== '' ? $category : 'Uncategorized';
     
-    // Get unit value from form (this will be saved to dosage_form column)
+    // Get generic_name (required for POS)
+    $generic_name = isset($_POST['genericName']) ? trim($_POST['genericName']) : '';
+    $generic_name = $generic_name !== '' ? $generic_name : '';
+    
+    // Get unit/dosage value from form
     $unit = isset($_POST['unit']) ? trim($_POST['unit']) : '';
-    $unit = $unit !== '' ? $unit : null;
+    $unit = $unit !== '' ? $unit : 'Tablet';
     
-    // Validate unit value against allowed ENUM values
+    // Validate unit value against allowed values
     $allowedUnits = [
         'Capsule', 'Tablet', 'Pill', 'Bottle', 'Vial', 'Ampoule', 'Syringe', 'Tube',
         'Cream', 'Ointment', 'Gel', 'Drops', 'Spray', 'Inhaler', 'Patch',
         'ml', 'mg', 'g', 'kg', 'L', 'mcg', 'IU'
     ];
     
-    // If unit is provided, validate it and use it for dosage_form
-    // If unit is not provided, set default to 'Tablet' (since dosage_form is NOT NULL)
     if ($unit !== null && !in_array($unit, $allowedUnits)) {
         sendJsonResponse(false, 'Invalid unit value. Please select a valid unit from the list.', null, 400);
     }
     
-    // Set dosage_form to the unit value (or default to 'Tablet' if not provided)
-    $dosage_form = $unit !== null ? $unit : 'Tablet';
+    // For POS structure: dosage and form are separate (both use unit value)
+    $dosage = $unit;
+    $form = $unit;
     
-    // Also set unit to the same value to keep both columns in sync
-    $unit = $dosage_form;
-    
-    // Get supplier_id if provided
-    $supplier_id = isset($_POST['supplier_id']) ? (int)$_POST['supplier_id'] : null;
-    if ($supplier_id !== null && $supplier_id <= 0) {
-        $supplier_id = null;
-    }
-    
-    $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
+    $stock = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
     $price = isset($_POST['price']) ? (float)$_POST['price'] : 0.00;
     
-    $expiration_date = isset($_POST['expirationDate']) ? trim($_POST['expirationDate']) : '';
-    $expiration_date = $expiration_date !== '' ? $expiration_date : null;
-    
-    $reorder_level = isset($_POST['reorderLevel']) ? (int)$_POST['reorderLevel'] : 10; // Default to 10 if not provided
-    
     // Validate required fields
-    if (empty($ndc)) {
-        sendJsonResponse(false, 'NDC Code is required', null, 400);
-    }
     if (empty($name)) {
         sendJsonResponse(false, 'Medicine Name is required', null, 400);
     }
-    if ($quantity < 0) {
-        sendJsonResponse(false, 'Quantity cannot be negative', null, 400);
+    if (empty($category)) {
+        $category = 'Uncategorized';
+    }
+    if (empty($generic_name)) {
+        $generic_name = ''; // Allow empty generic name
+    }
+    if ($stock < 0) {
+        sendJsonResponse(false, 'Stock cannot be negative', null, 400);
     }
     if ($price < 0) {
         sendJsonResponse(false, 'Price cannot be negative', null, 400);
     }
-    if ($reorder_level < 0) {
-        sendJsonResponse(false, 'Reorder level cannot be negative', null, 400);
-    }
-    
-    // Validate expiration date format if provided
-    if ($expiration_date !== null && $expiration_date !== '') {
-        // Validate date format YYYY-MM-DD
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $expiration_date)) {
-            sendJsonResponse(false, 'Invalid expiration date format. Use YYYY-MM-DD', null, 400);
-        }
-        
-        // Validate it's a valid date
-        $dateParts = explode('-', $expiration_date);
-        if (!checkdate((int)$dateParts[1], (int)$dateParts[2], (int)$dateParts[0])) {
-            sendJsonResponse(false, 'Invalid expiration date', null, 400);
-        }
-    } else {
-        $expiration_date = null; // Ensure it's NULL, not empty string
-    }
 
-    // Check for existing medicine with same NDC
-    // Database has UNIQUE constraint on ndc column
-    // Rules:
-    // - Same NDC + Same Name → Increment quantity (update existing)
-    // - Same NDC + Different Name → Error (not allowed)
-    // - Different NDC → Create new medicine
-    $ndcCheckSql = "SELECT id, ndc, name, quantity, expiration_date, batch_number FROM medicines 
-                    WHERE ndc = ? 
+    // Check for existing medicine with same name - Always use new POS structure
+    $checkSql = "SELECT medicine_id, medicine_name, stock FROM medicines 
+                WHERE medicine_name = ? 
                     LIMIT 1";
-    $ndcCheckStmt = mysqli_prepare($conn, $ndcCheckSql);
-    if (!$ndcCheckStmt) {
-        error_log("NDC check prepare error: " . mysqli_error($conn));
-        sendJsonResponse(false, 'Database error during NDC check', null, 500);
+    $checkStmt = mysqli_prepare($conn, $checkSql);
+    if (!$checkStmt) {
+        error_log("Check prepare error: " . mysqli_error($conn));
+        sendJsonResponse(false, 'Database error during duplicate check', null, 500);
     }
     
-    mysqli_stmt_bind_param($ndcCheckStmt, 's', $ndc);
-    mysqli_stmt_execute($ndcCheckStmt);
-    $ndcCheckResult = mysqli_stmt_get_result($ndcCheckStmt);
+    mysqli_stmt_bind_param($checkStmt, 's', $name);
+    mysqli_stmt_execute($checkStmt);
+    $checkResult = mysqli_stmt_get_result($checkStmt);
     
-    if ($ndcCheckResult && mysqli_num_rows($ndcCheckResult) > 0) {
-        $existing = mysqli_fetch_assoc($ndcCheckResult);
+    if ($checkResult && mysqli_num_rows($checkResult) > 0) {
+        $existing = mysqli_fetch_assoc($checkResult);
+        mysqli_stmt_close($checkStmt);
         
-        // Check if name matches
-        if (strcasecmp($existing['name'], $name) === 0) {
-            // Same NDC + Same Name → Increment quantity
-            mysqli_stmt_close($ndcCheckStmt);
+        // Same name → Increment stock
+        $existingId = $existing['medicine_id'];
+        $existingStock = (int)$existing['stock'];
+        $newStock = $existingStock + $stock;
             
-            $existingId = (int)$existing['id'];
-            $existingQuantity = (int)$existing['quantity'];
-            $newQuantity = $existingQuantity + $quantity;
-            
-            // Get or create batch number based on expiration date
-            require_once __DIR__ . '/batch_helper.php';
-            $batch_number = getOrCreateBatchNumber($conn, $expiration_date);
-            
-            // Calculate status based on new quantity, reorder_level, and expiration date
-            $currentDate = date('Y-m-d');
-            $status = 'in-stock';
-            
-            if ($expiration_date !== null && $expiration_date < $currentDate) {
-                $status = 'expired';
-            } elseif ($newQuantity === 0) {
-                $status = 'out-of-stock';
-            } elseif ($newQuantity > 0 && $newQuantity <= $reorder_level) {
-                $status = 'low-stock';
-            }
-            
-            // Update existing medicine: increment quantity and update expiration/batch if different
+        // Update existing medicine
             $updateSql = "UPDATE medicines SET 
-                          quantity = ?,
-                          expiration_date = ?,
-                          batch_number = ?,
-                          status = ?,
-                          updated_at = CURRENT_TIMESTAMP
-                          WHERE id = ?";
+                      stock = ?,
+                      price = ?
+                      WHERE medicine_id = ?";
             
             $updateStmt = mysqli_prepare($conn, $updateSql);
             if (!$updateStmt) {
                 error_log("Update prepare error: " . mysqli_error($conn));
-                sendJsonResponse(false, 'Database error during quantity update', null, 500);
+            sendJsonResponse(false, 'Database error during stock update', null, 500);
             }
             
-            mysqli_stmt_bind_param($updateStmt, 'isisi', $newQuantity, $expiration_date, $batch_number, $status, $existingId);
+        mysqli_stmt_bind_param($updateStmt, 'ids', $newStock, $price, $existingId);
             
             if (!mysqli_stmt_execute($updateStmt)) {
                 $error = mysqli_stmt_error($updateStmt);
                 error_log("Update execute error: " . $error);
                 mysqli_stmt_close($updateStmt);
-                sendJsonResponse(false, 'Failed to update medicine quantity: ' . $error, null, 500);
+            sendJsonResponse(false, 'Failed to update medicine stock: ' . $error, null, 500);
             }
             
             mysqli_stmt_close($updateStmt);
             
-            // Fetch updated medicine data
-            $checkUnitForSelect = mysqli_query($conn, "SHOW COLUMNS FROM medicines WHERE Field = 'unit'");
-            $hasUnitForSelect = $checkUnitForSelect && mysqli_num_rows($checkUnitForSelect) > 0;
-            
-            if ($hasUnitForSelect) {
-                $selectSql = "SELECT id, ndc, name, manufacturer, category, dosage_form, unit, quantity, reorder_level, price, expiration_date, batch_number, status, created_at, updated_at
-                              FROM medicines WHERE id = ?";
-            } else {
-                $selectSql = "SELECT id, ndc, name, manufacturer, category, dosage_form, quantity, reorder_level, price, expiration_date, batch_number, status, created_at, updated_at
-                              FROM medicines WHERE id = ?";
-            }
+        // Fetch updated medicine
+        $selectSql = "SELECT medicine_id as id, medicine_name as name, medicine_group as category, 
+                     generic_name, dosage, form, stock as quantity, price
+                     FROM medicines WHERE medicine_id = ?";
             $selectStmt = mysqli_prepare($conn, $selectSql);
-            mysqli_stmt_bind_param($selectStmt, 'i', $existingId);
+        mysqli_stmt_bind_param($selectStmt, 's', $existingId);
             mysqli_stmt_execute($selectStmt);
             $selectResult = mysqli_stmt_get_result($selectStmt);
             $updatedMedicine = mysqli_fetch_assoc($selectResult);
@@ -240,70 +186,25 @@ try {
                 $updatedMedicine['price'] = number_format((float)$updatedMedicine['price'], 2, '.', '');
             }
             
-            // Return success with updated medicine
-            sendJsonResponse(true, "Medicine quantity updated successfully. Quantity increased from {$existingQuantity} to {$newQuantity}.", $updatedMedicine, 200);
-            exit;
+        // Sync updated medicine to POS system
+        try {
+            $posSyncResult = updateMedicineInPOS($updatedMedicine);
+            if ($posSyncResult['success']) {
+                error_log("Updated medicine successfully synced to POS system: " . $existingId);
         } else {
-            // Same NDC + Different Name → Error
-            mysqli_stmt_close($ndcCheckStmt);
-            ob_clean();
-            http_response_code(409);
-            echo json_encode([
-                'success' => false,
-                'duplicate' => true,
-                'message' => "A medicine with NDC Code '{$ndc}' already exists with a different name ('{$existing['name']}'). Each NDC Code must refer to only one medicine.",
-                'data' => [
-                    'duplicate' => true, 
-                    'field' => 'NDC Code',
-                    'existing_id' => (int)$existing['id'],
-                    'existing_name' => $existing['name'],
-                    'new_name' => $name
-                ]
-            ], JSON_UNESCAPED_UNICODE);
-            ob_end_flush();
-            exit;
+                error_log("POS sync failed for updated medicine ID " . $existingId . ": " . $posSyncResult['message']);
         }
+        } catch (Exception $e) {
+            error_log("POS sync exception for updated medicine ID " . $existingId . ": " . $e->getMessage());
     }
-    mysqli_stmt_close($ndcCheckStmt);
-
-    // Calculate status based on quantity, reorder_level, and expiration date
-    $currentDate = date('Y-m-d');
-    $status = 'in-stock';
-    
-    // Check expiration first (highest priority)
-    if ($expiration_date !== null && $expiration_date < $currentDate) {
-        $status = 'expired';
-    } 
-    // Then check quantity
-    elseif ($quantity === 0) {
-        $status = 'out-of-stock';
-    } 
-    // Then check low stock (quantity <= reorder_level)
-    elseif ($quantity > 0 && $quantity <= $reorder_level) {
-        $status = 'low-stock';
+        
+        sendJsonResponse(true, "Medicine stock updated successfully. Stock increased from {$existingStock} to {$newStock}.", $updatedMedicine, 200);
+        exit;
     }
-    // Otherwise, it's in-stock (already set above)
-
-    // Get or create batch number based on expiration date
-    require_once __DIR__ . '/batch_helper.php';
-    $batch_number = getOrCreateBatchNumber($conn, $expiration_date);
-
-    // Check if supplier_id and unit columns exist
-    $checkSupplierId = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'supplier_id'");
-    $hasSupplierId = $checkSupplierId && mysqli_num_rows($checkSupplierId) > 0;
+    mysqli_stmt_close($checkStmt);
     
-    // Check if unit column exists
-    $checkUnit = mysqli_query($conn, "SHOW COLUMNS FROM medicines WHERE Field = 'unit'");
-    $hasUnit = $checkUnit && mysqli_num_rows($checkUnit) > 0;
-    
-    // If unit column doesn't exist, ignore unit value
-    if (!$hasUnit) {
-        $unit = null;
-    }
-    
-    // Generate next primary key ID
-    // Get the maximum ID from the medicines table
-    $maxIdQuery = "SELECT MAX(id) as max_id FROM medicines";
+    // Generate next primary key ID - Always use new POS structure
+    $maxIdQuery = "SELECT MAX(CAST(medicine_id AS UNSIGNED)) as max_id FROM medicines WHERE medicine_id REGEXP '^[0-9]+$'";
     $maxIdResult = mysqli_query($conn, $maxIdQuery);
     
     if (!$maxIdResult) {
@@ -314,98 +215,31 @@ try {
     $maxIdRow = mysqli_fetch_assoc($maxIdResult);
     $maxId = $maxIdRow['max_id'];
     
-    // Calculate next ID
-    // If table is empty or max_id is NULL, start at 1
-    // Otherwise, increment by 1
     if ($maxId === null || $maxId === '') {
         $nextId = 1;
     } else {
-        // Handle both numeric and formatted IDs (e.g., "MED-0005" or "5")
-        // Extract numeric portion if ID contains letters
-        if (preg_match('/\d+/', $maxId, $matches)) {
-            $numericId = (int)$matches[0];
-        } else {
-            $numericId = (int)$maxId;
-        }
-        $nextId = $numericId + 1;
+        $nextId = (int)$maxId + 1;
     }
     
-    // Ensure ID is never 0
     if ($nextId <= 0) {
         $nextId = 1;
     }
     
-    error_log("Generated next medicine ID: " . $nextId . " (max was: " . ($maxId ?? 'NULL') . ")");
+    $medicine_id = (string)$nextId;
+    error_log("Generated next medicine_id: " . $medicine_id);
     
-    // Prepare SQL INSERT statement - explicitly include id column
-    // Note: created_at and updated_at are handled automatically by MySQL
-    if ($hasSupplierId && $hasUnit) {
+    // Prepare SQL INSERT statement - Always use new POS structure columns
         $sql = "INSERT INTO medicines (
-            id,
-            ndc, 
-            name, 
-            manufacturer, 
-            category, 
-            dosage_form,
-            unit, 
-            quantity, 
-            reorder_level,
-            price, 
-            expiration_date,
-            batch_number,
-            supplier_id,
-            status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    } elseif ($hasSupplierId) {
-        $sql = "INSERT INTO medicines (
-            id,
-            ndc, 
-            name, 
-            manufacturer, 
-            category, 
-            dosage_form, 
-            quantity, 
-            reorder_level,
-            price, 
-            expiration_date,
-            batch_number,
-            supplier_id,
-            status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    } elseif ($hasUnit) {
-        $sql = "INSERT INTO medicines (
-            id,
-            ndc, 
-            name, 
-            manufacturer, 
-            category, 
-            dosage_form,
-            unit, 
-            quantity, 
-            reorder_level,
-            price, 
-            expiration_date,
-            batch_number,
-            status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    } else {
-        $sql = "INSERT INTO medicines (
-            id,
-            ndc, 
-            name, 
-            manufacturer, 
-            category, 
-            dosage_form, 
-            quantity, 
-            reorder_level,
-            price, 
-            expiration_date,
-            batch_number,
-            status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    }
-
-    // Prepare statement
+        medicine_id,
+        medicine_group,
+        medicine_name,
+        generic_name,
+        dosage,
+        form,
+        stock,
+        price
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         $error = mysqli_error($conn);
@@ -413,83 +247,18 @@ try {
         sendJsonResponse(false, 'Database preparation error: ' . $error, ['sql_error' => $error], 500);
     }
 
-    // Bind parameters
-    // Types: s=string, i=integer, d=double/decimal
-    // Note: For NULL values, we need to pass actual NULL, not empty string
-    // First parameter is always the id (integer)
-    if ($hasSupplierId && $hasUnit) {
         $bound = mysqli_stmt_bind_param(
             $stmt, 
-            'issssssiidsiis',  // 14 parameters: 1 integer (id), 6 strings, 4 integers, 1 double, 2 strings
-            $nextId,
-            $ndc, 
-            $name, 
-            $manufacturer, 
+        'ssssssid',  // 8 parameters: medicine_id, medicine_group, medicine_name, generic_name, dosage, form, stock, price
+        $medicine_id,
             $category, 
-            $dosage_form,
-            $unit,
-            $quantity, 
-            $reorder_level,
-            $price, 
-            $expiration_date,
-            $batch_number,
-            $supplier_id,
-            $status
-        );
-    } elseif ($hasSupplierId) {
-        $bound = mysqli_stmt_bind_param(
-            $stmt, 
-            'isssssiidsiis',  // 13 parameters: 1 integer (id), 5 strings, 4 integers, 1 double, 2 strings
-            $nextId,
-            $ndc, 
             $name, 
-            $manufacturer, 
-            $category, 
-            $dosage_form,
-            $quantity, 
-            $reorder_level,
-            $price, 
-            $expiration_date,
-            $batch_number,
-            $supplier_id,
-            $status
+        $generic_name,
+        $dosage,
+        $form,
+        $stock,
+        $price
         );
-    } elseif ($hasUnit) {
-        $bound = mysqli_stmt_bind_param(
-            $stmt, 
-            'issssssiidsis',  // 13 parameters: 1 integer (id), 6 strings, 3 integers, 1 double, 2 strings
-            $nextId,
-            $ndc, 
-            $name, 
-            $manufacturer, 
-            $category, 
-            $dosage_form,
-            $unit,
-            $quantity, 
-            $reorder_level,
-            $price, 
-            $expiration_date,
-            $batch_number,
-            $status
-        );
-    } else {
-        $bound = mysqli_stmt_bind_param(
-            $stmt, 
-            'isssssiidsis',  // 12 parameters: 1 integer (id), 5 strings, 3 integers, 1 double, 2 strings
-            $nextId,
-            $ndc, 
-            $name, 
-            $manufacturer, 
-            $category, 
-            $dosage_form,
-            $quantity, 
-            $reorder_level,
-            $price, 
-            $expiration_date,
-            $batch_number,
-            $status
-        );
-    }
     
     // Verify binding was successful
     if (!$bound) {
@@ -504,29 +273,41 @@ try {
         $error = mysqli_stmt_error($stmt);
         $errorCode = mysqli_stmt_errno($stmt);
         error_log("MySQL execute error [$errorCode]: " . $error);
-        error_log("Attempted to insert with ID: " . $nextId);
+        error_log("Attempted to insert with ID: " . $medicine_id);
         
         mysqli_stmt_close($stmt);
         
-        // Check for PRIMARY KEY duplicate error (including '0' key error)
+        // Check for unique constraint errors (especially ndc_name from old structure)
+        if (strpos($error, 'Duplicate') !== false || $errorCode === 1062) {
+            if (strpos($error, 'ndc_name') !== false || strpos($error, 'ndc') !== false) {
+                $errorMessage = 'Database constraint error: The medicines table has a unique constraint on NDC that conflicts with the new POS structure. Please run: php/remove_ndc_constraint.php to remove this constraint.';
+                sendJsonResponse(false, $errorMessage, [
+                    'error_code' => $errorCode,
+                    'error' => $error,
+                    'fix_script' => 'php/remove_ndc_constraint.php',
+                    'migration_required' => true
+                ], 500);
+            }
+        }
+        
+        // Check for PRIMARY KEY duplicate error
         if ((strpos($error, 'Duplicate') !== false && strpos($error, 'PRIMARY') !== false) || 
             (strpos($error, 'Duplicate') !== false && strpos($error, "'0'") !== false)) {
-            // ID conflict - this should not happen with our new logic, but handle it gracefully
-            error_log("Primary key conflict detected. Attempted ID: " . $nextId);
+            error_log("Primary key conflict detected. Attempted ID: " . $medicine_id);
             error_log("Error details: " . $error);
             
             // If the error is about '0', it means our ID calculation failed
-            if (strpos($error, "'0'") !== false || $nextId <= 0) {
+            if (strpos($error, "'0'") !== false || $medicine_id <= 0) {
                 $errorMessage = 'Primary key generation error: Invalid ID (0) was generated. This indicates a problem with ID calculation.';
                 sendJsonResponse(false, $errorMessage, [
                     'error_code' => $errorCode, 
                     'error' => $error,
-                    'attempted_id' => $nextId,
-                    'suggestion' => 'Please check the database and ensure AUTO_INCREMENT is properly configured, or contact support.'
+                    'attempted_id' => $medicine_id,
+                    'suggestion' => 'Please check the database and ensure the medicines table structure is correct.'
                 ], 500);
             } else {
                 // Get current max ID again (in case another process inserted a record)
-                $retryMaxIdQuery = "SELECT MAX(id) as max_id FROM medicines";
+                $retryMaxIdQuery = "SELECT MAX(CAST(medicine_id AS UNSIGNED)) as max_id FROM medicines WHERE medicine_id REGEXP '^[0-9]+$'";
                 $retryMaxIdResult = mysqli_query($conn, $retryMaxIdQuery);
                 if ($retryMaxIdResult) {
                     $retryMaxIdRow = mysqli_fetch_assoc($retryMaxIdResult);
@@ -535,116 +316,96 @@ try {
                     if ($retryMaxId === null || $retryMaxId === '') {
                         $retryNextId = 1;
                     } else {
-                        if (preg_match('/\d+/', $retryMaxId, $matches)) {
-                            $retryNumericId = (int)$matches[0];
-                        } else {
-                            $retryNumericId = (int)$retryMaxId;
-                        }
-                        $retryNextId = $retryNumericId + 1;
+                        $retryNextId = (int)$retryMaxId + 1;
                     }
                     
                     if ($retryNextId <= 0) {
                         $retryNextId = 1;
                     }
                     
-                    error_log("Recalculated next ID: " . $retryNextId . " (previous was: " . $nextId . ")");
+                    error_log("Recalculated next ID: " . $retryNextId . " (previous was: " . $medicine_id . ")");
                 }
                 
-                $errorMessage = 'Primary key conflict detected. The calculated ID (' . $nextId . ') already exists. Please try again.';
+                $errorMessage = 'Primary key conflict detected. The calculated ID (' . $medicine_id . ') already exists. Please try again.';
                 sendJsonResponse(false, $errorMessage, [
                     'error_code' => $errorCode, 
                     'error' => $error,
-                    'attempted_id' => $nextId,
+                    'attempted_id' => $medicine_id,
                     'suggestion' => 'Please refresh and try adding the medicine again.'
                 ], 500);
             }
         }
         
-        // Check for duplicate NDC
+        // Check for duplicate medicine_name
         if (strpos($error, 'Duplicate') !== false || $errorCode === 1062) {
-            if (strpos($error, 'ndc') !== false || strpos($error, 'PRIMARY') === false) {
-                $errorMessage = 'A medicine with this NDC Code already exists.';
+            if (strpos($error, 'medicine_name') !== false || strpos($error, 'PRIMARY') === false) {
+                $errorMessage = 'A medicine with this name already exists.';
                 sendJsonResponse(false, $errorMessage, ['error_code' => $errorCode, 'error' => $error, 'duplicate' => true], 409);
             }
         }
         
         // Check for unknown column error
         if (strpos($error, 'Unknown column') !== false) {
-            $errorMessage = 'A required database column is missing. Please run: http://localhost:3000/php/add_unit_column.php';
+            $errorMessage = 'A required database column is missing. Please run the migration script: php/migrate_medicines_to_pos_structure.php';
             sendJsonResponse(false, $errorMessage, ['error_code' => $errorCode, 'error' => $error], 500);
         }
         
         sendJsonResponse(false, 'Database error: ' . $error, ['error_code' => $errorCode, 'error' => $error], 500);
     }
 
-    // Get the inserted ID (we explicitly set it, so use our calculated value)
-    // mysqli_insert_id will return 0 if we explicitly set the ID, so use our calculated nextId
-    $insertedId = $nextId;
-    mysqli_stmt_close($stmt);
-
-    if (!$insertedId || $insertedId <= 0) {
-        error_log("Warning: Inserted ID is invalid: " . $insertedId);
-        // Try to get it from mysqli_insert_id as fallback
-        $insertedId = mysqli_insert_id($conn);
-        if (!$insertedId || $insertedId <= 0) {
-            sendJsonResponse(false, 'Failed to get inserted medicine ID', null, 500);
-        }
-    }
+    // Get the inserted ID - Always use new POS structure
+    $insertedId = $medicine_id;
     
+    mysqli_stmt_close($stmt);
     error_log("Successfully inserted medicine with ID: " . $insertedId);
 
-    // Fetch the inserted medicine data to return
-    $selectFields = "id, ndc, name, manufacturer, category, dosage_form";
-    if ($hasUnit) {
-        $selectFields .= ", unit";
-    }
-    $selectFields .= ", quantity, reorder_level, price, expiration_date, batch_number";
-    if ($hasSupplierId) {
-        $selectFields .= ", supplier_id";
-    }
-    $selectFields .= ", status, created_at, updated_at";
-    
-    $selectSql = "SELECT {$selectFields} FROM medicines WHERE id = ?";
-    
+    // Fetch the inserted medicine data to return - Always use new POS structure
+    $selectSql = "SELECT medicine_id as id, medicine_name as name, medicine_group as category, 
+                 generic_name, dosage, form, stock as quantity, price
+                 FROM medicines WHERE medicine_id = ?";
     $selectStmt = mysqli_prepare($conn, $selectSql);
     if (!$selectStmt) {
         error_log("Select statement prepare error: " . mysqli_error($conn));
         $basicData = [
             'id' => $insertedId,
-            'ndc' => $ndc,
             'name' => $name,
-            'manufacturer' => $manufacturer,
             'category' => $category,
-            'dosage_form' => $dosage_form,
-            'quantity' => $quantity,
-            'reorder_level' => $reorder_level,
-            'price' => number_format($price, 2, '.', ''),
-            'expiration_date' => $expiration_date,
-            'batch_number' => $batch_number,
-            'status' => $status
+            'generic_name' => $generic_name,
+            'dosage' => $dosage,
+            'form' => $form,
+            'quantity' => $stock,
+            'price' => number_format($price, 2, '.', '')
         ];
         sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
-
-    mysqli_stmt_bind_param($selectStmt, 'i', $insertedId);
+    mysqli_stmt_bind_param($selectStmt, 's', $insertedId);
     
     if (!mysqli_stmt_execute($selectStmt)) {
         error_log("Select statement execute error: " . mysqli_stmt_error($selectStmt));
         mysqli_stmt_close($selectStmt);
         $basicData = [
             'id' => $insertedId,
-            'ndc' => $ndc,
             'name' => $name,
-            'manufacturer' => $manufacturer,
             'category' => $category,
-            'dosage_form' => $dosage_form,
-            'quantity' => $quantity,
-            'reorder_level' => $reorder_level,
-            'price' => number_format($price, 2, '.', ''),
-            'expiration_date' => $expiration_date,
-            'batch_number' => $batch_number,
-            'status' => $status
+            'generic_name' => $generic_name,
+            'dosage' => $dosage,
+            'form' => $form,
+            'quantity' => $stock,
+            'price' => number_format($price, 2, '.', '')
         ];
+        
+        // Sync to POS system before sending response
+        try {
+            $posSyncResult = syncMedicineToPOS($basicData);
+            if ($posSyncResult['success']) {
+                error_log("Medicine successfully synced to POS system: " . $insertedId);
+            } else {
+                error_log("POS sync failed for medicine ID " . $insertedId . ": " . $posSyncResult['message']);
+            }
+        } catch (Exception $e) {
+            error_log("POS sync exception for medicine ID " . $insertedId . ": " . $e->getMessage());
+        }
+        
         sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
 
@@ -655,24 +416,47 @@ try {
     if (!$medicine) {
         $basicData = [
             'id' => $insertedId,
-            'ndc' => $ndc,
             'name' => $name,
-            'manufacturer' => $manufacturer,
             'category' => $category,
-            'dosage_form' => $dosage_form,
-            'quantity' => $quantity,
-            'reorder_level' => $reorder_level,
-            'price' => number_format($price, 2, '.', ''),
-            'expiration_date' => $expiration_date,
-            'batch_number' => $batch_number,
-            'status' => $status
+            'generic_name' => $generic_name,
+            'dosage' => $dosage,
+            'form' => $form,
+            'quantity' => $stock,
+            'price' => number_format($price, 2, '.', '')
         ];
+        
+        // Sync to POS system before sending response
+        try {
+            $posSyncResult = syncMedicineToPOS($basicData);
+            if ($posSyncResult['success']) {
+                error_log("Medicine successfully synced to POS system: " . $insertedId);
+            } else {
+                error_log("POS sync failed for medicine ID " . $insertedId . ": " . $posSyncResult['message']);
+            }
+        } catch (Exception $e) {
+            error_log("POS sync exception for medicine ID " . $insertedId . ": " . $e->getMessage());
+        }
+        
         sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
 
     // Format price for response
     if (isset($medicine['price'])) {
         $medicine['price'] = number_format((float)$medicine['price'], 2, '.', '');
+    }
+
+    // Sync to POS system (non-blocking - don't fail if sync fails)
+    try {
+        $posSyncResult = syncMedicineToPOS($medicine);
+        if ($posSyncResult['success']) {
+            error_log("Medicine successfully synced to POS system: " . $insertedId);
+        } else {
+            error_log("POS sync failed for medicine ID " . $insertedId . ": " . $posSyncResult['message']);
+            // Don't fail the operation, just log the error
+        }
+    } catch (Exception $e) {
+        error_log("POS sync exception for medicine ID " . $insertedId . ": " . $e->getMessage());
+        // Don't fail the operation, just log the error
     }
 
     // Success response

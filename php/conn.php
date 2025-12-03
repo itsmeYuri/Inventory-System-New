@@ -7,7 +7,7 @@ ini_set('log_errors', 1);
 $host = 'localhost';
 $username = 'root';
 $password = '';
-$database = 'Inventory_system_db';
+$database = 'inventory_system_db';
 
 $conn = mysqli_connect($host, $username, $password, $database);
 

@@ -1,0 +1,141 @@
+.component__modal {
+    pointer-events: none;
+    opacity: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+
+    background-color: rgba(0, 0, 0, 0.5);
+
+    &,
+    & * {
+        transition: all 0.3s ease;
+    }
+
+    /* *** SUCCESS *** */
+    &.--success .component__modal-content {
+        border-color: var(--color-success);
+    }
+
+    &.--success .modal-content__icon {
+        background-color: var(--color-success-light);
+    }
+
+    &.--success .modal-content__icon svg,
+    &.--success .modal-content__heading {
+        color: var(--color-success);
+    }
+
+    /* *** WARNNING *** */
+    &.--warning .component__modal-content {
+        border-color: var(--color-warning);
+    }
+
+    &.--warning .modal-content__icon {
+        background-color: var(--color-warning-light);
+    }
+
+    &.--warning .modal-content__icon svg,
+    &.--warning .modal-content__heading {
+        color: var(--color-warning);
+    }
+
+    /* *** ERROR *** */
+    &.--error .component__modal-content {
+        border-color: var(--color-error);
+    }
+
+    &.--error .modal-content__icon {
+        background-color: var(--color-error-light);
+    }
+
+    &.--error .modal-content__icon svg,
+    &.--error .modal-content__heading {
+        color: var(--color-error);
+    }
+
+    /* *** STATE *** */
+    &.--active {
+        pointer-events: auto;
+        opacity: 1;
+    }
+}
+
+.component__modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+
+    position: relative;
+
+    background-color: var(--color-surface);
+
+    width: 40rem;
+
+    padding: 2em;
+
+    border-top: 6px solid var(--color-success);
+    border-radius: var(--radius-outer);
+
+    box-shadow: var(--shadow-surface);
+}
+
+.component__modal-content > header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+
+    color: var(--color-success);
+}
+
+.modal-content__icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    height: 5rem;
+    width: 5rem;
+
+    border-radius: var(--radius-circle);
+}
+
+.modal-content__icon > svg {
+    height: 3rem;
+    width: 3rem;
+}
+
+.modal-content__heading {
+    font-size: 2rem;
+
+    text-align: center;
+    text-shadow: var(--shadow-text);
+}
+
+.component__modal-content > p {
+    color: var(--color-text-muted);
+
+    text-align: center;
+}
+
+.component__modal-content > footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+
+    width: 50%;
+
+    margin-top: 2rem;
+}
+
+.component__modal-content > footer > button {
+    flex: 1;
+}

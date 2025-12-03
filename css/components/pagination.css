@@ -1,0 +1,79 @@
+.component__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    background-color: var(--color-surface);
+
+    width: 100%;
+
+    padding: 1em 2em;
+
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-outer);
+
+    &,
+    & * {
+        transition: all 0.3s ease;
+    }
+}
+
+.component__pagination-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pagination-button__action {
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background-color: var(--color-background);
+
+    height: 3rem;
+    width: 3rem;
+
+    border-radius: var(--radius-inner);
+    box-shadow: var(--shadow-element);
+
+    &.--switch {
+        background-color: transparent;
+
+        height: 3rem;
+        width: 6rem;
+
+        box-shadow: none;
+    }
+
+    &.--disabled {
+        cursor: default;
+        color: var(--color-text-muted);
+    }
+
+    &.--active {
+        cursor: default;
+
+        background-color: var(--color-primary) !important;
+        color: var(--color-background);
+    }
+
+    &:not(.--active):not(.--disabled):hover {
+        background-color: var(--color-primary-light);
+    }
+}
+
+.component__pagination-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.component__pagination-page .component__select {
+    height: 3rem;
+}

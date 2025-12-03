@@ -44,16 +44,20 @@
             <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div class="flex flex-col sm:flex-row gap-4">
                     <!-- Add Medicine Button -->
-                    <button id="addMedicineBtn" class="btn-primary px-6 py-3 rounded-xl font-medium flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200">
-                        <i class="fas fa-plus"></i>
+                    <button id="addMedicineBtn" class="component__button --primary">
+                        <svg>
+                            <use href="../icons.svg#placeholder"></use>
+                        </svg>
                         <span>Add Item</span>
                     </button>
                 </div>
 
                 <!-- Export Controls -->
                 <div class="flex space-x-2">
-                    <button id="exportCsvBtn" class="px-4 py-3 bg-accent text-white hover:bg-accent-700 rounded-xl transition-all duration-200 flex items-center space-x-2">
-                        <i class="fas fa-download"></i>
+                    <button id="exportCsvBtn" class="component__button --secondary">
+                        <svg>
+                            <use href="../icons.svg#placeholder"></use>
+                        </svg>
                         <span>Export CSV</span>
                     </button>
                 </div>
@@ -68,7 +72,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-text-tertiary dark:text-gray-500"></i>
                             </div>
-                            <input type="text" id="tableSearch" placeholder="Search medicines by name, NDC, manufacturer..." class="w-full pl-10 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
+                            <input type="text" id="tableSearch" placeholder="Search medicines by name, ID, generic name, or group..." class="w-full pl-10 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
                         </div>
                     </div>
 
@@ -103,30 +107,32 @@
             </div>
 
             <!-- Inventory Table -->
-            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 overflow-hidden">
+            <div class="component__card">
                 <!-- Table Header -->
-                <div class="px-6 py-4 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-800">
+                <div class="component__card-header">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">List </h3>
+                        <h3>Inventory List</h3>
                         <div class="flex items-center space-x-2">
-                            <button id="refreshTableBtn" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200">
-                                <i class="fas fa-sync-alt"></i>
+                            <button id="refreshTableBtn" class="component__button --ghost" title="Refresh">
+                                <svg>
+                                    <use href="../icons.svg#placeholder"></use>
+                                </svg>
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Table Container -->
-                <div class="overflow-x-auto">
-                    <table id="inventoryTable" class="w-full">
-                        <thead class="bg-surface-hover dark:bg-gray-800 border-b border-border-light dark:border-gray-700">
+                <div class="component__table">
+                    <table id="inventoryTable">
+                        <thead>
                             <tr>
                                 <th class="px-6 py-4 text-left">
                                     <input type="checkbox" id="selectAll" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" />
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="ndc">
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="id">
                                     <div class="flex items-center space-x-1">
-                                        <span>NDC Code</span>
+                                        <span>ID</span>
                                         <i class="fas fa-sort text-xs opacity-50"></i>
                                     </div>
                                 </th>
@@ -136,26 +142,29 @@
                                         <i class="fas fa-sort text-xs opacity-50"></i>
                                     </div>
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200 column-manufacturer" data-sort="manufacturer">
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200 column-generic-name" data-sort="generic_name">
                                     <div class="flex items-center space-x-1">
-                                        <span>Manufacturer</span>
+                                        <span>Generic Name</span>
                                         <i class="fas fa-sort text-xs opacity-50"></i>
                                     </div>
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200 column-category" data-sort="category">
                                     <div class="flex items-center space-x-1">
-                                        <span>Category</span>
+                                        <span>Medicine Group</span>
                                         <i class="fas fa-sort text-xs opacity-50"></i>
                                     </div>
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="quantity">
                                     <div class="flex items-center space-x-1">
-                                        <span>Quantity</span>
+                                        <span>Stock</span>
                                         <i class="fas fa-sort text-xs opacity-50"></i>
                                     </div>
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
-                                    <span>Unit</span>
+                                    <span>Dosage</span>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">
+                                    <span>Form</span>
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:text-text-primary dark:hover:text-gray-100 transition-colors duration-200" data-sort="price">
                                     <div class="flex items-center space-x-1">
@@ -174,7 +183,7 @@
                                 </th>
                             </tr>
                         </thead>
-                        <tbody id="inventoryTableBody" class="bg-white dark:bg-gray-900 divide-y divide-border-light dark:divide-gray-700">
+                        <tbody id="inventoryTableBody">
                             <!-- Medicine data will be populated from database -->
                             <tr>
                                 <td colspan="9" class="px-6 py-12 text-center text-text-secondary dark:text-gray-400">
@@ -189,24 +198,32 @@
                     </table>
                 </div>
 
-                <!-- Table Footer -->
-                <div class="px-6 py-4 border-t border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-800">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-text-secondary dark:text-gray-400">
-                            Showing <span id="paginationStart">0</span> to <span id="paginationEnd">0</span> of <span id="paginationTotal">0</span> results
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button id="prevPageBtn" class="px-3 py-2 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200 disabled:opacity-50" disabled>
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <div id="pageNumbers" class="flex items-center space-x-1">
-                                <!-- Page numbers will be populated by JavaScript -->
-                            </div>
-                            <button id="nextPageBtn" class="px-3 py-2 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-all duration-200 disabled:opacity-50" disabled>
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
+                <!-- Table Footer / Pagination -->
+                <div class="component__pagination">
+                    <section class="component__pagination-button">
+                        <button id="prevPageBtn" class="component__button --ghost" disabled>
+                            <svg>
+                                <use href="../icons.svg#arrow"></use>
+                            </svg>
+                        </button>
+                        <button id="nextPageBtn" class="component__button --ghost" disabled>
+                            <svg style="transform: rotate(180deg);">
+                                <use href="../icons.svg#arrow"></use>
+                            </svg>
+                        </button>
+                    </section>
+                    <section class="component__pagination-page">
+                        <span>
+                            Showing
+                            <span id="paginationStart">0</span>
+                            to
+                            <span id="paginationEnd">0</span>
+                            of
+                            <span id="paginationTotal">0</span>
+                            results
+                        </span>
+                        <div id="pageNumbers"></div>
+                    </section>
                 </div>
             </div>
 
@@ -222,14 +239,17 @@
             
             <form id="addMedicineForm" class="p-6 space-y-6">
                 <!-- Medicine ID (Auto-generated) -->
-                <div class="bg-primary-50 dark:bg-gray-800 border border-primary-200 dark:border-gray-700 rounded-xl p-4 mb-4">
+                <div class="component__card">
                     <label for="medicineId" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                         Medicine ID (Auto-generated)
                     </label>
                     <div class="flex items-center space-x-2">
-                        <input name="medicineId" type="text" id="medicineId" readonly class="w-full px-4 py-3 border border-primary-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-text-primary dark:text-gray-100 font-mono font-semibold text-primary-600 dark:text-primary-400" placeholder="Loading..." />
-                        <button type="button" id="refreshMedicineId" class="px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl transition-all duration-200" title="Refresh ID">
-                            <i class="fas fa-sync-alt"></i>
+                        <input name="medicineId" type="text" id="medicineId" readonly class="component__textfield" placeholder="Loading..." />
+                        <button type="button" id="refreshMedicineId" class="component__button --secondary" title="Refresh ID">
+                            <svg>
+                                <use href="../icons.svg#placeholder"></use>
+                            </svg>
+                            <span>Refresh</span>
                         </button>
                     </div>
                     <p class="text-xs text-text-secondary dark:text-gray-400 mt-2">
@@ -238,49 +258,43 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- NDC Code -->
-                    <div>
-                        <label for="ndcCode" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            NDC Code * <span class="text-xs text-text-secondary dark:text-gray-400">(10 digits: XXXX-XXXX-XX)</span>
-                        </label>
-                        <input name="ndcCode" type="text" id="ndcCode" required minlength="12" maxlength="12" pattern="[0-9]{4}-[0-9]{4}-[0-9]{2}" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100 font-mono" placeholder="0069-2587-68" />
-                        <p class="text-xs text-text-secondary dark:text-gray-400 mt-1">Format: 4 digits - 4 digits - 2 digits</p>
-                    </div>
-
                     <!-- Medicine Name -->
-                    <div>
+                    <div class="component__textfield">
                         <label for="medicineName" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Medicine Name *
                         </label>
-                        <input name="medicineName" type="text" id="medicineName" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter medicine name" />
+                        <input name="medicineName" type="text" id="medicineName" required placeholder="Enter medicine name" />
                     </div>
 
-                    <!-- Manufacturer -->
-                    <div>
-                        <label for="manufacturer" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Manufacturer
+                    <!-- Generic Name (New for POS) -->
+                    <div class="component__textfield">
+                        <label for="genericName" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Generic Name
                         </label>
-                        <input name="manufacturer" type="text" id="manufacturer" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter manufacturer name" />
+                        <input name="genericName" type="text" id="genericName" placeholder="Enter generic name" />
                     </div>
 
-                    <!-- Category -->
-                    <div>
+                    <!-- Category / Medicine Group -->
+                    <div class="component__select">
                         <label for="category" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Category
+                            Medicine Group *
                         </label>
-                        <select id="category" name="category" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
-                            <option value>Select category</option>
+                        <select id="category" name="category" required>
+                            <option value="Uncategorized">Select group</option>
                             <option value="Medicine">Medicine</option>
                             <option value="Item">Item</option>
+                            <option value="Prescription">Prescription</option>
+                            <option value="Over-the-Counter">Over-the-Counter</option>
+                            <option value="Supplements">Supplements</option>
                         </select>
                     </div>
 
                     <!-- Unit -->
-                    <div>
+                    <div class="component__select">
                         <label for="unit" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Unit
                         </label>
-                        <select id="unit" name="unit" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                        <select id="unit" name="unit">
                             <option value>Select unit</option>
                             <optgroup label="Form Types">
                                 <option value="Capsule">Capsule</option>
@@ -312,25 +326,20 @@
                     </div>
 
                     <!-- Unit Price -->
-                    <div>
+                    <div class="component__textfield">
                         <label for="price" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Unit Price *
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-text-tertiary dark:text-gray-500">₱</span>
-                            </div>
-                            <input name="price" type="number" id="price" required min="0" step="0.01" class="w-full pl-8 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="0.00" />
-                        </div>
+                        <input name="price" type="number" id="price" required min="0" step="0.01" placeholder="0.00" />
                     </div>
                 </div>
 
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t border-border-light dark:border-gray-700">
-                    <button type="button" id="cancelAddMedicine" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
-                        Cancel
+                    <button type="button" id="cancelAddMedicine" class="component__button --ghost">
+                        <span>Cancel</span>
                     </button>
-                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium">
-                        Add Medicine
+                    <button type="submit" class="component__button --primary">
+                        <span>Add Medicine</span>
                     </button>
                 </div>
             </form>
@@ -351,66 +360,60 @@
                 <input type="hidden" id="editMedicineId" name="id" />
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- NDC Code -->
-                    <div>
-                        <label for="editNdcCode" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            NDC Code * <span class="text-xs text-text-secondary dark:text-gray-400">(10 digits: XXXX-XXXX-XX)</span>
-                        </label>
-                        <input name="ndcCode" type="text" id="editNdcCode" required minlength="12" maxlength="12" pattern="[0-9]{4}-[0-9]{4}-[0-9]{2}" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100 font-mono" placeholder="0069-2587-68" />
-                        <p class="text-xs text-text-secondary dark:text-gray-400 mt-1">Format: 4 digits - 4 digits - 2 digits</p>
-                    </div>
-
                     <!-- Medicine Name -->
-                    <div>
+                    <div class="component__textfield">
                         <label for="editMedicineName" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Medicine Name *
                         </label>
-                        <input name="medicineName" type="text" id="editMedicineName" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter medicine name" />
+                        <input name="medicineName" type="text" id="editMedicineName" required placeholder="Enter medicine name" />
                     </div>
 
-                    <!-- Manufacturer -->
-                    <div>
-                        <label for="editManufacturer" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Manufacturer
+                    <!-- Generic Name (New for POS) -->
+                    <div class="component__textfield">
+                        <label for="editGenericName" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
+                            Generic Name
                         </label>
-                        <input name="manufacturer" type="text" id="editManufacturer" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter manufacturer name" />
+                        <input name="genericName" type="text" id="editGenericName" placeholder="Enter generic name" />
                     </div>
 
-                    <!-- Category -->
-                    <div>
+                    <!-- Category / Medicine Group -->
+                    <div class="component__select">
                         <label for="editCategory" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Category
+                            Medicine Group *
                         </label>
-                        <select id="editCategory" name="category" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
-                            <option value>Select category</option>
+                        <select id="editCategory" name="category" required>
+                            <option value="Uncategorized">Select group</option>
                             <option value="Medicine">Medicine</option>
                             <option value="Item">Item</option>
+                            <option value="Prescription">Prescription</option>
+                            <option value="Over-the-Counter">Over-the-Counter</option>
+                            <option value="Supplements">Supplements</option>
                         </select>
                     </div>
 
                     <!-- Quantity -->
-                    <div>
+                    <div class="component__textfield">
                         <label for="editQuantity" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Quantity *
                         </label>
-                        <input name="quantity" type="number" id="editQuantity" required min="0" readonly class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-700 text-text-primary dark:text-gray-100 cursor-not-allowed opacity-75" placeholder="0" />
+                        <input name="quantity" type="number" id="editQuantity" required min="0" readonly class="cursor-not-allowed opacity-75" placeholder="0" />
                         <p class="text-xs text-text-tertiary dark:text-gray-500 mt-1">Quantity cannot be edited</p>
                     </div>
 
                     <!-- Reorder Level -->
-                    <div>
+                    <div class="component__textfield">
                         <label for="editReorderLevel" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Reorder Level
                         </label>
-                        <input name="reorderLevel" type="number" id="editReorderLevel" min="0" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="10" value="10" />
+                        <input name="reorderLevel" type="number" id="editReorderLevel" min="0" placeholder="10" value="10" />
                     </div>
 
                     <!-- Unit -->
-                    <div>
+                    <div class="component__select">
                         <label for="editUnit" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Unit
                         </label>
-                        <select id="editUnit" name="unit" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                        <select id="editUnit" name="unit">
                             <option value>Select unit</option>
                             <optgroup label="Form Types">
                                 <option value="Capsule">Capsule</option>
@@ -442,26 +445,20 @@
                     </div>
 
                     <!-- Unit Price -->
-                    <div>
+                    <div class="component__textfield">
                         <label for="editPrice" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
                             Unit Price *
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-text-tertiary dark:text-gray-500">₱</span>
-                            </div>
-                            <input name="price" type="number" id="editPrice" required min="0" step="0.01" class="w-full pl-8 pr-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="0.00" />
-                        </div>
+                        <input name="price" type="number" id="editPrice" required min="0" step="0.01" placeholder="0.00" />
                     </div>
                 </div>
 
                 <div class="flex items-center justify-center space-x-4 pt-6 border-t border-border-light dark:border-gray-700">
-                    <button type="button" id="cancelEditMedicine" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
-                        Cancel
+                    <button type="button" id="cancelEditMedicine" class="component__button --ghost">
+                        <span>Cancel</span>
                     </button>
-                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium flex items-center justify-center">
-                        <i class="fas fa-save mr-2"></i>
-                        Update Medicine
+                    <button type="submit" class="component__button --primary">
+                        <span>Update Medicine</span>
                     </button>
                 </div>
             </form>
@@ -588,58 +585,55 @@
         // Get status badge class
         function getStatusClass(status) {
             if (!status) {
-                return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+                return 'bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-gray-100 border border-gray-400 dark:border-gray-500 shadow-sm';
             }
             
-            // Convert to lowercase and trim for comparison
             const statusLower = String(status).toLowerCase().trim();
             
-            // Handle all possible variations
             if (statusLower === 'in-stock' || statusLower === 'in stock' || statusLower.includes('in stock')) {
-                return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+                return 'bg-green-200 text-green-900 dark:bg-green-800 dark:text-green-100 border border-green-500 dark:border-green-400 shadow-sm';
             }
             
             if (statusLower === 'low-stock' || statusLower === 'low stock' || statusLower.includes('low stock')) {
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+                return 'bg-yellow-200 text-yellow-900 dark:bg-yellow-800 dark:text-yellow-100 border border-yellow-500 dark:border-yellow-400 shadow-sm';
             }
             
             if (statusLower === 'out-of-stock' || statusLower === 'out of-stock' || statusLower === 'out of stock' || 
                 statusLower.includes('out of stock') || statusLower.includes('out-of-stock') || statusLower.includes('out of-stock')) {
-                return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+                return 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100 border border-red-600 dark:border-red-400 shadow-sm';
             }
             
             if (statusLower === 'expired' || statusLower.includes('expired')) {
-                return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+                return 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100 border border-red-600 dark:border-red-400 shadow-sm';
             }
             
-            // Default gray if no match
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+            return 'bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-gray-100 border border-gray-400 dark:border-gray-500 shadow-sm';
         }
 
         // Get inline styles as fallback for status colors
         function getStatusInlineStyle(status) {
-            if (!status) return '';
+            if (!status) return 'border: 1px solid #9ca3af; font-weight: 600;';
             
             const statusLower = String(status).toLowerCase().trim();
             
             if (statusLower === 'in-stock' || statusLower === 'in stock' || statusLower.includes('in stock')) {
-                return 'background-color: #dcfce7; color: #166534;';
+                return 'background-color: #bbf7d0; color: #14532d; border: 1px solid #16a34a; font-weight: 600;';
             }
             
             if (statusLower === 'low-stock' || statusLower === 'low stock' || statusLower.includes('low stock')) {
-                return 'background-color: #fef3c7; color: #854d0e;';
+                return 'background-color: #fde68a; color: #713f12; border: 1px solid #f59e0b; font-weight: 600;';
             }
             
             if (statusLower === 'out-of-stock' || statusLower === 'out of-stock' || statusLower === 'out of stock' || 
                 statusLower.includes('out of stock') || statusLower.includes('out-of-stock') || statusLower.includes('out of-stock')) {
-                return 'background-color: #fee2e2; color: #991b1b;';
+                return 'background-color: #fecaca; color: #7f1d1d; border: 1px solid #dc2626; font-weight: 600;';
             }
             
             if (statusLower === 'expired' || statusLower.includes('expired')) {
-                return 'background-color: #fee2e2; color: #991b1b;';
+                return 'background-color: #fecaca; color: #7f1d1d; border: 1px solid #dc2626; font-weight: 600;';
             }
             
-            return '';
+            return 'border: 1px solid #9ca3af; font-weight: 600;';
         }
 
         // Format status text
@@ -659,7 +653,7 @@
             // Show loading state
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="px-6 py-12 text-center text-text-secondary dark:text-gray-400">
+                    <td colspan="11" class="px-6 py-12 text-center text-text-secondary dark:text-gray-400">
                         <div class="flex flex-col items-center space-y-3">
                             <i class="fas fa-spinner fa-spin text-4xl text-primary-600"></i>
                             <p class="text-lg font-medium">Loading medicines...</p>
@@ -861,11 +855,13 @@
                 let bVal = b[field];
 
                 // Handle different field types
-                if (field === 'ndc' || field === 'name' || field === 'manufacturer' || field === 'category' || field === 'status') {
+                if (field === 'id' || field === 'name' || field === 'medicine_name' || 
+                    field === 'manufacturer' || field === 'generic_name' || field === 'category' || 
+                    field === 'medicine_group' || field === 'status') {
                     // String comparison
                     aVal = (aVal || '').toString().toLowerCase();
                     bVal = (bVal || '').toString().toLowerCase();
-                } else if (field === 'quantity') {
+                } else if (field === 'quantity' || field === 'stock') {
                     // Numeric comparison
                     aVal = parseInt(aVal) || 0;
                     bVal = parseInt(bVal) || 0;
@@ -932,54 +928,80 @@
             }
 
             tbody.innerHTML = medicines.map(medicine => {
-                const rawStatus = medicine.status || '';
+                // Calculate status if not provided (for new POS structure)
+                let rawStatus = medicine.status || '';
+                if (!rawStatus) {
+                    const stock = parseInt(medicine.quantity || medicine.stock || 0);
+                    if (stock === 0) {
+                        rawStatus = 'out-of-stock';
+                    } else if (stock <= 10) { // Low stock threshold
+                        rawStatus = 'low-stock';
+                    } else {
+                        rawStatus = 'in-stock';
+                    }
+                }
+                
                 const statusClass = getStatusClass(rawStatus);
                 const statusInlineStyle = getStatusInlineStyle(rawStatus);
                 const statusText = formatStatus(rawStatus);
                 const price = parseFloat(medicine.price || 0).toFixed(2);
                 
+                // Determine display values based on available fields
+                const medicineId = medicine.id || medicine.medicine_id || 'N/A';
+                const medicineName = medicine.name || medicine.medicine_name || 'N/A';
+                const genericName = medicine.generic_name || medicine.manufacturer || 'N/A';
+                const medicineGroup = medicine.category || medicine.medicine_group || 'N/A';
+                const stock = parseInt(medicine.quantity || medicine.stock || 0);
+                const dosage = medicine.dosage || medicine.dosage_form || medicine.unit || '—';
+                const form = medicine.form || medicine.dosage_form || medicine.unit || '—';
+                
                 return `
                     <tr class="hover:bg-surface-hover dark:hover:bg-gray-800 transition-colors duration-200">
                         <td class="px-6 py-4">
-                            <input type="checkbox" class="medicine-checkbox h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" value="${medicine.id}" />
+                            <input type="checkbox" class="medicine-checkbox h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" value="${medicine.id || medicine.medicine_id}" />
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100">
-                            ${medicine.ndc || 'N/A'}
+                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100 font-mono">
+                            ${escapeHtml(String(medicineId))}
                         </td>
                         <td class="px-6 py-4 text-sm font-medium text-text-primary dark:text-gray-100">
-                            ${escapeHtml(medicine.name || 'N/A')}
+                            ${escapeHtml(medicineName)}
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400 column-manufacturer">
-                            ${escapeHtml(medicine.manufacturer || 'N/A')}
+                        <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400 column-generic-name">
+                            ${escapeHtml(genericName)}
                         </td>
                         <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400 column-category">
-                            ${escapeHtml(medicine.category || 'N/A')}
+                            ${escapeHtml(medicineGroup)}
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100">
-                            ${medicine.quantity || 0}
+                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100 font-semibold">
+                            ${stock.toLocaleString()}
                         </td>
                         <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400">
-                            ${escapeHtml(medicine.dosage_form || medicine.unit || '—')}
+                            ${escapeHtml(dosage)}
                         </td>
-                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100">
+                        <td class="px-6 py-4 text-sm text-text-secondary dark:text-gray-400">
+                            ${escapeHtml(form)}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-text-primary dark:text-gray-100 font-semibold">
                             ₱${price}
                         </td>
                         <td class="px-6 py-4 text-sm">
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}" style="${statusInlineStyle}">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}" style="${statusInlineStyle}">
                                 ${statusText}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-sm">
                             <div class="flex items-center space-x-2">
                                 <button class="edit-medicine-btn text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors duration-200" 
-                                        data-id="${medicine.id}" 
-                                        data-ndc="${escapeHtml(medicine.ndc || '')}" 
-                                        data-name="${escapeHtml(medicine.name || '')}" 
+                                        data-id="${medicine.id || medicine.medicine_id}" 
+                                        data-name="${escapeHtml(medicineName)}" 
                                         data-manufacturer="${escapeHtml(medicine.manufacturer || '')}" 
-                                        data-category="${escapeHtml(medicine.category || '')}" 
-                                        data-quantity="${medicine.quantity || 0}" 
+                                        data-category="${escapeHtml(medicineGroup)}" 
+                                        data-generic-name="${escapeHtml(medicine.generic_name || '')}"
+                                        data-quantity="${stock}" 
                                         data-reorder-level="${medicine.reorder_level || medicine.reorderLevel || 10}" 
-                                        data-unit="${escapeHtml(medicine.dosage_form || medicine.unit || '')}"
+                                        data-dosage="${escapeHtml(dosage)}"
+                                        data-form="${escapeHtml(form)}"
+                                        data-unit="${escapeHtml(dosage || form)}"
                                         data-price="${price}" 
                                         title="Edit">
                                     <i class="fas fa-edit"></i>
@@ -1158,73 +1180,6 @@
                 });
             }
 
-            // Function to format NDC Code with dashes (XXXX-XXXX-XX format)
-            function formatNDCCode(input) {
-                // Remove all non-digit characters
-                let value = input.value.replace(/\D/g, '');
-                
-                // Limit to 10 digits
-                if (value.length > 10) {
-                    value = value.substring(0, 10);
-                }
-                
-                // Format: XXXX-XXXX-XX
-                let formatted = '';
-                if (value.length > 0) {
-                    formatted = value.substring(0, 4);
-                }
-                if (value.length > 4) {
-                    formatted += '-' + value.substring(4, 8);
-                }
-                if (value.length > 8) {
-                    formatted += '-' + value.substring(8, 10);
-                }
-                
-                input.value = formatted;
-            }
-
-            // Apply auto-formatting to NDC Code inputs
-            const ndcCodeInput = document.getElementById('ndcCode');
-            const editNdcCodeInput = document.getElementById('editNdcCode');
-            
-            if (ndcCodeInput) {
-                // Format on input (as user types)
-                ndcCodeInput.addEventListener('input', function() {
-                    formatNDCCode(this);
-                });
-                
-                // Format on paste
-                ndcCodeInput.addEventListener('paste', function(e) {
-                    setTimeout(() => {
-                        formatNDCCode(this);
-                    }, 10);
-                });
-                
-                // Format on blur (when user leaves the field)
-                ndcCodeInput.addEventListener('blur', function() {
-                    formatNDCCode(this);
-                });
-            }
-            
-            if (editNdcCodeInput) {
-                // Format on input (as user types)
-                editNdcCodeInput.addEventListener('input', function() {
-                    formatNDCCode(this);
-                });
-                
-                // Format on paste
-                editNdcCodeInput.addEventListener('paste', function(e) {
-                    setTimeout(() => {
-                        formatNDCCode(this);
-                    }, 10);
-                });
-                
-                // Format on blur (when user leaves the field)
-                editNdcCodeInput.addEventListener('blur', function() {
-                    formatNDCCode(this);
-                });
-            }
-
             // Form submission
             const addMedicineForm = document.getElementById('addMedicineForm');
             if (addMedicineForm) {
@@ -1296,7 +1251,7 @@
                     } else {
                         // Check for duplicate or quantity update
                         if (result.duplicate || result.data?.duplicate) {
-                            const message = result.message || 'Medicine already exists. A medicine with this NDC Code already exists.';
+                            const message = result.message || 'Medicine already exists. A medicine with this name already exists.';
                             alert(message);
                         } else {
                             showError(result.message || 'Failed to add medicine');
@@ -1343,32 +1298,42 @@
                     const btn = e.target.closest('.edit-medicine-btn');
                     const medicineData = {
                         id: btn.dataset.id,
-                        ndc: btn.dataset.ndc,
                         name: btn.dataset.name,
                         manufacturer: btn.dataset.manufacturer || '',
                         category: btn.dataset.category || '',
+                        genericName: btn.dataset.genericName || '',
                         quantity: btn.dataset.quantity,
                         reorderLevel: btn.dataset.reorderLevel || '10',
-                        unit: btn.dataset.unit || '',
+                        dosage: btn.dataset.dosage || '',
+                        form: btn.dataset.form || '',
+                        unit: btn.dataset.unit || btn.dataset.dosage || '',
                         price: btn.dataset.price
                     };
 
                     // Populate edit form
                     document.getElementById('editMedicineId').value = medicineData.id;
-                    // Format NDC code when populating edit form
-                    const editNdcInput = document.getElementById('editNdcCode');
-                    if (editNdcInput && medicineData.ndc) {
-                        editNdcInput.value = medicineData.ndc;
-                        formatNDCCode(editNdcInput);
-                    }
                     document.getElementById('editMedicineName').value = medicineData.name;
-                    document.getElementById('editManufacturer').value = medicineData.manufacturer;
-                    document.getElementById('editCategory').value = medicineData.category;
-                    document.getElementById('editQuantity').value = medicineData.quantity;
-                    document.getElementById('editReorderLevel').value = medicineData.reorderLevel;
+                    const editGenericNameInput = document.getElementById('editGenericName');
+                    if (editGenericNameInput) {
+                        editGenericNameInput.value = medicineData.genericName || '';
+                    }
+                    const editManufacturerInput = document.getElementById('editManufacturer');
+                    if (editManufacturerInput) {
+                        editManufacturerInput.value = medicineData.manufacturer;
+                    }
+                    document.getElementById('editCategory').value = medicineData.category || 'Uncategorized';
+                    const editQuantityInput = document.getElementById('editQuantity');
+                    if (editQuantityInput) {
+                        editQuantityInput.value = medicineData.quantity;
+                    }
+                    const editReorderLevelInput = document.getElementById('editReorderLevel');
+                    if (editReorderLevelInput) {
+                        editReorderLevelInput.value = medicineData.reorderLevel;
+                    }
                     const editUnitSelect = document.getElementById('editUnit');
                     if (editUnitSelect) {
-                        editUnitSelect.value = medicineData.unit;
+                        // Use dosage if available, otherwise fall back to unit or form
+                        editUnitSelect.value = medicineData.dosage || medicineData.unit || medicineData.form || '';
                     }
                     document.getElementById('editPrice').value = medicineData.price;
 
@@ -1426,7 +1391,7 @@
                     } else {
                         // Check for duplicate
                         if (result.duplicate || result.data?.duplicate) {
-                            const message = result.message || 'Cannot update medicine. A medicine with this NDC Code already exists.';
+                            const message = result.message || 'Cannot update medicine. A medicine with this name already exists.';
                             alert(message);
                         } else {
                             showError(result.message || 'Failed to update medicine');
@@ -1512,7 +1477,7 @@
                     if (stockStatusFilter) stockStatusFilter.value = '';
                     searchInputs.forEach(input => {
                         input.value = '';
-                        input.placeholder = 'Search medicines by name, NDC, manufacturer...';
+                        input.placeholder = 'Search medicines by name, ID, generic name, or group...';
                     });
                     // Clear category from URL
                     const url = new URL(window.location);

@@ -88,12 +88,12 @@
         if (!tbody) return;
         
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
+            tbody.innerHTML = '<tr class="--empty"><td colspan="6" class="px-6 py-12 text-center text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
             return;
         }
 
         tbody.innerHTML = items.map(item => `
-            <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+            <tr>
                 <td class="py-3 px-4">
                     <div>
                         <div class="font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</div>
@@ -119,12 +119,12 @@
         if (!tbody) return;
         
         if (orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
+            tbody.innerHTML = '<tr class="--empty"><td colspan="7" class="px-6 py-12 text-center text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
             return;
         }
 
         tbody.innerHTML = orders.map(order => `
-            <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
+            <tr>
                 <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
                 <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(order.supplier_name || 'N/A')}</td>
                 <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>

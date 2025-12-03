@@ -13,27 +13,19 @@
         <div class="flex-1 overflow-y-auto p-6">
             <div class="space-y-6">
                 <!-- Summary Cards -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Expired Items</p>
-                                <p class="text-3xl font-bold text-error-600 dark:text-error-400" id="expiredCountModal">0</p>
-                            </div>
-                            <div class="w-12 h-12 bg-error-100 dark:bg-error-900 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-error-600 dark:text-error-400 text-xl"></i>
-                            </div>
+                <div class="metric-cards" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                    <div class="metric-card metric-card--danger">
+                        <div class="metric-card__top"></div>
+                        <div class="metric-card__body">
+                            <p class="metric-card__label">Expired Items</p>
+                            <p id="expiredCountModal" class="metric-card__value">0</p>
                         </div>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-text-secondary dark:text-gray-400 mb-1">Cancelled Orders</p>
-                                <p class="text-3xl font-bold text-warning-600 dark:text-warning-400" id="cancelledCountModal">0</p>
-                            </div>
-                            <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-ban text-warning-600 dark:text-warning-400 text-xl"></i>
-                            </div>
+                    <div class="metric-card metric-card--warning">
+                        <div class="metric-card__top"></div>
+                        <div class="metric-card__body">
+                            <p class="metric-card__label">Cancelled Orders</p>
+                            <p id="cancelledCountModal" class="metric-card__value">0</p>
                         </div>
                     </div>
                 </div>
@@ -57,21 +49,21 @@
                     <div class="p-6">
                         <!-- Expired Items Tab -->
                         <div id="contentExpiredModal" class="tab-content-modal">
-                            <div class="overflow-x-auto">
+                            <div class="component__table">
                                 <table class="w-full">
                                     <thead>
-                                        <tr class="border-b border-border-light dark:border-gray-700">
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Medicine</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Batch</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Quantity</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Expiration Date</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Days Expired</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Expired At</th>
+                                        <tr>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Medicine</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Batch</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Quantity</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Expiration Date</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Days Expired</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Expired At</th>
                                         </tr>
                                     </thead>
                                     <tbody id="expiredItemsTableModal">
-                                        <tr>
-                                            <td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                        <tr class="--empty">
+                                            <td colspan="6" class="px-6 py-12 text-center text-text-tertiary dark:text-gray-500">Loading...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -80,22 +72,22 @@
 
                         <!-- Cancelled Orders Tab -->
                         <div id="contentCancelledModal" class="tab-content-modal hidden">
-                            <div class="overflow-x-auto">
+                            <div class="component__table">
                                 <table class="w-full">
                                     <thead>
-                                        <tr class="border-b border-border-light dark:border-gray-700">
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Order ID</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Supplier</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Order Date</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Total Amount</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Items</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Cancelled At</th>
-                                            <th class="text-left py-3 px-4 text-sm font-semibold text-text-secondary dark:text-gray-400">Reason</th>
+                                        <tr>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Order ID</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Supplier</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Order Date</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Total Amount</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Items</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Cancelled At</th>
+                                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Reason</th>
                                         </tr>
                                     </thead>
                                     <tbody id="cancelledOrdersTableModal">
-                                        <tr>
-                                            <td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">Loading...</td>
+                                        <tr class="--empty">
+                                            <td colspan="7" class="px-6 py-12 text-center text-text-tertiary dark:text-gray-500">Loading...</td>
                                         </tr>
                                     </tbody>
                                 </table>

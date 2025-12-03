@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
 
 // Function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
@@ -68,7 +69,38 @@ try {
         sendJsonResponse(false, 'Database connection failed', null, 500);
     }
 
-    // Get the maximum ID from the medicines table
+    // Check which structure we're using
+    $hasNewStructure = hasNewMedicineStructure($conn);
+    
+    if ($hasNewStructure) {
+        // New structure: medicine_id is VARCHAR(50)
+        $maxIdQuery = "SELECT MAX(CAST(medicine_id AS UNSIGNED)) as max_id FROM medicines WHERE medicine_id REGEXP '^[0-9]+$'";
+        $maxIdResult = mysqli_query($conn, $maxIdQuery);
+        
+        if (!$maxIdResult) {
+            error_log("Error getting max ID: " . mysqli_error($conn));
+            sendJsonResponse(false, 'Database error while fetching next ID', null, 500);
+        }
+        
+        $maxIdRow = mysqli_fetch_assoc($maxIdResult);
+        $maxId = (int)($maxIdRow['max_id'] ?? 0);
+        
+        // Calculate next ID (max ID + 1)
+        $nextId = $maxId + 1;
+        if ($nextId <= 0) {
+            $nextId = 1;
+        }
+        
+        // Format the ID for display (MED-XXXX format)
+        $formattedId = 'MED-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        
+        sendJsonResponse(true, 'Next ID retrieved successfully', [
+            'next_id' => (string)$nextId,
+            'formatted_id' => $formattedId,
+            'max_id' => $maxId
+        ], 200);
+    } else {
+        // Old structure: id is INT
     $maxIdQuery = "SELECT MAX(id) as max_id FROM medicines";
     $maxIdResult = mysqli_query($conn, $maxIdQuery);
     
@@ -90,19 +122,18 @@ try {
     $autoIncrementValue = (int)($tableStatus['Auto_increment'] ?? 0);
     
     // Use the higher value between max_id+1 and auto_increment
-    // This ensures we get the correct next ID even if there were deletions
     $finalNextId = max($nextId, $autoIncrementValue);
     
     // Format the ID for display (MED-XXXX format)
     $formattedId = 'MED-' . str_pad($finalNextId, 4, '0', STR_PAD_LEFT);
     
-    // Return both numeric and formatted ID
     sendJsonResponse(true, 'Next ID retrieved successfully', [
         'next_id' => $finalNextId,
         'formatted_id' => $formattedId,
         'max_id' => $maxId,
         'auto_increment' => $autoIncrementValue
     ], 200);
+    }
 
 } catch (Exception $e) {
     error_log('Exception in get_next_medicine_id.php: ' . $e->getMessage());

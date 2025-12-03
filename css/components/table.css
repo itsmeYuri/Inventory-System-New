@@ -1,0 +1,85 @@
+.component__table {
+    overflow: hidden;
+
+    background-color: var(--color-surface);
+
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-inner);
+
+    box-shadow: var(--shadow-surface);
+
+    &,
+    & * {
+        transition: all 0.3s ease;
+    }
+}
+
+.component__table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.component__table thead tr {
+    height: 3.5rem;
+}
+
+.component__table tbody tr {
+    cursor: pointer;
+    background-color: var(--color-surface);
+
+    height: 3.5rem;
+
+    &:not(.--empty):hover {
+        background-color: var(--color-primary-light);
+    }
+
+    &.--empty {
+        cursor: default;
+
+        background-color: var(--color-disabled);
+        color: var(--color-text-muted);
+
+        height: 7rem;
+
+        font-style: italic;
+
+        text-align: center;
+    }
+}
+
+.component__table tr:last-child td {
+    border-bottom: none;
+}
+
+.component__table th,
+.component__table td {
+    padding: 0.5em 1em;
+
+    border-right: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.component__table th:last-child,
+.component__table td:last-child {
+    border-right: none;
+}
+
+.component__table th {
+    background-color: var(--color-primary);
+    color: var(--color-background);
+
+    font-family: var(--font-heading);
+}
+
+.component__table-action {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.component__table td:last-child button {
+    flex: 1;
+
+    height: 100%;
+}

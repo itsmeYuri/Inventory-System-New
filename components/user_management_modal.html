@@ -98,24 +98,24 @@
                             </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-surface-hover dark:bg-gray-700 border-b border-border-light dark:border-gray-600">
+                    <div class="component__table">
+                        <table id="usersTableModal" class="w-full">
+                            <thead>
                                 <tr>
                                     <th class="px-6 py-4 text-left">
                                         <input type="checkbox" id="selectAllModal" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" />
                                     </th>
-                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Full Name</th>
-                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Username</th>
-                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Employee ID</th>
-                                    <th class="px-6 py-4 text-left text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Role</th>
-                                    <th class="px-6 py-4 text-center text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-4 text-center text-xs font-medium text-text-secondary dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Full Name</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Username</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Employee ID</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="usersTableBodyModal" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr>
+                            <tbody id="usersTableBodyModal">
+                                <tr class="--empty">
                                     <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                         <div class="flex flex-col items-center space-y-3">
                                             <i class="fas fa-users text-4xl opacity-50"></i>

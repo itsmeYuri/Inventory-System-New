@@ -1,32 +1,27 @@
 <?php
 // Script to add 'role' column to users table if it doesn't exist
 
-$DB_HOST = '127.0.0.1';
-$DB_USER = 'root';
-$DB_PASS = '';
-$DB_NAME = 'Inventory_system_db';
+require_once __DIR__ . '/../php/conn.php';
 
-$mysqli = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-
-if ($mysqli->connect_errno) {
-    die("Failed to connect to MySQL: " . $mysqli->connect_error);
+if (!isset($conn) || !$conn) {
+    die("Failed to connect to MySQL: " . mysqli_connect_error());
 }
 
 // Check if role column exists
-$result = $mysqli->query("SHOW COLUMNS FROM users LIKE 'role'");
+$result = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'role'");
 
-if ($result->num_rows == 0) {
+if (!$result || mysqli_num_rows($result) == 0) {
     // Column doesn't exist, add it
     $alter_query = "ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'employee' AFTER status";
     
-    if ($mysqli->query($alter_query)) {
+    if (mysqli_query($conn, $alter_query)) {
         echo "✓ Role column added successfully to users table\n";
     } else {
-        echo "✗ Error adding role column: " . $mysqli->error . "\n";
+        echo "✗ Error adding role column: " . mysqli_error($conn) . "\n";
     }
 } else {
     echo "✓ Role column already exists in users table\n";
 }
 
-$mysqli->close();
+mysqli_close($conn);
 ?>

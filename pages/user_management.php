@@ -8,6 +8,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: login.html');
+    exit;
+}
+
 // Get user info
 $user_name = $_SESSION['full_name'] ?? 'User';
 $user_email = $_SESSION['user_email'] ?? $_SESSION['email'] ?? 'user@example.com';

@@ -87,38 +87,38 @@
             <!-- Metrics & Activities Row -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Totals & Metrics Panel -->
-                <section class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-border-light dark:border-gray-700 p-6">
-                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-6 flex items-center">
+                <section class="lg:col-span-2">
+                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-4 flex items-center">
                         <i class="fas fa-chart-line text-primary-600 dark:text-primary-400 mr-2"></i>
                         Key Metrics
                     </h2>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-                        <!-- Total Products -->
-                        <button onclick="window.location.href='inventory_management.html'" class="text-center p-4 bg-primary-50 dark:bg-primary-900 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-800 transition-all duration-200 cursor-pointer">
-                            <div class="w-12 h-12 bg-primary-600 dark:bg-primary-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-capsules text-white"></i>
+
+                    <div class="metric-cards mb-6" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                        <!-- Total Medicines -->
+                        <button onclick="window.location.href='inventory_management.html'" class="metric-card metric-card--primary cursor-pointer">
+                            <div class="metric-card__top"></div>
+                            <div class="metric-card__body">
+                                <div class="metric-card__label">Total Medicines</div>
+                                <div class="metric-card__value" id="totalMedicines">--</div>
                             </div>
-                            <div class="text-2xl font-bold text-primary-700 dark:text-primary-300 mb-1" id="totalMedicines">--</div>
-                            <div class="text-sm text-primary-600 dark:text-primary-400">Total Medicines</div>
                         </button>
 
                         <!-- Pending Orders -->
-                        <button onclick="window.location.href='orders_management.html'" class="text-center p-4 bg-warning-50 dark:bg-warning-900 rounded-xl hover:bg-warning-100 dark:hover:bg-warning-800 transition-all duration-200 cursor-pointer">
-                            <div class="w-12 h-12 bg-warning-600 dark:bg-warning-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-clock text-white"></i>
+                        <button onclick="window.location.href='orders_management.html'" class="metric-card metric-card--warning cursor-pointer">
+                            <div class="metric-card__top"></div>
+                            <div class="metric-card__body">
+                                <div class="metric-card__label">Pending Orders</div>
+                                <div class="metric-card__value" id="pendingOrders">--</div>
                             </div>
-                            <div class="text-2xl font-bold text-warning-700 dark:text-warning-300 mb-1" id="pendingOrders">--</div>
-                            <div class="text-sm text-warning-600 dark:text-warning-400">Pending Orders</div>
                         </button>
 
                         <!-- Inventory Value -->
-                        <button onclick="window.location.href='reports_analytics.html'" class="text-center p-4 bg-success-50 dark:bg-success-900 rounded-xl hover:bg-success-100 dark:hover:bg-success-800 transition-all duration-200 cursor-pointer">
-                            <div class="w-12 h-12 bg-success-600 dark:bg-success-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-coins text-white"></i>
+                        <button onclick="window.location.href='reports_analytics.html'" class="metric-card metric-card--success cursor-pointer">
+                            <div class="metric-card__top"></div>
+                            <div class="metric-card__body">
+                                <div class="metric-card__label">Total Inventory Value</div>
+                                <div class="metric-card__value" id="totalValue">--</div>
                             </div>
-                            <div class="text-2xl font-bold text-success-700 dark:text-success-300 mb-1" id="totalValue">--</div>
-                            <div class="text-sm text-success-600 dark:text-success-400">Total Value</div>
                         </button>
                     </div>
 
@@ -788,7 +788,8 @@
 
                 if (result.success && result.data && result.data.length > 0) {
                     activitiesList.innerHTML = '';
-                    result.data.forEach(activity => {
+                    const activities = result.data.slice(0, 6);
+                    activities.forEach(activity => {
                         const activityEl = document.createElement('div');
                         activityEl.className = 'flex items-start space-x-3 p-3 bg-surface-hover dark:bg-gray-800 rounded-xl';
                         

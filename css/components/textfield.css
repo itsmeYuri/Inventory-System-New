@@ -1,0 +1,93 @@
+.component__textfield {
+    position: relative;
+    height: 3.5rem;
+
+    &,
+    & > * {
+        transition: 0.3s ease;
+    }
+    /* ========== [ --TYPES ] ========== */
+    &.--no-icon > input[type='text'],
+    &.--no-icon > input[type='email'] {
+        padding: 0.5em 1em !important;
+    }
+
+    &.--no-icon > input[id*='password'],
+    &.--no-icon > input[id*='Password'] {
+        padding: 0.5em 3.5em 0.5em 1em !important;
+    }
+
+    /* ========== [ :BEHAVIORS ] ========== */
+    &:hover > * {
+        color: var(--color-text);
+        border-color: var(--color-text);
+    }
+
+    &:has(input:focus) > input {
+        color: var(--color-text);
+
+        border-color: var(--color-primary);
+        box-shadow: var(--shadow-element);
+    }
+
+    &:has(input:focus) > svg:first-child {
+        color: var(--color-primary);
+    }
+
+    &:hover > svg:last-child,
+    &:has(input:focus) > svg:last-child {
+        opacity: 1;
+    }
+
+    &:has(input:focus) > svg:last-child {
+        color: var(--color-text);
+    }
+}
+
+.component__textfield > input {
+    background-color: var(--color-background);
+    color: var(--color-text-muted);
+
+    height: 100%;
+    width: 100%;
+
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-inner);
+
+    outline: none;
+
+    font-size: 1rem;
+
+    &[type='text'],
+    &[type='email'] {
+        padding: 0.5em 1em 0.5em 3.5em;
+    }
+
+    &[id*='password'],
+    &[id*='Password'] {
+        padding: 0.5em 3.5em;
+    }
+}
+
+.component__textfield svg {
+    position: absolute;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: var(--color-text-muted);
+
+    height: 2rem;
+    width: 2rem;
+
+    &:first-child {
+        pointer-events: none;
+        left: 1rem;
+    }
+
+    &:last-child {
+        opacity: 0;
+        cursor: pointer;
+        right: 1rem;
+    }
+}

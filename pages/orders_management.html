@@ -142,27 +142,29 @@
             </div>
 
             <!-- Orders Table -->
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 overflow-hidden">
+            <div class="component__card">
                 <!-- Table Header -->
-                <div class="px-6 py-4 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-800">
-                    <div class="flex items-center justify-between">
+                <header class="component__card-header flex items-center justify-between">
+                    <div class="component__card-header-main">
                         <div class="flex items-center space-x-3">
                             <input type="checkbox" id="selectAll" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" />
                             <span class="text-sm font-medium text-text-secondary dark:text-gray-300">Select All</span>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <button id="exportBtn" class="px-3 py-1.5 text-sm text-text-secondary dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 border border-border-light dark:border-gray-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200">
-                                <i class="fas fa-download mr-1"></i>
-                                Export
+                    </div>
+                    <div class="component__card-header-actions ml-auto flex items-center">
+                        <button id="exportBtn" class="component__button --secondary">
+                            <svg>
+                                <use href="../icons.svg#placeholder"></use>
+                            </svg>
+                            <span>Export</span>
                             </button>
                         </div>
-                    </div>
-                </div>
+                </header>
 
                 <!-- Desktop Table View -->
-                <div class="hidden md:block overflow-x-auto">
+                <div class="component__table hidden md:block">
                     <table class="w-full">
-                        <thead class="bg-surface-hover dark:bg-gray-800">
+                        <thead>
                             <tr>
                                 <th class="px-6 py-3 text-left">
                                     <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded opacity-0" />
@@ -210,29 +212,41 @@
                     </div>
                     <h3 class="text-lg font-medium text-text-primary mb-2">No orders found</h3>
                     <p class="text-text-secondary mb-6">Get started by creating your first order</p>
-                    <button id="createOrderBtnEmpty" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
-                        <i class="fas fa-plus mr-2"></i>
-                        Create Order
+                    <button id="createOrderBtnEmpty" class="component__button --primary">
+                        <svg>
+                            <use href="../icons.svg#placeholder"></use>
+                        </svg>
+                        <span>Create Order</span>
                     </button>
                 </div>
             </div>
 
             <!-- Pagination -->
-            <div class="flex items-center justify-between mt-6">
-                <div class="text-sm text-text-secondary">
-                    Showing <span id="showingFrom">1</span> to <span id="showingTo">12</span> of <span id="totalOrders">12</span> orders
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button id="prevPage" class="px-3 py-2 text-text-secondary hover:text-primary border border-border-light rounded-lg hover:border-primary-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-chevron-left"></i>
+            <div class="component__pagination mt-6">
+                <section class="component__pagination-button">
+                    <button id="prevPage" class="component__button --ghost" disabled>
+                        <svg>
+                            <use href="../icons.svg#arrow"></use>
+                        </svg>
                     </button>
-                    <div id="pageNumbers" class="flex items-center space-x-1">
-                        <!-- Page numbers will be populated by JavaScript -->
-                    </div>
-                    <button id="nextPage" class="px-3 py-2 text-text-secondary hover:text-primary border border-border-light rounded-lg hover:border-primary-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-chevron-right"></i>
+                    <button id="nextPage" class="component__button --ghost" disabled>
+                        <svg style="transform: rotate(180deg);">
+                            <use href="../icons.svg#arrow"></use>
+                        </svg>
                     </button>
-                </div>
+                </section>
+                <section class="component__pagination-page">
+                    <span>
+                        Showing
+                        <span id="showingFrom">0</span>
+                        to
+                        <span id="showingTo">0</span>
+                        of
+                        <span id="totalOrders">0</span>
+                        orders
+                    </span>
+                    <div id="pageNumbers" class="flex items-center space-x-1"></div>
+                </section>
             </div>
         </main>
     </div>

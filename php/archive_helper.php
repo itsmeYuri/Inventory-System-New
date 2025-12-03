@@ -5,19 +5,33 @@
  */
 
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
 
 /**
  * Archive a deleted medicine
  */
 function archiveMedicine($conn, $medicine_id, $deleted_by = null, $reason = null) {
+    // Check which structure we're using
+    $hasNewStructure = hasNewMedicineStructure($conn);
+    
     // First, get the medicine data
+    if ($hasNewStructure) {
+        $sql = "SELECT medicine_id, medicine_name, medicine_group, generic_name, dosage, form, stock, price FROM medicines WHERE medicine_id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 's', $medicine_id);
+    } else {
     $sql = "SELECT * FROM medicines WHERE id = ?";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
+        }
+        $medicine_id_int = (int)$medicine_id;
+        mysqli_stmt_bind_param($stmt, 'i', $medicine_id_int);
     }
     
-    mysqli_stmt_bind_param($stmt, 'i', $medicine_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     
@@ -30,6 +44,42 @@ function archiveMedicine($conn, $medicine_id, $deleted_by = null, $reason = null
     mysqli_stmt_close($stmt);
     
     // Insert into archive table
+    // Archive table uses old structure, so map new fields to old field names
+    if ($hasNewStructure) {
+        $archiveSql = "INSERT INTO archived_medicines 
+                        (original_id, ndc, name, manufacturer, category, dosage_form, price, quantity, description, deleted_by, reason)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $archiveStmt = mysqli_prepare($conn, $archiveSql);
+        if (!$archiveStmt) {
+            return false;
+        }
+        
+        // Map new structure to archive table (old structure)
+        $original_id = $medicine['medicine_id'];
+        $ndc = ''; // Not in new structure
+        $name = $medicine['medicine_name'] ?? '';
+        $manufacturer = ''; // Not in new structure
+        $category = $medicine['medicine_group'] ?? '';
+        $dosage_form = $medicine['dosage'] ?? $medicine['form'] ?? '';
+        $price = $medicine['price'] ?? 0.00;
+        $quantity = $medicine['stock'] ?? 0;
+        $description = $medicine['generic_name'] ?? '';
+        
+        mysqli_stmt_bind_param($archiveStmt, 'isssssdssss',
+            $original_id,
+            $ndc,
+            $name,
+            $manufacturer,
+            $category,
+            $dosage_form,
+            $price,
+            $quantity,
+            $description,
+            $deleted_by,
+            $reason
+        );
+    } else {
     $archiveSql = "INSERT INTO archived_medicines 
                     (original_id, ndc, name, manufacturer, category, dosage_form, price, quantity, description, deleted_by, reason)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -41,17 +91,18 @@ function archiveMedicine($conn, $medicine_id, $deleted_by = null, $reason = null
     
     mysqli_stmt_bind_param($archiveStmt, 'isssssdssss',
         $medicine['id'],
-        $medicine['ndc'],
+            $medicine['ndc'] ?? '',
         $medicine['name'],
-        $medicine['manufacturer'],
-        $medicine['category'],
-        $medicine['dosage_form'],
+            $medicine['manufacturer'] ?? '',
+            $medicine['category'] ?? '',
+            $medicine['dosage_form'] ?? '',
         $medicine['price'],
         $medicine['quantity'],
         $medicine['description'] ?? null,
         $deleted_by,
         $reason
     );
+    }
     
     $success = mysqli_stmt_execute($archiveStmt);
     mysqli_stmt_close($archiveStmt);

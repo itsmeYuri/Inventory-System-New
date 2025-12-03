@@ -1,6 +1,17 @@
 // Load Top Bar Component - Non-blocking
 (function() {
     'use strict';
+
+    var currentPath = window.location.pathname.split('/').pop() || '';
+    var isPublicPage = /^(login\.html|supplier_login\.html|no-access\.php|reset_password\.php|forgot_password\.php|send_otp\.php|verify_otp\.php)$/i.test(currentPath);
+    if (!isPublicPage) {
+        var isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        var supplierLoggedIn = localStorage.getItem('supplierLoggedIn') === 'true' || sessionStorage.getItem('supplierLoggedIn') === 'true';
+        if (!isLoggedIn && !supplierLoggedIn) {
+            window.location.href = 'login.html';
+            return;
+        }
+    }
     
     let topbarLoaded = false;
 

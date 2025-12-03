@@ -122,36 +122,39 @@
             </div>
 
             <!-- Users Table Container -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-border-light dark:border-gray-700 overflow-hidden">
-                <div class="p-6 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-700">
-                    <div class="flex items-center justify-between">
+            <div class="component__card">
+                <header class="component__card-header">
+                    <div class="component__card-header-main">
                         <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">All Users</h3>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="loadUsers()" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-all duration-200">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                        </div>
                     </div>
-                </div>
+                    <div class="component__card-header-actions">
+                        <button onclick="loadUsers()" class="component__button --ghost">
+                            <svg>
+                                <use href="../icons.svg#placeholder"></use>
+                            </svg>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </header>
 
-                <div class="overflow-x-auto">
+                <div class="component__table">
                     <table id="usersTable" class="w-full">
-                        <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                        <thead>
                             <tr>
                                 <th class="px-6 py-4 text-left">
                                     <input type="checkbox" id="selectAll" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-slate-300 dark:border-slate-600 rounded" />
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Full Name</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Email</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Username</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Employee ID</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Full Name</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Username</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Employee ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="usersTableBody" class="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
-                            <tr>
+                        <tbody id="usersTableBody">
+                            <tr class="--empty">
                                 <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                     <div class="flex flex-col items-center space-y-3">
                                         <i class="fas fa-users text-4xl opacity-50"></i>
@@ -180,27 +183,21 @@
             <form id="createUserForm" class="p-6 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Full Name -->
-                    <div class="md:col-span-2">
-                        <label for="full_name" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Full Name *
-                        </label>
-                        <input type="text" id="full_name" name="full_name" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter full name" />
+                    <div class="component__textfield --no-icon md:col-span-2">
+                        <label for="full_name" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Full Name *</label>
+                        <input type="text" id="full_name" name="full_name" required placeholder="Enter full name" />
                     </div>
 
                     <!-- Email -->
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Email *
-                        </label>
-                        <input type="email" id="email" name="email" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter email address" />
+                    <div class="component__textfield --no-icon">
+                        <label for="email" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Email *</label>
+                        <input type="email" id="email" name="email" required placeholder="Enter email address" />
                     </div>
 
                     <!-- Username -->
-                    <div>
-                        <label for="username" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Username *
-                        </label>
-                        <input type="text" id="username" name="username" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter username" />
+                    <div class="component__textfield --no-icon">
+                        <label for="username" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Username *</label>
+                        <input type="text" id="username" name="username" required placeholder="Enter username" />
                     </div>
 
                     <!-- Password Info Note -->
@@ -217,11 +214,9 @@
                     </div>
 
                     <!-- Role -->
-                    <div>
-                        <label for="user_role" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Role
-                        </label>
-                        <select id="user_role" name="user_role" class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100">
+                    <div class="component__select --no-icon">
+                        <label for="user_role" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Role</label>
+                        <select id="user_role" name="user_role">
                             <option value="employee">Employee</option>
                             <option value="admin">Admin</option>
                             <option value="supplier">Supplier</option>
@@ -232,11 +227,11 @@
                 <div id="formMessage" class="hidden p-3 rounded-lg text-sm"></div>
 
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t border-border-light dark:border-gray-700">
-                    <button type="button" id="cancelAddUser" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
-                        Cancel
+                    <button type="button" id="cancelAddUser" class="component__button --ghost">
+                        <span>Cancel</span>
                     </button>
-                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium">
-                        Create User
+                    <button type="submit" class="component__button --primary">
+                        <span>Create User</span>
                     </button>
                 </div>
             </form>
@@ -258,38 +253,32 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Full Name -->
-                    <div class="md:col-span-2">
-                        <label for="edit_full_name" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Full Name *
-                        </label>
-                        <input type="text" id="edit_full_name" name="edit_full_name" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter full name" />
+                    <div class="component__textfield --no-icon md:col-span-2">
+                        <label for="edit_full_name" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Full Name *</label>
+                        <input type="text" id="edit_full_name" name="edit_full_name" required placeholder="Enter full name" />
                     </div>
 
                     <!-- Email -->
-                    <div>
-                        <label for="edit_email" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Email *
-                        </label>
-                        <input type="email" id="edit_email" name="edit_email" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter email address" />
+                    <div class="component__textfield --no-icon">
+                        <label for="edit_email" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Email *</label>
+                        <input type="email" id="edit_email" name="edit_email" required placeholder="Enter email address" />
                     </div>
 
                     <!-- Username -->
-                    <div>
-                        <label for="edit_username" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">
-                            Username *
-                        </label>
-                        <input type="text" id="edit_username" name="edit_username" required class="w-full px-4 py-3 border border-border-light dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" placeholder="Enter username" />
+                    <div class="component__textfield --no-icon">
+                        <label for="edit_username" class="block text-sm font-medium text-text-primary dark:text-gray-100 mb-2">Username *</label>
+                        <input type="text" id="edit_username" name="edit_username" required placeholder="Enter username" />
                     </div>
                 </div>
 
                 <div id="editFormMessage" class="hidden p-3 rounded-lg text-sm"></div>
 
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t border-border-light dark:border-gray-700">
-                    <button type="button" id="cancelEditUser" class="px-6 py-3 border border-border-medium dark:border-gray-600 text-text-secondary dark:text-gray-300 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
-                        Cancel
+                    <button type="button" id="cancelEditUser" class="component__button --ghost">
+                        <span>Cancel</span>
                     </button>
-                    <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-medium">
-                        Update User
+                    <button type="submit" class="component__button --primary">
+                        <span>Update User</span>
                     </button>
                 </div>
             </form>
@@ -403,7 +392,7 @@
             }
             
             tbody.innerHTML = users.map(user => `
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                <tr>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <input type="checkbox" class="user-checkbox h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" data-user-id="${user.user_id}" onchange="updateSelectedCount()">
                     </td>
