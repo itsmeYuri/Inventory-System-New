@@ -1,17 +1,6 @@
 // Load Top Bar Component - Non-blocking
 (function() {
     'use strict';
-
-    var currentPath = window.location.pathname.split('/').pop() || '';
-    var isPublicPage = /^(login\.html|supplier_login\.html|no-access\.php|reset_password\.php|forgot_password\.php|send_otp\.php|verify_otp\.php)$/i.test(currentPath);
-    if (!isPublicPage) {
-        var isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        var supplierLoggedIn = localStorage.getItem('supplierLoggedIn') === 'true' || sessionStorage.getItem('supplierLoggedIn') === 'true';
-        if (!isLoggedIn && !supplierLoggedIn) {
-            window.location.href = 'login.html';
-            return;
-        }
-    }
     
     let topbarLoaded = false;
 
@@ -20,6 +9,9 @@
         topbarLoaded = true;
         
         try {
+            // Always enforce light theme globally
+            document.documentElement.classList.remove('dark');
+            try { localStorage.setItem('theme', 'light'); } catch (e) {}
             console.log('Loading topbar...');
             const response = await fetch('../components/topbar.html');
             if (!response.ok) {
@@ -134,9 +126,8 @@
                 window.clockInitialized = true;
             }
             
-            // Initialize theme toggle if not already initialized
+            // Theme toggle removed; ensure light theme remains active
             if (!window.themeToggleInitialized) {
-                initializeThemeToggle();
                 window.themeToggleInitialized = true;
             }
             
@@ -165,34 +156,9 @@
     }
     
     function initializeThemeToggle() {
-        const themeToggle = document.getElementById('headerThemeToggle');
-        if (!themeToggle) return;
-        
-        // Check if theme toggle is already initialized
-        if (themeToggle.dataset.initialized === 'true') return;
-        themeToggle.dataset.initialized = 'true';
-        
-        themeToggle.addEventListener('click', function() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            
-            document.documentElement.classList.toggle('dark', !isDark);
-            localStorage.setItem('theme', newTheme);
-            
-            // Update toggle buttons
-            const toggles = document.querySelectorAll('#themeToggle, #settingsThemeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', !isDark);
-                toggle.classList.toggle('bg-border-light', isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', !isDark);
-                button.classList.toggle('translate-x-1', isDark);
-            });
-        });
+        // Theme toggle removed; keep light mode
+        document.documentElement.classList.remove('dark');
+        try { localStorage.setItem('theme', 'light'); } catch (e) {}
     }
     
     // Load when DOM is ready - use multiple strategies to ensure it loads
@@ -220,4 +186,3 @@
         }
     });
 })();
-

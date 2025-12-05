@@ -62,14 +62,8 @@
             </ul>
         </nav>
 
-        <!-- Bottom Section: Theme Toggle + Logout -->
+        <!-- Bottom Section: Logout -->
         <div class="sidebar-bottom">
-            <div class="sidebar-theme-toggle">
-                <span class="sidebar-theme-label">Dark Mode</span>
-                <button id="themeToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-border-light dark:bg-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200">
-                    <span id="themeToggleButton" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1 dark:translate-x-6"></span>
-                </button>
-            </div>
             <button id="logoutBtn" class="sidebar-logout-btn">
                 <i class="fas fa-sign-out-alt sidebar-icon"></i>
                 <span class="sidebar-menu-text">Logout</span>
@@ -79,23 +73,10 @@
 </aside>
 
 <style>
-    /* Collapsible Sidebar Styles - Overlay */
+    /* Stationary Sidebar Styles */
     .sidebar-overlay {
-        width: 60px;
-        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
-    }
-
-    .sidebar-overlay:hover {
         width: 250px;
-    }
-
-    .sidebar-overlay:hover .sidebar-menu-text,
-    .sidebar-overlay:hover .sidebar-logo-text,
-    .sidebar-overlay:hover .sidebar-user-info,
-    .sidebar-overlay:hover .sidebar-theme-label {
-        opacity: 1;
-        visibility: visible;
+        overflow: hidden;
     }
 
     .sidebar-container {
@@ -133,16 +114,11 @@
     }
 
     .sidebar-logo-text {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
         white-space: nowrap;
         overflow: hidden;
-        transform: translateX(-10px);
-    }
-
-    .sidebar-overlay:hover .sidebar-logo-text {
-        transform: translateX(0);
     }
 
     .sidebar-logo-text h2 {
@@ -156,8 +132,8 @@
     }
 
     .sidebar-close-btn {
-        opacity: 0;
-        visibility: hidden;
+        opacity: 1;
+        visibility: visible;
         transition: opacity 0.2s ease, visibility 0.2s ease;
         padding: 0.5rem;
         border-radius: 0.5rem;
@@ -219,16 +195,11 @@
     }
 
     .sidebar-user-info {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
         min-width: 0;
         flex: 1;
-        transform: translateX(-10px);
-    }
-
-    .sidebar-overlay:hover .sidebar-user-info {
-        transform: translateX(0);
     }
 
     /* Middle Section - Navigation (Scrollable) */
@@ -362,16 +333,11 @@
     }
 
     .sidebar-menu-text {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
         white-space: nowrap;
         overflow: hidden;
-        transform: translateX(-10px);
-    }
-
-    .sidebar-overlay:hover .sidebar-menu-text {
-        transform: translateX(0);
     }
 
     /* Bottom Section */
@@ -389,31 +355,7 @@
         border-top-color: rgba(147, 197, 253, 0.2);
     }
 
-    .sidebar-theme-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 4px;
-    }
-
-    .sidebar-theme-label {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
-        font-size: 14px;
-        font-weight: 500;
-        color: #e0e7ff;
-        white-space: nowrap;
-        transform: translateX(-10px);
-    }
-
-    .sidebar-overlay:hover .sidebar-theme-label {
-        transform: translateX(0);
-    }
-
-    .dark .sidebar-theme-label {
-        color: #e0e7ff;
-    }
+    /* Theme toggle removed */
 
     .sidebar-logout-btn {
         display: flex;
@@ -470,7 +412,7 @@
 
     /* Main Content Wrapper - Dynamic Padding */
     .main-content-wrapper {
-        padding-left: 60px;
+        padding-left: 250px;
         transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 

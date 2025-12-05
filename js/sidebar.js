@@ -50,7 +50,7 @@
             sidebarOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Dynamic padding for main content when sidebar is hovered
+        // Stationary sidebar: always use full width on desktop
         function updateMainContentPadding(isExpanded) {
             try {
                 const mainContent = document.querySelector('.main-content-wrapper');
@@ -65,13 +65,8 @@
                     return;
                 }
                 
-                // Use requestAnimationFrame for smooth transitions
                 requestAnimationFrame(() => {
-                    if (isExpanded) {
-                        mainContent.style.paddingLeft = '250px';
-                    } else {
-                        mainContent.style.paddingLeft = '60px';
-                    }
+                    mainContent.style.paddingLeft = '250px';
                 });
             } catch (error) {
                 console.warn('Error updating main content padding:', error);
@@ -92,21 +87,7 @@
 
         initializePadding();
 
-        // Add hover listeners for dynamic padding (only on desktop)
-        function setupHoverListeners() {
-            if (window.innerWidth > 1023) {
-                sidebar.addEventListener('mouseenter', () => {
-                    updateMainContentPadding(true);
-                }, { once: false });
-
-                sidebar.addEventListener('mouseleave', () => {
-                    updateMainContentPadding(false);
-                }, { once: false });
-            }
-        }
-
-        // Setup hover listeners after a short delay
-        setTimeout(setupHoverListeners, 300);
+        // Hover listeners removed; sidebar is stationary
 
         // Handle mobile - no padding on mobile
         function handleMobilePadding() {

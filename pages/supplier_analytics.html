@@ -14,7 +14,7 @@
         /* Main Content Wrapper - Padding handled by sidebar component */
         .main-content-wrapper {
             margin-left: 0;
-            padding-left: 60px;
+            padding-left: 250px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -88,13 +88,17 @@
                     <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-4">
                         <i class="fas fa-chart-pie mr-2 text-primary-600 dark:text-primary-400"></i>Orders by Status
                     </h2>
-                    <canvas id="statusChart"></canvas>
+                    <div style="height: 280px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                 </div>
                 <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-border-light dark:border-gray-700 p-6">
                     <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100 mb-4">
                         <i class="fas fa-chart-line mr-2 text-primary-600 dark:text-primary-400"></i>Revenue Trend
                     </h2>
-                    <canvas id="revenueChart"></canvas>
+                    <div style="height: 280px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -196,7 +200,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'bottom'
@@ -235,7 +239,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,

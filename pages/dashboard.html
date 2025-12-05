@@ -16,7 +16,7 @@
         /* Main Content Wrapper - Padding handled by sidebar component */
         .main-content-wrapper {
             margin-left: 0;
-            padding-left: 60px;
+            padding-left: 250px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -93,7 +93,7 @@
                         Key Metrics
                     </h2>
 
-                    <div class="metric-cards mb-6" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                    <div class="metric-cards mb-6">
                         <!-- Total Medicines -->
                         <button onclick="window.location.href='inventory_management.html'" class="metric-card metric-card--primary cursor-pointer">
                             <div class="metric-card__top"></div>
@@ -472,33 +472,7 @@
                 });
             }
 
-            // Global search functionality
-            const searchInput = document.getElementById('globalSearch');
-            if (searchInput) {
-                let searchTimeout;
-                searchInput.addEventListener('input', function(e) {
-                const searchTerm = e.target.value.trim();
-                
-                clearTimeout(searchTimeout);
-                
-                    if (searchTerm.length > 2) {
-                        searchTimeout = setTimeout(() => {
-                            // Navigate to inventory with search filter
-                            window.location.href = `inventory_management.html?search=${encodeURIComponent(searchTerm)}`;
-                        }, 500);
-                    }
-                });
-                
-                // Allow Enter key to search immediately
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        const searchTerm = e.target.value.trim();
-                        if (searchTerm.length > 0) {
-                            window.location.href = `inventory_management.html?search=${encodeURIComponent(searchTerm)}`;
-                        }
-                    }
-                });
-            }
+         
 
             // ESC key to close modals
             document.addEventListener('keydown', function(e) {
@@ -788,7 +762,9 @@
 
                 if (result.success && result.data && result.data.length > 0) {
                     activitiesList.innerHTML = '';
-                    const activities = result.data.slice(0, 6);
+                    const activities = [...result.data]
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .slice(0, 5);
                     activities.forEach(activity => {
                         const activityEl = document.createElement('div');
                         activityEl.className = 'flex items-start space-x-3 p-3 bg-surface-hover dark:bg-gray-800 rounded-xl';

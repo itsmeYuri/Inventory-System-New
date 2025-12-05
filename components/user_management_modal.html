@@ -1,5 +1,22 @@
 <!-- User Management Modal -->
-<div id="userManagementModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] hidden" style="left: 60px;">
+<style>
+    #userManagementModal table thead th,
+    #userManagementModal table thead th.dark,
+    #userManagementModal.dark table thead th {
+        background-color: #2563eb !important;
+        background: #2563eb !important;
+        color: #ffffff !important;
+    }
+    #userManagementModal table thead th *,
+    #userManagementModal table thead th.dark *,
+    #userManagementModal.dark table thead th * {
+        color: #ffffff !important;
+    }
+    #userManagementModal table thead th input[type="checkbox"] {
+        border-color: #ffffff !important;
+    }
+</style>
+<div id="userManagementModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100] hidden">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden animation-slide-up flex flex-col">
         <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700 flex-shrink-0">
             <div>
@@ -88,9 +105,12 @@
 
                 <!-- Users Table -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-border-light dark:border-gray-700 overflow-hidden">
-                    <div class="p-6 border-b border-border-light dark:border-gray-700 bg-surface-hover dark:bg-gray-700">
+                    <div class="p-0">
+                        <div class="h-3 bg-blue-600 rounded-t-2xl"></div>
+                    </div>
+                    <div class="p-4 border-b border-border-light dark:border-gray-700">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-text-primary dark:text-gray-100">All Users</h3>
+                            <h3 class="text-lg font-semibold text-text-primary">All Users</h3>
                             <div class="flex items-center space-x-2">
                                 <button onclick="loadUsersModal()" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-all duration-200">
                                     <i class="fas fa-sync-alt"></i>
@@ -98,24 +118,24 @@
                             </div>
                         </div>
                     </div>
-                    <div class="component__table">
-                        <table id="usersTableModal" class="w-full">
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
                             <thead>
                                 <tr>
-                                    <th class="px-6 py-4 text-left">
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-left font-semibold">
                                         <input type="checkbox" id="selectAllModal" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" />
                                     </th>
-                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Full Name</th>
-                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Username</th>
-                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Employee ID</th>
-                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Role</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-left font-semibold">Full Name</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-left font-semibold">Email</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-left font-semibold">Username</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-left font-semibold">Employee ID</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-left font-semibold">Role</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-center font-semibold">Status</th>
+                                    <th style="background-color: #2563eb !important; color: #ffffff !important;" class="px-6 py-3 text-center font-semibold">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="usersTableBodyModal">
-                                <tr class="--empty">
+                            <tbody id="usersTableBodyModal" class="bg-white divide-y divide-border-light">
+                                <tr>
                                     <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                         <div class="flex flex-col items-center space-y-3">
                                             <i class="fas fa-users text-4xl opacity-50"></i>
@@ -134,7 +154,7 @@
 </div>
 
 <!-- Add User Modal (inside User Management Modal) -->
-<div id="addUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] hidden" style="left: 60px;">
+<div id="addUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[110] hidden">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
         <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
             <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Add New User</h2>
@@ -215,7 +235,7 @@
 </div>
 
 <!-- Edit User Modal (inside User Management Modal) -->
-<div id="editUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] hidden" style="left: 60px;">
+<div id="editUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[110] hidden">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animation-slide-up">
         <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
             <h2 class="text-xl font-semibold text-text-primary dark:text-gray-100">Edit User</h2>

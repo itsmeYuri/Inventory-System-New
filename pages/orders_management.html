@@ -13,7 +13,7 @@
         /* Main Content Wrapper - Padding handled by sidebar component */
         .main-content-wrapper {
             margin-left: 0;
-            padding-left: 60px;
+            padding-left: 250px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -57,11 +57,7 @@
                         <input type="text" id="globalSearch" placeholder="Search orders..." class="w-80 pl-10 pr-4 py-2 border border-border-light dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all duration-200 bg-white dark:bg-gray-800 text-text-primary dark:text-gray-100" />
                     </div>
                     
-                    <!-- Theme Toggle -->
-                    <button id="headerThemeToggle" class="p-2 text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200 hover:bg-surface-hover dark:hover:bg-gray-800 rounded-xl transition-all duration-200">
-                        <i class="fas fa-moon dark:hidden text-lg"></i>
-                        <i class="fas fa-sun hidden dark:block text-lg"></i>
-                    </button>
+                    <!-- Theme Toggle removed -->
                     
                     <!-- Live Clock -->
                     <div class="hidden md:flex items-center space-x-2 text-text-secondary dark:text-gray-400">
@@ -144,14 +140,14 @@
             <!-- Orders Table -->
             <div class="component__card">
                 <!-- Table Header -->
-                <header class="component__card-header flex items-center justify-between">
+                <header class="component__card-header">
                     <div class="component__card-header-main">
                         <div class="flex items-center space-x-3">
                             <input type="checkbox" id="selectAll" class="h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium rounded" />
                             <span class="text-sm font-medium text-text-secondary dark:text-gray-300">Select All</span>
                         </div>
                     </div>
-                    <div class="component__card-header-actions ml-auto flex items-center">
+                    <div class="component__card-header-actions">
                         <button id="exportBtn" class="component__button --secondary">
                             <svg>
                                 <use href="../icons.svg#placeholder"></use>
@@ -858,49 +854,12 @@
             document.addEventListener('keydown', escHandler);
         }
 
-        // Theme management
+        // Theme management disabled; enforce light mode
         function initializeTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            const isDark = savedTheme === 'dark';
-            
-            document.documentElement.classList.toggle('dark', isDark);
-            
-            // Update toggle buttons
-            const toggles = document.querySelectorAll('#themeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', isDark);
-                toggle.classList.toggle('bg-border-light', !isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', isDark);
-                button.classList.toggle('translate-x-1', !isDark);
-            });
+            try { localStorage.setItem('theme', 'light'); } catch (e) {}
+            document.documentElement.classList.remove('dark');
         }
-
-        function toggleTheme() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            
-            document.documentElement.classList.toggle('dark', !isDark);
-            localStorage.setItem('theme', newTheme);
-            
-            // Update toggle buttons
-            const toggles = document.querySelectorAll('#themeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', !isDark);
-                toggle.classList.toggle('bg-border-light', isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', !isDark);
-                button.classList.toggle('translate-x-1', isDark);
-            });
-        }
+        function toggleTheme() { /* removed */ }
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {

@@ -15,12 +15,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$isLoggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
-if (!$isLoggedIn) {
-    header('Location: ../pages/login.html');
-    exit;
-}
-
 $user_role = $_SESSION['role'] ?? null;
 $user_name = $_SESSION['full_name'] ?? 'User';
 $user_email = $_SESSION['user_email'] ?? $_SESSION['email'] ?? 'user@example.com';
@@ -70,7 +64,7 @@ function render_navigation() {
     <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden"></div>
     
     <!-- Sidebar -->
-    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 shadow-xl border-r border-border-light dark:border-gray-700 z-50 transform -translate-x-full lg:translate-x-0 transition-all duration-300">
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-xl border-r border-border-light z-50 transform -translate-x-full lg:translate-x-0 transition-all duration-300">
         <!-- Sidebar Header -->
         <div class="flex items-center justify-between p-6 border-b border-border-light dark:border-gray-700">
             <div class="flex items-center space-x-3">
@@ -78,8 +72,8 @@ function render_navigation() {
                     <i class="fas fa-pills text-primary-600 dark:text-primary-400 text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-lg font-semibold text-text-primary dark:text-gray-100">PHARMACY</h2>
-                    <p class="text-xs text-text-tertiary dark:text-gray-400">Inventory System</p>
+                    <h2 class="text-lg font-semibold text-text-primary">PHARMACY</h2>
+                    <p class="text-xs text-text-tertiary">Inventory System</p>
                 </div>
             </div>
             <button id="closeSidebar" class="lg:hidden text-text-tertiary hover:text-text-secondary dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
@@ -88,15 +82,15 @@ function render_navigation() {
         </div>
 
         <!-- User Profile Section -->
-        <div class="p-6 border-b border-border-light dark:border-gray-700">
+        <div class="p-6 border-b border-border-light">
             <div class="flex items-center space-x-3">
                 <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
                      alt="User Avatar" 
                      class="w-12 h-12 rounded-full object-cover border-2 border-primary-200 dark:border-primary-700" 
                      onerror="this.src='https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'; this.onerror=null;" />
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-text-primary dark:text-gray-100 truncate" id="userDisplayName"><?php echo htmlspecialchars($user_name); ?></p>
-                    <p class="text-xs text-text-tertiary dark:text-gray-400 truncate" id="userDisplayEmail"><?php echo htmlspecialchars($user_email); ?></p>
+                    <p class="text-sm font-medium text-text-primary truncate" id="userDisplayName"><?php echo htmlspecialchars($user_name); ?></p>
+                    <p class="text-xs text-text-tertiary truncate" id="userDisplayEmail"><?php echo htmlspecialchars($user_email); ?></p>
                 </div>
             </div>
         </div>
@@ -155,15 +149,9 @@ function render_navigation() {
             </ul>
         </nav>
 
-        <!-- Theme Toggle & Logout -->
-        <div class="p-4 border-t border-border-light dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-sm text-text-tertiary dark:text-gray-400">Theme</span>
-                <button id="themeToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1 dark:translate-x-6"></span>
-                </button>
-            </div>
-            <button id="logoutBtn" class="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
+        <!-- Logout -->
+        <div class="p-4 border-t border-border-light">
+            <button id="logoutBtn" class="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </button>
@@ -221,4 +209,3 @@ function render_navigation() {
     <?php
 }
 ?>
-

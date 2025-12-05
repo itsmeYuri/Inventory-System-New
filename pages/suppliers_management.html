@@ -13,7 +13,7 @@
         /* Main Content Wrapper - Padding handled by sidebar component */
         .main-content-wrapper {
             margin-left: 0;
-            padding-left: 60px;
+            padding-left: 250px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -1699,49 +1699,12 @@
         });
 
 
-        // Theme management
+        // Theme management disabled; enforce light mode
         function initializeTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            const isDark = savedTheme === 'dark';
-            
-            document.documentElement.classList.toggle('dark', isDark);
-            
-            // Update toggle buttons
-            const toggles = document.querySelectorAll('#themeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', isDark);
-                toggle.classList.toggle('bg-border-light', !isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', isDark);
-                button.classList.toggle('translate-x-1', !isDark);
-            });
+            try { localStorage.setItem('theme', 'light'); } catch (e) {}
+            document.documentElement.classList.remove('dark');
         }
-
-        function toggleTheme() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            
-            document.documentElement.classList.toggle('dark', !isDark);
-            localStorage.setItem('theme', newTheme);
-            
-            // Update toggle buttons
-            const toggles = document.querySelectorAll('#themeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', !isDark);
-                toggle.classList.toggle('bg-border-light', isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', !isDark);
-                button.classList.toggle('translate-x-1', isDark);
-            });
-        }
+        function toggleTheme() { /* removed */ }
 
         // Helper functions for notifications
         function showSuccess(message) {

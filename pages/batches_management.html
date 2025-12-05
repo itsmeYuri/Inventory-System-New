@@ -13,7 +13,7 @@
         /* Main Content Wrapper - Padding handled by sidebar component */
         .main-content-wrapper {
             margin-left: 0;
-            padding-left: 60px;
+            padding-left: 250px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -1159,20 +1159,13 @@
         window.viewBatchDetails = viewBatchDetails;
         window.editBatch = editBatch;
 
-        // Theme functionality
+        // Theme functionality disabled; enforce light mode
         function initializeTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            }
+            try { localStorage.setItem('theme', 'light'); } catch (e) {}
+            document.documentElement.classList.remove('dark');
         }
 
-        function toggleTheme() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            document.documentElement.classList.toggle('dark', !isDark);
-            localStorage.setItem('theme', newTheme);
-        }
+        function toggleTheme() { /* removed */ }
 
         document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
         // Theme toggle is now initialized by load-topbar.js

@@ -13,7 +13,7 @@
         /* Main Content Wrapper - Padding handled by sidebar component */
         .main-content-wrapper {
             margin-left: 0;
-            padding-left: 60px;
+            padding-left: 250px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -312,8 +312,8 @@
                 const response = await fetch(`../php/get_order_items.php?order_id=${orderId}`);
                 const result = await response.json();
 
-                if (result.success && result.data) {
-                    const items = result.data;
+                if (result.success) {
+                    const items = Array.isArray(result.data) ? result.data : [];
                     const total = items.reduce((sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)), 0);
 
                     content.innerHTML = `
@@ -345,20 +345,21 @@
                                             ${items.map(item => `
                                                 <tr>
                                                     <td class="px-4 py-3 text-sm text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</td>
-                                                    <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || 'N/A')}</td>
+                                                    <td class="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">${escapeHtml(item.ndc || '—')}</td>
                                                     <td class="px-4 py-3 text-sm text-right text-text-primary dark:text-gray-100">${item.quantity || 0}</td>
                                                     <td class="px-4 py-3 text-sm text-right text-text-secondary dark:text-gray-400">₱${parseFloat(item.price || 0).toFixed(2)}</td>
                                                     <td class="px-4 py-3 text-sm text-right font-semibold text-text-primary dark:text-gray-100">₱${(parseFloat(item.price || 0) * parseInt(item.quantity || 0)).toFixed(2)}</td>
                                                 </tr>
                                             `).join('')}
                                         </tbody>
-                                    </table>
+                                        </table>
                                 </div>
                             </div>
                         </div>
                     `;
                 } else {
-                    content.innerHTML = '<div class="text-center py-8 text-error-600 dark:text-error-400">Error loading order details</div>';
+                    const msg = result.message ? escapeHtml(result.message) : 'Error loading order details';
+                    content.innerHTML = `<div class="text-center py-8 text-error-600 dark:text-error-400">${msg}</div>`;
                 }
             } catch (error) {
                 console.error('Error loading order details:', error);

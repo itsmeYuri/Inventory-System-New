@@ -31,8 +31,8 @@
         
         // Remove active class from all tabs
         document.querySelectorAll('.tab-button-modal').forEach(btn => {
-            btn.classList.remove('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
-            btn.classList.add('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+            btn.classList.remove('active', 'border-primary', 'text-primary');
+            btn.classList.add('border-transparent', 'text-text-secondary');
         });
         
         // Show selected tab content
@@ -44,8 +44,8 @@
         // Add active class to selected tab
         const activeTab = document.getElementById(`tab${tabName}Modal`);
         if (activeTab) {
-            activeTab.classList.add('active', 'border-primary', 'text-primary', 'dark:text-primary-400');
-            activeTab.classList.remove('border-transparent', 'text-text-secondary', 'dark:text-gray-400');
+            activeTab.classList.add('active', 'border-primary', 'text-primary');
+            activeTab.classList.remove('border-transparent', 'text-text-secondary');
         }
     }
 
@@ -76,6 +76,23 @@
                 
                 // Render cancelled orders
                 renderCancelledOrdersModal(result.data.items.cancelled || []);
+
+                // Load archived users via user management API
+                try {
+                    const usersRes = await fetch('../php/user_management.php?action=get_all');
+                    const usersJson = await usersRes.json();
+                    if (usersJson.success && Array.isArray(usersJson.users)) {
+                        const archivedUsers = usersJson.users.filter(u => (u.status || '').toLowerCase() === 'archived');
+                        const countEl = document.getElementById('archivedUsersCountModal');
+                        if (countEl) countEl.textContent = archivedUsers.length;
+                        renderArchivedUsersModal(archivedUsers);
+                    } else {
+                        renderArchivedUsersModal([]);
+                    }
+                } catch (e) {
+                    console.error('Error loading archived users:', e);
+                    renderArchivedUsersModal([]);
+                }
             }
         } catch (error) {
             console.error('Error loading archives:', error);
@@ -88,12 +105,12 @@
         if (!tbody) return;
         
         if (items.length === 0) {
-            tbody.innerHTML = '<tr class="--empty"><td colspan="6" class="px-6 py-12 text-center text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary dark:text-gray-500">No expired items found</td></tr>';
             return;
         }
 
         tbody.innerHTML = items.map(item => `
-            <tr>
+            <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
                 <td class="py-3 px-4">
                     <div>
                         <div class="font-medium text-text-primary dark:text-gray-100">${escapeHtml(item.medicine_name || 'N/A')}</div>
@@ -119,12 +136,12 @@
         if (!tbody) return;
         
         if (orders.length === 0) {
-            tbody.innerHTML = '<tr class="--empty"><td colspan="7" class="px-6 py-12 text-center text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-text-tertiary dark:text-gray-500">No cancelled orders found</td></tr>';
             return;
         }
 
         tbody.innerHTML = orders.map(order => `
-            <tr>
+            <tr class="border-b border-border-light dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-800">
                 <td class="py-3 px-4 font-medium text-text-primary dark:text-gray-100">#${order.original_id || order.id}</td>
                 <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${escapeHtml(order.supplier_name || 'N/A')}</td>
                 <td class="py-3 px-4 text-text-secondary dark:text-gray-400">${order.order_date || 'N/A'}</td>
@@ -134,6 +151,51 @@
                 <td class="py-3 px-4 text-text-tertiary dark:text-gray-500 text-sm">${escapeHtml(order.cancellation_reason || 'N/A')}</td>
             </tr>
         `).join('');
+    }
+
+    // Render archived users
+    function renderArchivedUsersModal(users) {
+        const tbody = document.getElementById('archivedUsersTableModal');
+        if (!tbody) return;
+        if (!users || users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-tertiary">No archived users</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+            <tr class="border-b border-border-light hover:bg-surface-hover">
+                <td class="py-3 px-4">${escapeHtml(u.full_name || 'N/A')}</td>
+                <td class="py-3 px-4">${escapeHtml(u.email || 'N/A')}</td>
+                <td class="py-3 px-4">${escapeHtml(u.username || 'N/A')}</td>
+                <td class="py-3 px-4">${escapeHtml((u.role || 'employee').toUpperCase())}</td>
+                <td class="py-3 px-4">${u.updated_at ? new Date(u.updated_at).toLocaleDateString() : '—'}</td>
+                <td class="py-3 px-4 text-center">
+                    <button class="px-3 py-1 border border-border-light rounded-lg hover:bg-white" onclick="restoreArchivedUser('${u.user_id}')">
+                        Restore
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Restore archived user (sets status back to active)
+    window.restoreArchivedUser = async function(userId) {
+        try {
+            const res = await fetch('../php/user_management.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                body: new URLSearchParams({ action: 'update_status', user_id: userId, status: 'active' })
+            });
+            const json = await res.json();
+            if (json.success) {
+                loadArchivesModal();
+            } else {
+                alert(json.error || 'Failed to restore user');
+            }
+        } catch (e) {
+            console.error('Restore user error:', e);
+            alert('Error restoring user');
+        }
     }
 
     // Open Archive Modal
@@ -165,6 +227,11 @@
             return;
         }
 
+        try {
+            archiveModal.style.left = '0';
+            archiveModal.style.zIndex = '1000';
+        } catch (e) {}
+
         // Close Archive Modal
         const closeBtn = document.getElementById('closeArchiveModal');
         if (closeBtn) {
@@ -183,12 +250,16 @@
         // Tab switching event listeners
         const expiredTab = document.getElementById('tabExpiredModal');
         const cancelledTab = document.getElementById('tabCancelledModal');
+        const usersTab = document.getElementById('tabUsersModal');
         
         if (expiredTab) {
             expiredTab.addEventListener('click', () => switchArchiveTab('Expired'));
         }
         if (cancelledTab) {
             cancelledTab.addEventListener('click', () => switchArchiveTab('Cancelled'));
+        }
+        if (usersTab) {
+            usersTab.addEventListener('click', () => switchArchiveTab('Users'));
         }
     }
 

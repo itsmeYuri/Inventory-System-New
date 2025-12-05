@@ -494,7 +494,7 @@ function updateUserStatus() {
     }
     
     // Validate status
-    $validStatuses = ['active', 'inactive', 'offline', 'locked'];
+    $validStatuses = ['active', 'inactive', 'offline', 'locked', 'archived'];
     if (!in_array($status, $validStatuses)) {
         echo json_encode([
             'success' => false,
@@ -507,8 +507,16 @@ function updateUserStatus() {
         // Check if status column exists, create if not
         $checkStatus = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'status'");
         if (mysqli_num_rows($checkStatus) === 0) {
-            $alterQuery = "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'offline', 'locked') DEFAULT 'active'";
+            $alterQuery = "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'offline', 'locked', 'archived') DEFAULT 'active'";
             mysqli_query($conn, $alterQuery);
+        } else {
+            // Ensure 'archived' exists in ENUM
+            $col = mysqli_fetch_assoc($checkStatus);
+            $type = $col['Type'] ?? '';
+            if (strpos($type, "'archived'") === false) {
+                $alterQuery = "ALTER TABLE users MODIFY COLUMN status ENUM('active', 'inactive', 'offline', 'locked', 'archived') DEFAULT 'active'";
+                mysqli_query($conn, $alterQuery);
+            }
         }
         
         // Check which ID column exists
