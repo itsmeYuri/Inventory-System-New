@@ -449,15 +449,29 @@ try {
             }
         }
 
-        // Create batch for this order date (one batch per day, grouped by order_date)
-        // Items will be added to batch_items when order is confirmed
+        $itemsForBatch = [];
+        foreach ($items as $it) {
+            $itemsForBatch[] = [
+                'medicine_id' => (int)($it['medicine_id'] ?? 0),
+                'quantity' => (int)($it['quantity'] ?? 0),
+                'expiration_date' => null
+            ];
+        }
+        if (!empty($itemsForBatch)) {
+            try {
+                if (function_exists('addOrderToDailyBatch')) {
+                    addOrderToDailyBatch($conn, $order_id, $supplier_id, $order_date, $itemsForBatch);
+                }
+            } catch (Exception $e) {
+                error_log('Error adding items to daily batch on order creation: ' . $e->getMessage());
+            }
+        }
+
         try {
-            require_once __DIR__ . '/order_batch_helper.php';
-            if (function_exists('getOrCreateDailyBatch')) {
-                $batch_id = getOrCreateDailyBatch($conn, $order_date);
+            if (function_exists('getOrCreateOrderBatch')) {
+                $batch_id = getOrCreateOrderBatch($conn, $order_id, $supplier_id, $order_date);
                 if ($batch_id === false) {
                     error_log("ERROR: Failed to create/get batch for order date {$order_date} for order {$order_id}");
-                    // Try to get more details about the failure
                     $errorCheck = mysqli_error($conn);
                     if ($errorCheck) {
                         error_log("MySQL Error: " . $errorCheck);
@@ -465,16 +479,12 @@ try {
                 } else {
                     error_log("SUCCESS: Batch {$batch_id} created/retrieved for order {$order_id} with order date {$order_date}");
                 }
-            } else {
-                error_log("ERROR: getOrCreateDailyBatch function not found in order_batch_helper.php");
             }
         } catch (Exception $batchException) {
             error_log("EXCEPTION creating batch: " . $batchException->getMessage());
             error_log("Stack trace: " . $batchException->getTraceAsString());
-            // Don't fail the order creation if batch creation fails
         } catch (Error $batchError) {
             error_log("FATAL ERROR creating batch: " . $batchError->getMessage());
-            // Don't fail the order creation if batch creation fails
         }
 
         // Commit transaction

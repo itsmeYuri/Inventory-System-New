@@ -85,7 +85,15 @@ function getDashboardData($conn, $dateRange, $category) {
     }
 
     $medicineDateFilter = getDateFilterForColumn($dateRange, 'created_at', $conn);
+<<<<<<< HEAD
     $orderDateFilter = getDateFilterForColumn($dateRange, 'order_date', $conn);
+=======
+    
+    // Get date filter for orders by order_date (general)
+    $orderDateFilter = getDateFilterForColumn($dateRange, 'order_date', $conn);
+    // Get date filter for completed orders by updated_at (reflect completion time)
+    $completedDateFilter = getDateFilterForColumn($dateRange, 'updated_at', $conn);
+>>>>>>> b1ac2c0f0564fadcaa4501139af395f878d091a7
 
     $stockedSql = "SELECT COALESCE(SUM(stock), 0) AS total_stocked
                    FROM medicines
@@ -107,9 +115,17 @@ function getDashboardData($conn, $dateRange, $category) {
         $turnover = (int)($row['total_quantity'] ?? 0);
     }
 
+<<<<<<< HEAD
     $completedOrdersSql = "SELECT COUNT(*) AS completed_count
                            FROM orders
                            WHERE status = 'completed' AND {$orderDateFilter}";
+=======
+    // Orders Completed (count within date range by completion time)
+    $completedOrdersSql = "SELECT COUNT(*) as completed_count 
+                          FROM orders 
+                          WHERE status = 'completed' 
+                          AND {$completedDateFilter}";
+>>>>>>> b1ac2c0f0564fadcaa4501139af395f878d091a7
     $completedOrdersResult = mysqli_query($conn, $completedOrdersSql);
     $completedOrders = 0;
     if ($completedOrdersResult) {

@@ -18,6 +18,11 @@ function generateDailyBatchNumber($conn, $order_date) {
     return "BATCH-{$datePrefix}";
 }
 
+function generateOrderBatchNumber($conn, $order_date, $order_id) {
+    $datePrefix = date('Ymd', strtotime($order_date));
+    return "BATCH-{$datePrefix}-O{$order_id}";
+}
+
 /**
  * Get or create a batch for a specific date
  * One batch per day - all orders from the same day share the same batch
@@ -166,6 +171,71 @@ function getOrCreateDailyBatch($conn, $order_date) {
     return $batch_id;
 }
 
+function getOrCreateOrderBatch($conn, $order_id, $supplier_id, $order_date) {
+    $checkTable = mysqli_query($conn, "SHOW TABLES LIKE 'batches'");
+    if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
+        return false;
+    }
+
+    @mysqli_query($conn, "DELETE FROM batches WHERE id = 0");
+    $maxBatchIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batches");
+    $maxBatchId = 0;
+    if ($maxBatchIdQuery) {
+        $maxBatchRow = mysqli_fetch_assoc($maxBatchIdQuery);
+        $maxBatchId = (int)($maxBatchRow['max_id'] ?? 0);
+    }
+    $nextBatchId = max(1, $maxBatchId + 1);
+    @mysqli_query($conn, "ALTER TABLE batches AUTO_INCREMENT = {$nextBatchId}");
+
+    $batch_number = generateOrderBatchNumber($conn, $order_date, $order_id);
+
+    $checkBatchSql = "SELECT id FROM batches WHERE order_id = ? OR batch_number = ? LIMIT 1";
+    $checkBatchStmt = mysqli_prepare($conn, $checkBatchSql);
+    if ($checkBatchStmt) {
+        mysqli_stmt_bind_param($checkBatchStmt, 'is', $order_id, $batch_number);
+        mysqli_stmt_execute($checkBatchStmt);
+        $checkResult = mysqli_stmt_get_result($checkBatchStmt);
+        if ($checkResult && mysqli_num_rows($checkResult) > 0) {
+            $batchRow = mysqli_fetch_assoc($checkResult);
+            mysqli_stmt_close($checkBatchStmt);
+            return (int)$batchRow['id'];
+        }
+        mysqli_stmt_close($checkBatchStmt);
+    }
+
+    $batchSql = "INSERT INTO batches (batch_number, order_id, supplier_id, created_date, status) VALUES (?, ?, ?, ?, 'active')";
+    $batchStmt = mysqli_prepare($conn, $batchSql);
+    if (!$batchStmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($batchStmt, 'siis', $batch_number, $order_id, $supplier_id, $order_date);
+    if (!mysqli_stmt_execute($batchStmt)) {
+        mysqli_stmt_close($batchStmt);
+        $batch_number_escaped = mysqli_real_escape_string($conn, $batch_number);
+        $supplier_id_escaped = (int)$supplier_id;
+        $order_date_escaped = mysqli_real_escape_string($conn, $order_date);
+        $rawBatchSql = "INSERT INTO batches (batch_number, order_id, supplier_id, created_date, status) VALUES ('{$batch_number_escaped}', {$order_id}, {$supplier_id_escaped}, '{$order_date_escaped}', 'active')";
+        if (!mysqli_query($conn, $rawBatchSql)) {
+            return false;
+        }
+        $batch_id = mysqli_insert_id($conn);
+    } else {
+        $batch_id = mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($batchStmt);
+    if ($batch_id <= 0) {
+        $lastBatchIdQuery = mysqli_query($conn, "SELECT MAX(id) as last_id FROM batches WHERE batch_number = '{$batch_number}'");
+        if ($lastBatchIdQuery) {
+            $lastBatchRow = mysqli_fetch_assoc($lastBatchIdQuery);
+            $batch_id = (int)($lastBatchRow['last_id'] ?? 0);
+        }
+        if ($batch_id <= 0) {
+            return false;
+        }
+    }
+    return $batch_id;
+}
+
 /**
  * Add order items to the daily batch for the order date
  * Groups all orders from the same day into one batch
@@ -208,7 +278,7 @@ function addOrderToDailyBatch($conn, $order_id, $supplier_id, $order_date, $item
     
     // Get or create batch for this date
     try {
-        $batch_id = getOrCreateDailyBatch($conn, $order_date);
+        $batch_id = getOrCreateOrderBatch($conn, $order_id, $supplier_id, $order_date);
         if ($batch_id === false) {
             error_log("Failed to get or create daily batch for date {$order_date}");
             return false;
@@ -313,6 +383,7 @@ function addOrderToDailyBatch($conn, $order_id, $supplier_id, $order_date, $item
         mysqli_stmt_close($itemStmt);
     }
     
+    @mysqli_query($conn, "UPDATE batches b SET b.status='expired' WHERE b.id={$batch_id} AND EXISTS (SELECT 1 FROM batch_items bi WHERE bi.batch_id={$batch_id} AND bi.expiration_date < CURDATE())");
     error_log("Added {$itemsInserted} items from order {$order_id} to daily batch {$batch_id} for date {$order_date}");
     return true;
 }
@@ -327,7 +398,7 @@ function addOrderToDailyBatch($conn, $order_id, $supplier_id, $order_date, $item
  * @param array $items Order items with medicine_id, quantity, expiration_date, received_quantity
  * @return bool True on success, false on failure
  */
-function addOrderItemsToBatch($conn, $order_id, $order_date, $items) {
+function addOrderItemsToBatch($conn, $order_id, $supplier_id, $order_date, $items) {
     // Validate inputs
     if (!$conn) {
         error_log("addOrderItemsToBatch: Invalid database connection");
@@ -357,6 +428,7 @@ function addOrderItemsToBatch($conn, $order_id, $order_date, $items) {
     }
     
     // Get batch for this order date (batch is created when order is created, grouped by order_date)
+<<<<<<< HEAD
     try {
         $batch_id = getOrCreateDailyBatch($conn, $order_date);
         if ($batch_id === false) {
@@ -418,6 +490,15 @@ function addOrderItemsToBatch($conn, $order_id, $order_date, $items) {
             error_log("Failed to prepare batch update statement: " . mysqli_error($conn));
         }
     } catch (Exception $e) {
+=======
+    try {
+        $batch_id = getOrCreateOrderBatch($conn, $order_id, $supplier_id, $order_date);
+        if ($batch_id === false) {
+            error_log("Failed to get or create daily batch for date {$order_date}");
+            return false;
+        }
+    } catch (Exception $e) {
+>>>>>>> b1ac2c0f0564fadcaa4501139af395f878d091a7
         error_log("Exception in getOrCreateDailyBatch: " . $e->getMessage());
         return false;
     }
@@ -533,6 +614,7 @@ function addOrderItemsToBatch($conn, $order_id, $order_date, $items) {
         mysqli_stmt_close($itemStmt);
     }
     
+    @mysqli_query($conn, "UPDATE batches b SET b.status='expired' WHERE b.id={$batch_id} AND EXISTS (SELECT 1 FROM batch_items bi WHERE bi.batch_id={$batch_id} AND bi.expiration_date < CURDATE())");
     error_log("Added {$itemsInserted} items from confirmed order {$order_id} to batch {$batch_id} for order date {$order_date}");
     return true;
 }

@@ -32,8 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+<<<<<<< HEAD
 require_once __DIR__ . '/conn.php';
 require_once __DIR__ . '/medicine_structure_helper.php';
+=======
+require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
+>>>>>>> b1ac2c0f0564fadcaa4501139af395f878d091a7
 
 try {
     $order_id = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
@@ -46,6 +51,7 @@ try {
         exit;
     }
 
+<<<<<<< HEAD
     // Determine medicine table structure and available columns
     $hasNewStructure = hasNewMedicineStructure($conn);
 
@@ -99,6 +105,39 @@ try {
                 WHERE oi.order_id = ?
                 ORDER BY oi.id ASC";
     }
+=======
+    // Determine medicine table structure and available columns
+    $hasNewStructure = hasNewMedicineStructure($conn);
+
+    // Check optional columns existence safely
+    $hasNdc = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'ndc'") && mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'ndc'")) > 0;
+    $hasBatchNumber = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'batch_number'") && mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'batch_number'")) > 0;
+    $hasExpirationDate = mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'expiration_date'") && mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM medicines LIKE 'expiration_date'")) > 0;
+
+    $medicineIdJoinColumn = $hasNewStructure ? 'm.medicine_id' : 'm.id';
+    $medicineNameColumn = $hasNewStructure ? 'm.medicine_name' : 'm.name';
+    $ndcSelect = $hasNdc ? 'm.ndc' : 'NULL as ndc';
+    $batchSelect = $hasBatchNumber ? 'm.batch_number' : 'NULL as batch_number';
+    $expSelect = $hasExpirationDate ? 'm.expiration_date' : 'NULL as expiration_date';
+
+    // Build query dynamically to avoid selecting non-existent columns
+    $sql = "SELECT 
+                oi.id,
+                oi.order_id,
+                oi.medicine_id,
+                oi.quantity,
+                oi.price,
+                oi.created_at,
+                oi.updated_at,
+                {$ndcSelect},
+                {$medicineNameColumn} as medicine_name,
+                {$batchSelect},
+                {$expSelect}
+            FROM order_items oi
+            LEFT JOIN medicines m ON oi.medicine_id = {$medicineIdJoinColumn}
+            WHERE oi.order_id = ?
+            ORDER BY oi.id ASC";
+>>>>>>> b1ac2c0f0564fadcaa4501139af395f878d091a7
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
