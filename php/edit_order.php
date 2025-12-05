@@ -181,49 +181,77 @@ try {
                 }
             }
             
-            // Add order items to batch_items when order is confirmed
-            // This ensures items are only added when order is confirmed, not when created
             require_once __DIR__ . '/order_batch_helper.php';
-            if (function_exists('addOrderItemsToBatch')) {
-                // Get order items
-                $itemsForBatchSql = "SELECT oi.medicine_id, oi.quantity, m.expiration_date 
-                                    FROM order_items oi
-                                    LEFT JOIN medicines m ON oi.medicine_id = m.id
-                                    WHERE oi.order_id = ?";
-                $itemsForBatchStmt = mysqli_prepare($conn, $itemsForBatchSql);
-                $batchItems = [];
+            // Build batch items from order_items and update received quantities in existing batch rows
+            $itemsForBatchSql = "SELECT oi.medicine_id, oi.quantity, m.expiration_date 
+                                FROM order_items oi
+                                LEFT JOIN medicines m ON oi.medicine_id = m.id
+                                WHERE oi.order_id = ?";
+            $itemsForBatchStmt = mysqli_prepare($conn, $itemsForBatchSql);
+            $batchItems = [];
+            
+            if ($itemsForBatchStmt) {
+                mysqli_stmt_bind_param($itemsForBatchStmt, 'i', $order_id);
+                mysqli_stmt_execute($itemsForBatchStmt);
+                $itemsForBatchResult = mysqli_stmt_get_result($itemsForBatchStmt);
                 
-                if ($itemsForBatchStmt) {
-                    mysqli_stmt_bind_param($itemsForBatchStmt, 'i', $order_id);
-                    mysqli_stmt_execute($itemsForBatchStmt);
-                    $itemsForBatchResult = mysqli_stmt_get_result($itemsForBatchStmt);
+                while ($batchItemRow = mysqli_fetch_assoc($itemsForBatchResult)) {
+                    $medicine_id = (int)$batchItemRow['medicine_id'];
+                    $ordered_quantity = (int)$batchItemRow['quantity'];
+                    $received_quantity = isset($receivedQtyMap[$medicine_id]) 
+                        ? $receivedQtyMap[$medicine_id] 
+                        : $ordered_quantity;
                     
-                    while ($batchItemRow = mysqli_fetch_assoc($itemsForBatchResult)) {
-                        $medicine_id = (int)$batchItemRow['medicine_id'];
-                        $ordered_quantity = (int)$batchItemRow['quantity'];
-                        // Use received quantity if provided, otherwise use ordered quantity
-                        $received_quantity = isset($receivedQtyMap[$medicine_id]) 
-                            ? $receivedQtyMap[$medicine_id] 
-                            : $ordered_quantity;
-                        
-                        $batchItems[] = [
-                            'medicine_id' => $medicine_id,
-                            'quantity' => $ordered_quantity,
-                            'expiration_date' => $batchItemRow['expiration_date'],
-                            'received_quantity' => $received_quantity
-                        ];
-                    }
-                    mysqli_stmt_close($itemsForBatchStmt);
+                    $batchItems[] = [
+                        'medicine_id' => $medicine_id,
+                        'quantity' => $ordered_quantity,
+                        'expiration_date' => $batchItemRow['expiration_date'],
+                        'received_quantity' => $received_quantity
+                    ];
                 }
-                
-                // Add items to batch (batch is grouped by order_date, not confirmation date)
-                if (!empty($batchItems)) {
-                    $batchResult = addOrderItemsToBatch($conn, $order_id, $order_date, $batchItems);
-                    if ($batchResult === false) {
-                        error_log("Warning: Failed to add order {$order_id} items to batch, but continuing with order confirmation");
-                    } else {
-                        error_log("Order {$order_id} items added to batch for order date {$order_date}");
+                mysqli_stmt_close($itemsForBatchStmt);
+            }
+            
+            if (!empty($batchItems)) {
+                $batch_id = getOrCreateOrderBatch($conn, $order_id, $supplier_id, $order_date);
+                if ($batch_id !== false) {
+                    foreach ($batchItems as $bi) {
+                        $medicine_id = (int)$bi['medicine_id'];
+                        $received_quantity = (int)$bi['received_quantity'];
+                        $expiration_date = $bi['expiration_date'];
+                        $existsSql = "SELECT id FROM batch_items WHERE batch_id = ? AND medicine_id = ? LIMIT 1";
+                        $existsStmt = mysqli_prepare($conn, $existsSql);
+                        $existingId = 0;
+                        if ($existsStmt) {
+                            mysqli_stmt_bind_param($existsStmt, 'ii', $batch_id, $medicine_id);
+                            mysqli_stmt_execute($existsStmt);
+                            $existsRes = mysqli_stmt_get_result($existsStmt);
+                            if ($row = mysqli_fetch_assoc($existsRes)) {
+                                $existingId = (int)$row['id'];
+                            }
+                            mysqli_stmt_close($existsStmt);
+                        }
+                        if ($existingId > 0) {
+                            $updSql = "UPDATE batch_items SET received_quantity = ? WHERE id = ?";
+                            $updStmt = mysqli_prepare($conn, $updSql);
+                            if ($updStmt) {
+                                mysqli_stmt_bind_param($updStmt, 'ii', $received_quantity, $existingId);
+                                mysqli_stmt_execute($updStmt);
+                                mysqli_stmt_close($updStmt);
+                            }
+                        } else {
+                            $insSql = "INSERT INTO batch_items (batch_id, medicine_id, quantity, expiration_date, received_quantity) VALUES (?, ?, ?, ?, ?)";
+                            $insStmt = mysqli_prepare($conn, $insSql);
+                            if ($insStmt) {
+                                $quantity = (int)$bi['quantity'];
+                                mysqli_stmt_bind_param($insStmt, 'iiisi', $batch_id, $medicine_id, $quantity, $expiration_date, $received_quantity);
+                                mysqli_stmt_execute($insStmt);
+                                mysqli_stmt_close($insStmt);
+                            }
+                        }
                     }
+                } else {
+                    error_log("Failed to get batch for updating received quantities for order {$order_id}");
                 }
             }
             

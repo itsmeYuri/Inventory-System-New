@@ -89,8 +89,10 @@ function getDashboardData($conn, $dateRange, $category) {
     // Get date filter for medicines (using created_at)
     $medicineDateFilter = getDateFilterForColumn($dateRange, 'created_at', $conn);
     
-    // Get date filter for orders (using order_date)
+    // Get date filter for orders by order_date (general)
     $orderDateFilter = getDateFilterForColumn($dateRange, 'order_date', $conn);
+    // Get date filter for completed orders by updated_at (reflect completion time)
+    $completedDateFilter = getDateFilterForColumn($dateRange, 'updated_at', $conn);
 
     // Total Stocked (total quantity of items in stock within date range)
     $stockedSql = "SELECT SUM(quantity) as total_stocked 
@@ -116,11 +118,11 @@ function getDashboardData($conn, $dateRange, $category) {
         $turnover = (int)($row['total_quantity'] ?? 0);
     }
 
-    // Order Completed (count of completed orders within date range)
+    // Orders Completed (count within date range by completion time)
     $completedOrdersSql = "SELECT COUNT(*) as completed_count 
                           FROM orders 
                           WHERE status = 'completed' 
-                          AND {$orderDateFilter}";
+                          AND {$completedDateFilter}";
     $completedOrdersResult = mysqli_query($conn, $completedOrdersSql);
     $completedOrders = 0;
     if ($completedOrdersResult) {
