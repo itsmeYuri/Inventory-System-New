@@ -307,13 +307,41 @@ function createUser() {
         
         // Insert new user
         $insertQuery = "INSERT INTO users (full_name, email, username, $passwordColumn, role, status) VALUES (?, ?, ?, ?, ?, 'active')";
+        $insertStmt = mysqli_prepare($conn, $insertQuery);
+        
+        if (!$insertStmt) {
+            throw new Exception('Database query failed: ' . mysqli_error($conn));
+        }
+        
+        mysqli_stmt_bind_param($insertStmt, "sssss", $fullName, $email, $username, $defaultPassword, $role);
+        
+        if (mysqli_stmt_execute($insertStmt)) {
+            $newUserId = mysqli_insert_id($conn);
+            mysqli_stmt_close($insertStmt);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'User created successfully',
+                'user_id' => $newUserId
+            ], JSON_UNESCAPED_UNICODE);
+        } else {
+            mysqli_stmt_close($insertStmt);
+            throw new Exception('Failed to create user: ' . mysqli_error($conn));
+        }
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+    }
 }
 
 /**
  * Update user
  */
 function updateUser() {
-        mysqli_stmt_bind_param($insertStmt, "sssss", $fullName, $email, $username, $defaultPassword, $role);
+    global $conn;
     
     $userId = $_POST['user_id'] ?? null;
     $fullName = $_POST['full_name'] ?? '';
@@ -767,5 +795,4 @@ function unlockAccount() {
     }
 }
 ?>
-
 

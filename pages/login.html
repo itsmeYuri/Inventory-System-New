@@ -1,7 +1,13 @@
 <?php
 session_start();
+
+// Redirect if already logged in
 if (isset($_SESSION['loggedin'])) {
-    header('Location: dashboard.html');
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'supplier') {
+        header('Location: supplier_dashboard.html');
+    } else {
+        header('Location: dashboard.html');
+    }
     exit;
 }
 ?>
@@ -588,9 +594,6 @@ if (isset($_SESSION['loggedin'])) {
                     if (data.user.role) {
                         localStorage.setItem('userRole', data.user.role);
                     }
-                    if (data.user.sub_role) {
-                        localStorage.setItem('userSubRole', data.user.sub_role);
-                    }
                     if (data.user.user_id) {
                         localStorage.setItem('userId', data.user.user_id);
                     }
@@ -665,12 +668,12 @@ if (isset($_SESSION['loggedin'])) {
             document.getElementById('sendOtpBtnText').textContent = 'Sending...';
 
             try {
-                const resp = await fetch('../php/login.php', {
+                const resp = await fetch('send_otp.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: new URLSearchParams({ action: 'send_otp', email })
+                    body: new URLSearchParams({ email: email })
                 });
 
                 if (!resp.ok) {
@@ -685,7 +688,7 @@ if (isset($_SESSION['loggedin'])) {
                     showStage('otp');
                 } else {
                     // Show error
-                    errorText.textContent = data.message || data.error || 'Failed to send OTP. Please try again.';
+                    errorText.textContent = data.error || 'Failed to send OTP. Please try again.';
                     errorDiv.classList.remove('hidden');
                 }
             } catch (err) {
@@ -721,12 +724,15 @@ if (isset($_SESSION['loggedin'])) {
             btn.textContent = 'Verifying...';
 
             try {
-                const resp = await fetch('../php/login.php', {
+                const resp = await fetch('verify_otp.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: new URLSearchParams({ action: 'verify_otp', email: resetEmail, otp })
+                    body: new URLSearchParams({ 
+                        email: resetEmail,
+                        otp: otp 
+                    })
                 });
 
                 // Get response text first to handle both success and error cases
@@ -743,12 +749,12 @@ if (isset($_SESSION['loggedin'])) {
                 }
 
                 if (data && data.success) {
-                    // Store temporary password and transition to password reset stage
-                    window.temporaryPassword = data.temporary_password || '';
+                    // Store user ID and transition to password reset stage
+                    resetUserId = data.user_id;
                     showStage('password');
                 } else {
                     // Show error message from server
-                    const errorMessage = data.message || data.error || 'Invalid OTP code. Please try again.';
+                    const errorMessage = data.error || data.message || 'Invalid OTP code. Please try again.';
                     errorText.textContent = errorMessage;
                     errorDiv.classList.remove('hidden');
                     otpInput.value = '';
@@ -773,12 +779,12 @@ if (isset($_SESSION['loggedin'])) {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sending...';
 
             try {
-                const resp = await fetch('../php/login.php', {
+                const resp = await fetch('send_otp.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: new URLSearchParams({ action: 'send_otp', email: resetEmail })
+                    body: new URLSearchParams({ email: resetEmail })
                 });
 
                 const data = await resp.json();
@@ -844,17 +850,14 @@ if (isset($_SESSION['loggedin'])) {
             btn.textContent = 'Resetting...';
 
             try {
-                const resp = await fetch('../php/login.php', {
+                const resp = await fetch('reset_password.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
                     body: new URLSearchParams({ 
-                        action: 'update_password',
-                        email: resetEmail,
-                        temporary_password: window.temporaryPassword || '',
-                        new_password: password,
-                        confirm_password: confirmPassword
+                        user_id: resetUserId,
+                        password: password 
                     })
                 });
 
@@ -871,7 +874,7 @@ if (isset($_SESSION['loggedin'])) {
                     
                     // Reset form
                     resetEmail = '';
-                    window.temporaryPassword = '';
+                    resetUserId = null;
                     passwordInput.value = '';
                     confirmPasswordInput.value = '';
                     document.getElementById('resetEmail').value = '';
@@ -879,7 +882,7 @@ if (isset($_SESSION['loggedin'])) {
                     showStage('email');
                 } else {
                     // Show error
-                    errorText.textContent = data.message || data.error || 'Failed to reset password. Please try again.';
+                    errorText.textContent = data.error || 'Failed to reset password. Please try again.';
                     errorDiv.classList.remove('hidden');
                 }
             } catch (err) {
@@ -914,24 +917,24 @@ if (isset($_SESSION['loggedin'])) {
         }
 
         // Reset modal when closed
-            document.getElementById('closeForgotModal').addEventListener('click', function() {
-                resetEmail = '';
-                window.temporaryPassword = '';
-                document.getElementById('resetEmail').value = '';
-                document.getElementById('otpCode').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmNewPassword').value = '';
-                document.getElementById('resetError').classList.add('hidden');
-                document.getElementById('otpError').classList.add('hidden');
-                document.getElementById('passwordError').classList.add('hidden');
-                showStage('email');
-            });
+        document.getElementById('closeForgotModal').addEventListener('click', function() {
+            resetEmail = '';
+            resetUserId = null;
+            document.getElementById('resetEmail').value = '';
+            document.getElementById('otpCode').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+            document.getElementById('resetError').classList.add('hidden');
+            document.getElementById('otpError').classList.add('hidden');
+            document.getElementById('passwordError').classList.add('hidden');
+            showStage('email');
+        });
 
         // Also reset when clicking backdrop
         document.getElementById('forgotPasswordModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 resetEmail = '';
-                window.temporaryPassword = '';
+                resetUserId = null;
                 document.getElementById('resetEmail').value = '';
                 document.getElementById('otpCode').value = '';
                 document.getElementById('newPassword').value = '';

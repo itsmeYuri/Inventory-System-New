@@ -255,7 +255,16 @@ try {
             }
         }
 
-        $updateBatchStatusSql = "UPDATE batches b SET b.status = 'expired' WHERE b.id = ? AND EXISTS (SELECT 1 FROM batch_items bi WHERE bi.batch_id = b.id AND bi.is_expired = 1)";
+        // Update batch status if all items are expired
+        $updateBatchStatusSql = "UPDATE batches b
+                                 SET b.status = 'expired'
+                                 WHERE b.id = ?
+                                 AND b.status = 'active'
+                                 AND NOT EXISTS (
+                                     SELECT 1 FROM batch_items bi 
+                                     WHERE bi.batch_id = b.id 
+                                     AND bi.is_expired = 0
+                                 )";
         $updateBatchStmt = mysqli_prepare($conn, $updateBatchStatusSql);
         if ($updateBatchStmt) {
             mysqli_stmt_bind_param($updateBatchStmt, 'i', $batch_id);

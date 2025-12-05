@@ -432,7 +432,22 @@
 
     <script>
         // API Base URL
-        const API_BASE = '../php/get_reports.php';
+        function getApiBaseUrl() {
+            const { origin, pathname } = window.location;
+            const projectSegment = '/Inventory-System-New-main';
+            if (pathname.includes(`${projectSegment}/pages/`)) {
+                return `${origin}${projectSegment}/php`;
+            }
+            const isDev3000 = origin.includes(':3000');
+            if (isDev3000) {
+                return `http://localhost${projectSegment}/php`;
+            }
+            if (pathname.includes('/pages/')) {
+                return '../php';
+            }
+            return 'php';
+        }
+        const API_BASE = `${getApiBaseUrl()}/get_reports.php`;
 
         // Global state
         let currentFilters = {
@@ -620,27 +635,19 @@
             const topSellingEl = document.getElementById('topSellingItems');
 
             if (stockedEl) {
-                stockedEl.textContent = data.totalStocked || '0';
-                const descEl = stockedEl.parentElement.querySelector('.text-text-tertiary');
-                if (descEl) descEl.textContent = 'Total items in stock';
+                stockedEl.textContent = (data.totalStocked ?? 0).toLocaleString();
             }
 
             if (turnoverEl) {
-                turnoverEl.textContent = data.medicineTurnover || '0';
-                const descEl = turnoverEl.parentElement.querySelector('.text-text-tertiary');
-                if (descEl) descEl.textContent = 'Total units in stock';
+                turnoverEl.textContent = (data.medicineTurnover ?? 0).toLocaleString();
             }
 
             if (completedEl) {
-                completedEl.textContent = data.completedOrders || '0';
-                const descEl = completedEl.parentElement.querySelector('.text-text-tertiary');
-                if (descEl) descEl.textContent = 'Total completed orders';
+                completedEl.textContent = (data.completedOrders ?? 0).toLocaleString();
             }
 
             if (topSellingEl) {
-                topSellingEl.textContent = data.topSellingItems || '0';
-                const descEl = topSellingEl.parentElement.querySelector('.text-text-tertiary');
-                if (descEl) descEl.textContent = 'Active medicines';
+                topSellingEl.textContent = (data.topSellingItems ?? 0).toLocaleString();
             }
         }
 
@@ -1148,14 +1155,7 @@
             }
         }
 
-        // Get API Base URL helper
-        function getApiBaseUrl() {
-            const currentPath = window.location.pathname;
-            if (currentPath.includes('/pages/')) {
-                return '../php';
-            }
-            return 'php';
-        }
+        // Removed duplicate getApiBaseUrl (now defined near top and reused everywhere)
 
         // Event Listeners
         document.getElementById('refreshBtn')?.addEventListener('click', refreshAllData);
