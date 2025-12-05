@@ -109,12 +109,13 @@ try {
     }
 
     // Fetch batches with supplier and order info
+    // Show all batches, even if they have no items yet (item_count will be 0)
     $sql = "SELECT 
                 b.id,
                 b.batch_number,
                 b.order_id,
                 b.supplier_id,
-                s.name as supplier_name,
+                COALESCE(s.name, 'Unknown Supplier') as supplier_name,
                 b.created_date,
                 b.status,
                 b.notes,
@@ -122,9 +123,9 @@ try {
                 b.updated_at,
                 o.order_date,
                 o.status as order_status,
-                (SELECT COUNT(*) FROM batch_items bi WHERE bi.batch_id = b.id) as item_count,
-                (SELECT SUM(bi.received_quantity) FROM batch_items bi WHERE bi.batch_id = b.id) as total_quantity,
-                (SELECT COUNT(*) FROM batch_items bi WHERE bi.batch_id = b.id AND bi.is_expired = 1) as expired_count
+                COALESCE((SELECT COUNT(*) FROM batch_items bi WHERE bi.batch_id = b.id), 0) as item_count,
+                COALESCE((SELECT SUM(bi.received_quantity) FROM batch_items bi WHERE bi.batch_id = b.id), 0) as total_quantity,
+                COALESCE((SELECT COUNT(*) FROM batch_items bi WHERE bi.batch_id = b.id AND bi.is_expired = 1), 0) as expired_count
             FROM batches b
             LEFT JOIN suppliers s ON b.supplier_id = s.id
             LEFT JOIN orders o ON b.order_id = o.id
@@ -132,27 +133,46 @@ try {
             ORDER BY b.created_date DESC, b.id DESC
             LIMIT {$offset}, {$pageSize}";
 
+    // Debug: Log the SQL query
+    error_log("get_batches.php - SQL: " . $sql);
+    error_log("get_batches.php - WHERE: " . $where);
+    error_log("get_batches.php - Types: " . $types);
+    error_log("get_batches.php - Params: " . print_r($params, true));
+    
     $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt && !empty($types)) {
+    if (!$stmt) {
+        $error = mysqli_error($conn);
+        error_log("get_batches.php - Prepare error: " . $error);
+        throw new Exception("Failed to prepare statement: " . $error);
+    }
+    
+    if (!empty($types) && !empty($params)) {
         mysqli_stmt_bind_param($stmt, $types, ...$params);
     }
 
-    if ($stmt) {
-        if (!empty($types)) {
-            mysqli_stmt_execute($stmt);
-        } else {
-            mysqli_stmt_execute($stmt);
-        }
-        $result = mysqli_stmt_get_result($stmt);
-        
-        $data = [];
-        while ($row = mysqli_fetch_assoc($result)) {
-            $data[] = $row;
-        }
+    if (!mysqli_stmt_execute($stmt)) {
+        $error = mysqli_stmt_error($stmt);
+        error_log("get_batches.php - Execute error: " . $error);
         mysqli_stmt_close($stmt);
-    } else {
-        $data = [];
+        throw new Exception("Failed to execute statement: " . $error);
     }
+    
+    $result = mysqli_stmt_get_result($stmt);
+    
+    if (!$result) {
+        $error = mysqli_error($conn);
+        error_log("get_batches.php - Get result error: " . $error);
+        mysqli_stmt_close($stmt);
+        throw new Exception("Failed to get result: " . $error);
+    }
+    
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    
+    error_log("get_batches.php - Found " . count($data) . " batches");
 
     echo json_encode([
         'success' => true,

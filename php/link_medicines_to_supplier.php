@@ -75,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Require database connection
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
 
 try {
     // Check database connection
@@ -105,11 +106,15 @@ try {
     // Get medicine IDs (array)
     $medicine_ids_json = isset($_POST['medicine_ids']) ? $_POST['medicine_ids'] : '[]';
     
+    // Debug logging
+    error_log("Raw medicine_ids_json: " . $medicine_ids_json);
+    
     // Handle both JSON string and array formats
     if (is_string($medicine_ids_json)) {
         $medicine_ids = json_decode($medicine_ids_json, true);
         // If JSON decode failed, try to parse as comma-separated string
         if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("JSON decode failed, trying comma-separated: " . json_last_error_msg());
             $medicine_ids = array_filter(array_map('trim', explode(',', $medicine_ids_json)));
         }
     } else {
@@ -120,34 +125,72 @@ try {
         $medicine_ids = [];
     }
     
-    // Filter out invalid IDs and ensure they're integers
-    $medicine_ids = array_filter(array_map('intval', $medicine_ids), function($id) {
-        return $id > 0;
-    });
+    error_log("Parsed medicine_ids array: " . print_r($medicine_ids, true));
+    
+    // Check which medicine structure is in use first
+    $hasNewStructure = hasNewMedicineStructure($conn);
+    
+    // Normalize medicine IDs based on structure
+    if ($hasNewStructure) {
+        // New structure: medicine_id is varchar, keep as strings
+        $medicine_ids = array_filter(array_map(function($id) {
+            return trim((string)$id);
+        }, $medicine_ids), function($id) {
+            return $id !== '' && $id !== '0';
+        });
+    } else {
+        // Old structure: id is int, convert to integers
+        $medicine_ids = array_filter(array_map('intval', $medicine_ids), function($id) {
+            return $id > 0;
+        });
+    }
     
     // Remove duplicates
-    $medicine_ids = array_unique($medicine_ids);
-    $medicine_ids = array_values($medicine_ids); // Re-index array
+    $medicine_ids = array_values(array_unique($medicine_ids)); // Re-index array
     
-    // Verify medicines exist
+    // Verify medicines exist using the correct ID field
     if (count($medicine_ids) > 0) {
-        $medicine_ids_str = implode(',', $medicine_ids);
-        $checkMedicines = mysqli_query($conn, "SELECT id FROM medicines WHERE id IN ({$medicine_ids_str})");
         $existing_medicine_ids = [];
+        
+        if ($hasNewStructure) {
+            // New structure: use medicine_id (varchar)
+            // Convert IDs to strings and escape them
+            $escaped_ids = array_map(function($id) use ($conn) {
+                return "'" . mysqli_real_escape_string($conn, (string)$id) . "'";
+            }, $medicine_ids);
+            $medicine_ids_str = implode(',', $escaped_ids);
+            $checkMedicines = mysqli_query($conn, "SELECT medicine_id FROM medicines WHERE medicine_id IN ({$medicine_ids_str})");
+        } else {
+            // Old structure: use id (int)
+            $medicine_ids_str = implode(',', array_map('intval', $medicine_ids));
+            $checkMedicines = mysqli_query($conn, "SELECT id FROM medicines WHERE id IN ({$medicine_ids_str})");
+        }
+        
         if ($checkMedicines) {
             while ($row = mysqli_fetch_assoc($checkMedicines)) {
-                $existing_medicine_ids[] = (int)$row['id'];
+                if ($hasNewStructure) {
+                    $existing_medicine_ids[] = (string)$row['medicine_id'];
+                } else {
+                    $existing_medicine_ids[] = (int)$row['id'];
+                }
             }
         } else {
             $error = mysqli_error($conn);
             error_log("Error checking medicines: " . $error);
         }
         
-        // Filter to only include medicines that exist
+        // Filter to only include medicines that exist (handle type conversion)
+        if ($hasNewStructure) {
+            // Convert both arrays to strings for comparison
+            $medicine_ids = array_map('strval', $medicine_ids);
+            $existing_medicine_ids = array_map('strval', $existing_medicine_ids);
+        }
         $medicine_ids = array_intersect($medicine_ids, $existing_medicine_ids);
+        $medicine_ids = array_values($medicine_ids); // Re-index
     }
     
-    error_log("Linking medicines to supplier. Supplier ID: {$supplier_id}, Medicine IDs: " . implode(', ', $medicine_ids));
+    error_log("Linking medicines to supplier. Supplier ID: {$supplier_id}, Medicine IDs: " . print_r($medicine_ids, true));
+    error_log("Has new structure: " . ($hasNewStructure ? 'YES' : 'NO'));
     
     // If no medicines to link, just return success (before starting transaction)
     if (count($medicine_ids) == 0) {
@@ -166,11 +209,15 @@ try {
     
     if (!$hasTable) {
         // Create the junction table if it doesn't exist
+        // Use VARCHAR for medicine_id to support both old (int) and new (varchar) structures
+        // Match existing table structure: id INT(11), supplier_id INT(11), medicine_id VARCHAR(50)
+        $medicineIdType = $hasNewStructure ? 'VARCHAR(50)' : 'INT(11)';
         $createTableSql = "CREATE TABLE supplier_medicines (
-            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            supplier_id INT UNSIGNED NOT NULL,
-            medicine_id INT UNSIGNED NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            supplier_id INT(11) NOT NULL,
+            medicine_id {$medicineIdType} NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY unique_supplier_medicine (supplier_id, medicine_id),
             INDEX idx_supplier_id (supplier_id),
             INDEX idx_medicine_id (medicine_id)
@@ -185,6 +232,28 @@ try {
         }
     } else {
         // Table exists - ensure it's properly configured
+        // Check if medicine_id column needs to be updated for new structure
+        if ($hasNewStructure) {
+            $checkMedicineIdColumn = mysqli_query($conn, "SHOW COLUMNS FROM supplier_medicines WHERE Field = 'medicine_id'");
+            if ($checkMedicineIdColumn) {
+                $colInfo = mysqli_fetch_assoc($checkMedicineIdColumn);
+                $currentType = strtoupper($colInfo['Type'] ?? '');
+                // If medicine_id is INT but we need VARCHAR, alter it
+                if (strpos($currentType, 'INT') !== false && strpos($currentType, 'VARCHAR') === false) {
+                    error_log("Migrating supplier_medicines.medicine_id from {$colInfo['Type']} to VARCHAR(50)");
+                    $alterResult = mysqli_query($conn, "ALTER TABLE supplier_medicines MODIFY medicine_id VARCHAR(50) NOT NULL");
+                    if ($alterResult) {
+                        error_log("Successfully migrated supplier_medicines.medicine_id to VARCHAR(50)");
+                    } else {
+                        $alterError = mysqli_error($conn);
+                        error_log("Failed to migrate supplier_medicines.medicine_id: {$alterError}");
+                    }
+                } else {
+                    error_log("supplier_medicines.medicine_id type is already compatible: {$colInfo['Type']}");
+                }
+            }
+        }
+        
         // Step 1: Delete any rows with id=0
         @mysqli_query($conn, "DELETE FROM supplier_medicines WHERE id = 0");
         
@@ -205,10 +274,36 @@ try {
         $checkIdColumn = mysqli_query($conn, "SHOW COLUMNS FROM supplier_medicines WHERE Field = 'id'");
         if ($checkIdColumn) {
             $idColumn = mysqli_fetch_assoc($checkIdColumn);
-            if (strpos($idColumn['Extra'] ?? '', 'auto_increment') === false) {
+            $hasAutoIncrement = strpos($idColumn['Extra'] ?? '', 'auto_increment') !== false;
+            $currentType = $idColumn['Type'] ?? '';
+            
+            if (!$hasAutoIncrement) {
                 // id column doesn't have AUTO_INCREMENT - fix it
-                error_log("Fixing id column to have AUTO_INCREMENT");
-                @mysqli_query($conn, "ALTER TABLE supplier_medicines MODIFY id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY");
+                error_log("Fixing id column to have AUTO_INCREMENT. Current type: {$currentType}");
+                // Check if PRIMARY KEY already exists
+                $checkPrimary = mysqli_query($conn, "SHOW INDEXES FROM supplier_medicines WHERE Key_name = 'PRIMARY'");
+                $hasPrimaryKey = $checkPrimary && mysqli_num_rows($checkPrimary) > 0;
+                
+                if ($hasPrimaryKey) {
+                    // PRIMARY KEY exists, just add AUTO_INCREMENT (don't redefine PRIMARY KEY)
+                    // Match existing column type (INT(11) based on user's table structure)
+                    $alterSql = "ALTER TABLE supplier_medicines MODIFY id INT(11) NOT NULL AUTO_INCREMENT";
+                    error_log("PRIMARY KEY exists, adding AUTO_INCREMENT only. SQL: {$alterSql}");
+                } else {
+                    // No PRIMARY KEY, add it with AUTO_INCREMENT
+                    $alterSql = "ALTER TABLE supplier_medicines MODIFY id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY";
+                    error_log("No PRIMARY KEY found, adding both. SQL: {$alterSql}");
+                }
+                
+                $alterResult = @mysqli_query($conn, $alterSql);
+                if (!$alterResult) {
+                    $alterError = mysqli_error($conn);
+                    error_log("Warning: Failed to add AUTO_INCREMENT to id column: {$alterError}");
+                } else {
+                    error_log("Successfully added AUTO_INCREMENT to id column");
+                }
+            } else {
+                error_log("id column already has AUTO_INCREMENT");
             }
         }
         
@@ -254,27 +349,40 @@ try {
             $escapedSupplierId = (int)$supplier_id;
             
             foreach ($medicine_ids as $medicine_id) {
-                $medicine_id = (int)$medicine_id;
-                if ($medicine_id <= 0) {
-                    $skipped++;
-                    continue;
+                // Handle both int and varchar medicine_id
+                if ($hasNewStructure) {
+                    // New structure: medicine_id is varchar
+                    $escapedMedicineId = "'" . mysqli_real_escape_string($conn, (string)$medicine_id) . "'";
+                } else {
+                    // Old structure: medicine_id is int
+                    $medicine_id_int = (int)$medicine_id;
+                    if ($medicine_id_int <= 0) {
+                        $skipped++;
+                        continue;
+                    }
+                    $escapedMedicineId = (int)$medicine_id_int;
                 }
                 
                 // Use raw SQL with proper escaping
-                $escapedMedicineId = (int)$medicine_id;
                 $insertSql = "INSERT IGNORE INTO supplier_medicines (supplier_id, medicine_id) VALUES ({$escapedSupplierId}, {$escapedMedicineId})";
+                
+                error_log("Attempting insert: supplier_id={$escapedSupplierId}, medicine_id={$escapedMedicineId}, SQL: {$insertSql}");
                 
                 if (mysqli_query($conn, $insertSql)) {
                     $affectedRows = mysqli_affected_rows($conn);
+                    error_log("Insert result: affected_rows={$affectedRows}");
                     if ($affectedRows > 0) {
                         $inserted++;
+                        error_log("Successfully inserted medicine_id={$escapedMedicineId}");
                     } else {
                         // INSERT IGNORE returns 0 affected rows for duplicates
                         $skipped++;
+                        error_log("Skipped (duplicate or no change): medicine_id={$escapedMedicineId}");
                     }
                 } else {
                     $error = mysqli_error($conn);
                     $errorCode = mysqli_errno($conn);
+                    error_log("Insert failed: medicine_id={$escapedMedicineId}, error={$error}, code={$errorCode}");
                     
                     // If we get a PRIMARY KEY error with '0', fix the table and retry
                     if ($errorCode === 1062 && strpos($error, "'0'") !== false) {

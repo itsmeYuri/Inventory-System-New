@@ -96,7 +96,7 @@
         }
         
         tbody.innerHTML = users.map(user => `
-            <tr>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <input type="checkbox" class="user-checkbox-modal h-4 w-4 text-primary-600 focus:ring-primary-200 border-border-medium dark:border-gray-500 rounded" data-user-id="${user.user_id}" onchange="updateSelectedCountModal()">
                 </td>
@@ -327,12 +327,11 @@
         }
     }
 
-    // Delete user
+    // Archive user (instead of delete)
     async function deleteUserModal(userId, userName) {
-        if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+        if (!confirm(`Archive user "${userName}"? The account will be moved to Archives and can be restored later.`)) {
             return;
         }
-        
         try {
             const baseUrl = getApiBaseUrl();
             const response = await fetch(`${baseUrl}/user_management.php`, {
@@ -343,22 +342,21 @@
                 },
                 credentials: 'include',
                 body: new URLSearchParams({
-                    action: 'delete_user',
-                    user_id: userId
+                    action: 'update_status',
+                    user_id: userId,
+                    status: 'archived'
                 })
             });
-            
             const data = await response.json();
-            
             if (data.success) {
-                alert('User deleted successfully');
+                alert('User archived successfully');
                 loadUsersModal();
             } else {
-                alert(data.error || 'Failed to delete user');
+                alert(data.error || 'Failed to archive user');
             }
         } catch (error) {
-            console.error('Error deleting user:', error);
-            alert('Error deleting user');
+            console.error('Error archiving user:', error);
+            alert('Error archiving user');
         }
     }
 
@@ -549,6 +547,21 @@
             console.warn('User management modal not found in DOM');
             return;
         }
+
+        try {
+            userManagementModal.style.left = '0';
+            userManagementModal.style.zIndex = '1000';
+            const addUserModal = document.getElementById('addUserModal');
+            const editUserModal = document.getElementById('editUserModal');
+            if (addUserModal) {
+                addUserModal.style.left = '0';
+                addUserModal.style.zIndex = '1010';
+            }
+            if (editUserModal) {
+                editUserModal.style.left = '0';
+                editUserModal.style.zIndex = '1010';
+            }
+        } catch (e) {}
 
         // Close User Management Modal
         const closeBtn = document.getElementById('closeUserManagementModal');

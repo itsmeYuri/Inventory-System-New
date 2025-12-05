@@ -35,7 +35,10 @@ function getOrCreateDailyBatch($conn, $order_date) {
     }
     
     // Fix AUTO_INCREMENT issues in batches table
+    // Delete any batches with id = 0 first
     @mysqli_query($conn, "DELETE FROM batches WHERE id = 0");
+    
+    // Get max ID and set AUTO_INCREMENT properly
     $maxBatchIdQuery = mysqli_query($conn, "SELECT MAX(id) as max_id FROM batches");
     $maxBatchId = 0;
     if ($maxBatchIdQuery) {
@@ -43,7 +46,20 @@ function getOrCreateDailyBatch($conn, $order_date) {
         $maxBatchId = (int)($maxBatchRow['max_id'] ?? 0);
     }
     $nextBatchId = max(1, $maxBatchId + 1);
+    
+    // Set AUTO_INCREMENT to ensure it's working
     @mysqli_query($conn, "ALTER TABLE batches AUTO_INCREMENT = {$nextBatchId}");
+    
+    // Verify AUTO_INCREMENT is set correctly
+    $checkAutoInc = mysqli_query($conn, "SHOW TABLE STATUS LIKE 'batches'");
+    if ($checkAutoInc) {
+        $statusRow = mysqli_fetch_assoc($checkAutoInc);
+        $currentAutoInc = (int)($statusRow['Auto_increment'] ?? 0);
+        if ($currentAutoInc <= $maxBatchId) {
+            error_log("Fixing AUTO_INCREMENT: current={$currentAutoInc}, max={$maxBatchId}, setting to {$nextBatchId}");
+            @mysqli_query($conn, "ALTER TABLE batches AUTO_INCREMENT = {$nextBatchId}");
+        }
+    }
     
     // Generate batch number for this date
     $batch_number = generateDailyBatchNumber($conn, $order_date);
@@ -87,11 +103,14 @@ function getOrCreateDailyBatch($conn, $order_date) {
     $batchStmt = mysqli_prepare($conn, $batchSql);
     
     if (!$batchStmt) {
-        error_log("Batch insert prepare error: " . mysqli_error($conn));
+        $error = mysqli_error($conn);
+        error_log("Batch insert prepare error: " . $error);
         return false;
     }
     
     mysqli_stmt_bind_param($batchStmt, 'sis', $batch_number, $supplier_id, $order_date);
+    
+    error_log("Attempting to create batch: batch_number={$batch_number}, supplier_id={$supplier_id}, created_date={$order_date}");
     
     if (!mysqli_stmt_execute($batchStmt)) {
         $error = mysqli_stmt_error($batchStmt);
@@ -281,6 +300,9 @@ function addOrderToDailyBatch($conn, $order_id, $supplier_id, $order_date, $item
                 } else {
                     error_log("Failed to insert batch item using raw SQL for medicine_id={$medicine_id}: " . mysqli_error($conn));
                 }
+                } else {
+            
+                }
             }
             
             mysqli_stmt_close($itemStmt);
@@ -340,6 +362,60 @@ function addOrderItemsToBatch($conn, $order_id, $order_date, $items) {
         if ($batch_id === false) {
             error_log("Failed to get or create daily batch for date {$order_date}");
             return false;
+        }
+        
+        // Update the batch's order_id and supplier_id for this specific order
+        // Get the supplier_id from the current order
+        $orderSupplierSql = "SELECT supplier_id FROM orders WHERE id = ? LIMIT 1";
+        $orderSupplierStmt = mysqli_prepare($conn, $orderSupplierSql);
+        $current_supplier_id = 0;
+        
+        if ($orderSupplierStmt) {
+            mysqli_stmt_bind_param($orderSupplierStmt, 'i', $order_id);
+            mysqli_stmt_execute($orderSupplierStmt);
+            $orderSupplierResult = mysqli_stmt_get_result($orderSupplierStmt);
+            if ($orderSupplierRow = mysqli_fetch_assoc($orderSupplierResult)) {
+                $current_supplier_id = (int)($orderSupplierRow['supplier_id'] ?? 0);
+            }
+            mysqli_stmt_close($orderSupplierStmt);
+        }
+        
+        // Update batch: set order_id if NULL or 0, and update supplier_id to match current order
+        // Use a more explicit update that handles NULL and 0 values
+        $updateBatchSql = "UPDATE batches SET 
+                            order_id = CASE 
+                                WHEN order_id IS NULL OR order_id = 0 THEN ? 
+                                ELSE order_id 
+                            END,
+                            supplier_id = ?
+                          WHERE id = ?";
+        $updateBatchStmt = mysqli_prepare($conn, $updateBatchSql);
+        if ($updateBatchStmt) {
+            mysqli_stmt_bind_param($updateBatchStmt, 'iii', $order_id, $current_supplier_id, $batch_id);
+            if (mysqli_stmt_execute($updateBatchStmt)) {
+                $affected = mysqli_stmt_affected_rows($updateBatchStmt);
+                if ($affected > 0) {
+                    error_log("Updated batch {$batch_id} with order_id {$order_id} and supplier_id {$current_supplier_id}");
+                } else {
+                    // Check current batch state
+                    $checkBatchSql = "SELECT order_id, supplier_id FROM batches WHERE id = ?";
+                    $checkStmt = mysqli_prepare($conn, $checkBatchSql);
+                    if ($checkStmt) {
+                        mysqli_stmt_bind_param($checkStmt, 'i', $batch_id);
+                        mysqli_stmt_execute($checkStmt);
+                        $checkResult = mysqli_stmt_get_result($checkStmt);
+                        if ($checkRow = mysqli_fetch_assoc($checkResult)) {
+                            error_log("Batch {$batch_id} current state: order_id={$checkRow['order_id']}, supplier_id={$checkRow['supplier_id']}");
+                        }
+                        mysqli_stmt_close($checkStmt);
+                    }
+                }
+            } else {
+                error_log("Failed to update batch: " . mysqli_stmt_error($updateBatchStmt));
+            }
+            mysqli_stmt_close($updateBatchStmt);
+        } else {
+            error_log("Failed to prepare batch update statement: " . mysqli_error($conn));
         }
     } catch (Exception $e) {
         error_log("Exception in getOrCreateDailyBatch: " . $e->getMessage());

@@ -211,10 +211,20 @@ try {
         $updateTypes .= 's';
     }
     
-    if ($hasStatus && $username !== null && $username !== '') {
-        $updateFields[] = 'status = ?';
-        $updateValues[] = 'active';
-        $updateTypes .= 's';
+    // Always keep suppliers active when editing (unless explicitly changed)
+    if ($hasStatus) {
+        // Only update status if explicitly provided in POST, otherwise set to active
+        $explicitStatus = isset($_POST['status']) ? trim($_POST['status']) : null;
+        if ($explicitStatus !== null && in_array($explicitStatus, ['active', 'inactive', 'locked'])) {
+            $updateFields[] = 'status = ?';
+            $updateValues[] = $explicitStatus;
+            $updateTypes .= 's';
+        } else {
+            // If no explicit status provided, ensure supplier is active (for orders)
+            $updateFields[] = 'status = ?';
+            $updateValues[] = 'active';
+            $updateTypes .= 's';
+        }
     }
     
     $updateFields[] = 'updated_at = CURRENT_TIMESTAMP';

@@ -270,7 +270,8 @@ try {
     if ($hasStatus) {
         $fields[] = 'status';
         $placeholders[] = '?';
-        $statusValue = ($username !== null && $username !== '') ? 'active' : 'inactive';
+        // Set all new suppliers to 'active' by default so they appear in orders
+        $statusValue = 'active';
         $values[] = $statusValue;
         $types .= 's';
     }

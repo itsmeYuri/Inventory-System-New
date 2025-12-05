@@ -39,6 +39,9 @@ require_once __DIR__ . '/conn.php';
 require_once __DIR__ . '/medicine_structure_helper.php';
 require_once __DIR__ . '/pos_sync_helper.php';
 
+// Critical low-stock threshold
+$CRITICAL_STOCK_THRESHOLD = 10;
+
 // Function to send JSON response
 function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
     ob_clean();
@@ -53,6 +56,23 @@ function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
     ob_end_flush();
     exit;
+}
+
+function determineStatus($stock, $expirationDate, $threshold = 10) {
+    $today = new DateTime('today');
+    if (!empty($expirationDate)) {
+        $expDate = DateTime::createFromFormat('Y-m-d', $expirationDate);
+        if ($expDate && $expDate < $today) {
+            return 'expired';
+        }
+    }
+    if ($stock <= 0) {
+        return 'out-of-stock';
+    }
+    if ($stock <= $threshold) {
+        return 'low-stock';
+    }
+    return 'in-stock';
 }
 
 try {
@@ -78,52 +98,51 @@ try {
 
     // Always use new POS structure - Get and sanitize form data
     $name = isset($_POST['medicineName']) ? trim($_POST['medicineName']) : '';
-    
+    $generic_name = isset($_POST['genericName']) ? trim($_POST['genericName']) : '';
+    $manufacturer = isset($_POST['manufacturer']) ? trim($_POST['manufacturer']) : '';
     $category = isset($_POST['category']) ? trim($_POST['category']) : '';
     $category = $category !== '' ? $category : 'Uncategorized';
-    
-    // Get generic_name (required for POS)
-    $generic_name = isset($_POST['genericName']) ? trim($_POST['genericName']) : '';
-    $generic_name = $generic_name !== '' ? $generic_name : '';
-    
-    // Get unit/dosage value from form
-    $unit = isset($_POST['unit']) ? trim($_POST['unit']) : '';
-    $unit = $unit !== '' ? $unit : 'Tablet';
-    
-    // Validate unit value against allowed values
-    $allowedUnits = [
-        'Capsule', 'Tablet', 'Pill', 'Bottle', 'Vial', 'Ampoule', 'Syringe', 'Tube',
-        'Cream', 'Ointment', 'Gel', 'Drops', 'Spray', 'Inhaler', 'Patch',
-        'ml', 'mg', 'g', 'kg', 'L', 'mcg', 'IU'
-    ];
-    
-    if ($unit !== null && !in_array($unit, $allowedUnits)) {
-        sendJsonResponse(false, 'Invalid unit value. Please select a valid unit from the list.', null, 400);
-    }
-    
-    // For POS structure: dosage and form are separate (both use unit value)
-    $dosage = $unit;
-    $form = $unit;
-    
+    $dosage = isset($_POST['dosage']) ? trim($_POST['dosage']) : '';
+    $form = isset($_POST['form']) ? trim($_POST['form']) : '';
+    $expirationDate = isset($_POST['expirationDate']) ? trim($_POST['expirationDate']) : '';
+
     $stock = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
     $price = isset($_POST['price']) ? (float)$_POST['price'] : 0.00;
-    
+    $reorderLevel = $CRITICAL_STOCK_THRESHOLD;
+
     // Validate required fields
-    if (empty($name)) {
-        sendJsonResponse(false, 'Medicine Name is required', null, 400);
+    $missingFields = [];
+    if (empty($name)) $missingFields[] = 'Medicine Name';
+    if (empty($generic_name)) $missingFields[] = 'Generic Name';
+    if (empty($manufacturer)) $missingFields[] = 'Manufacturer';
+    if (empty($category)) $missingFields[] = 'Category';
+    if (empty($dosage)) $missingFields[] = 'Dosage/Strength';
+    if (empty($form)) $missingFields[] = 'Form';
+    if (empty($expirationDate)) $missingFields[] = 'Expiration Date';
+
+    if (!empty($missingFields)) {
+        sendJsonResponse(false, 'Missing required fields: ' . implode(', ', $missingFields), null, 400);
     }
-    if (empty($category)) {
-        $category = 'Uncategorized';
-    }
-    if (empty($generic_name)) {
-        $generic_name = ''; // Allow empty generic name
-    }
-    if ($stock < 0) {
-        sendJsonResponse(false, 'Stock cannot be negative', null, 400);
+
+    if ($stock < 1) {
+        sendJsonResponse(false, 'Initial stock must be at least 1', null, 400);
     }
     if ($price < 0) {
         sendJsonResponse(false, 'Price cannot be negative', null, 400);
     }
+
+    // Validate expiration date format (YYYY-MM-DD) and not in the past
+    $expDate = DateTime::createFromFormat('Y-m-d', $expirationDate);
+    $expDateErrors = DateTime::getLastErrors();
+    if (!$expDate || $expDateErrors['warning_count'] > 0 || $expDateErrors['error_count'] > 0) {
+        sendJsonResponse(false, 'Invalid expiration date format. Use YYYY-MM-DD.', null, 400);
+    }
+    $today = new DateTime('today');
+    if ($expDate < $today) {
+        sendJsonResponse(false, 'Expiration date cannot be in the past.', null, 400);
+    }
+
+    $status = determineStatus($stock, $expirationDate, $CRITICAL_STOCK_THRESHOLD);
 
     // Check for existing medicine with same name - Always use new POS structure
     $checkSql = "SELECT medicine_id, medicine_name, stock FROM medicines 
@@ -147,11 +166,22 @@ try {
         $existingId = $existing['medicine_id'];
         $existingStock = (int)$existing['stock'];
         $newStock = $existingStock + $stock;
+        $status = determineStatus($newStock, $expirationDate, $CRITICAL_STOCK_THRESHOLD);
             
         // Update existing medicine
             $updateSql = "UPDATE medicines SET 
                       stock = ?,
-                      price = ?
+                      quantity = ?,
+                      price = ?,
+                      generic_name = ?,
+                      manufacturer = ?,
+                      dosage = ?,
+                      form = ?,
+                      medicine_group = ?,
+                      category = ?,
+                      expiration_date = ?,
+                      reorder_level = ?,
+                      status = ?
                       WHERE medicine_id = ?";
             
             $updateStmt = mysqli_prepare($conn, $updateSql);
@@ -160,7 +190,7 @@ try {
             sendJsonResponse(false, 'Database error during stock update', null, 500);
             }
             
-        mysqli_stmt_bind_param($updateStmt, 'ids', $newStock, $price, $existingId);
+        mysqli_stmt_bind_param($updateStmt, 'iidsssssssiss', $newStock, $newStock, $price, $generic_name, $manufacturer, $dosage, $form, $category, $category, $expirationDate, $reorderLevel, $status, $existingId);
             
             if (!mysqli_stmt_execute($updateStmt)) {
                 $error = mysqli_stmt_error($updateStmt);
@@ -173,7 +203,7 @@ try {
             
         // Fetch updated medicine
         $selectSql = "SELECT medicine_id as id, medicine_name as name, medicine_group as category, 
-                     generic_name, dosage, form, stock as quantity, price
+                     generic_name, manufacturer, dosage, form, stock as quantity, price, expiration_date, status
                      FROM medicines WHERE medicine_id = ?";
             $selectStmt = mysqli_prepare($conn, $selectSql);
         mysqli_stmt_bind_param($selectStmt, 's', $existingId);
@@ -232,13 +262,19 @@ try {
         $sql = "INSERT INTO medicines (
         medicine_id,
         medicine_group,
+        category,
         medicine_name,
         generic_name,
+        manufacturer,
         dosage,
         form,
         stock,
-        price
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        quantity,
+        price,
+        expiration_date,
+        reorder_level,
+        status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -249,15 +285,21 @@ try {
 
         $bound = mysqli_stmt_bind_param(
             $stmt, 
-        'ssssssid',  // 8 parameters: medicine_id, medicine_group, medicine_name, generic_name, dosage, form, stock, price
+        'ssssssssiidsis',  // 14 parameters
         $medicine_id,
-            $category, 
+            $category,
+            $category,
             $name, 
         $generic_name,
+        $manufacturer,
         $dosage,
         $form,
         $stock,
-        $price
+        $stock,
+        $price,
+        $expirationDate,
+        $reorderLevel,
+        $status
         );
     
     // Verify binding was successful
@@ -361,7 +403,7 @@ try {
 
     // Fetch the inserted medicine data to return - Always use new POS structure
     $selectSql = "SELECT medicine_id as id, medicine_name as name, medicine_group as category, 
-                 generic_name, dosage, form, stock as quantity, price
+                 generic_name, manufacturer, dosage, form, stock as quantity, price, expiration_date, status
                  FROM medicines WHERE medicine_id = ?";
     $selectStmt = mysqli_prepare($conn, $selectSql);
     if (!$selectStmt) {
@@ -371,10 +413,13 @@ try {
             'name' => $name,
             'category' => $category,
             'generic_name' => $generic_name,
+            'manufacturer' => $manufacturer,
             'dosage' => $dosage,
             'form' => $form,
             'quantity' => $stock,
-            'price' => number_format($price, 2, '.', '')
+            'price' => number_format($price, 2, '.', ''),
+            'expiration_date' => $expirationDate,
+            'status' => $status
         ];
         sendJsonResponse(true, 'Medicine added successfully', $basicData, 200);
     }
@@ -388,10 +433,13 @@ try {
             'name' => $name,
             'category' => $category,
             'generic_name' => $generic_name,
+            'manufacturer' => $manufacturer,
             'dosage' => $dosage,
             'form' => $form,
             'quantity' => $stock,
-            'price' => number_format($price, 2, '.', '')
+            'price' => number_format($price, 2, '.', ''),
+            'expiration_date' => $expirationDate,
+            'status' => $status
         ];
         
         // Sync to POS system before sending response
@@ -419,10 +467,13 @@ try {
             'name' => $name,
             'category' => $category,
             'generic_name' => $generic_name,
+            'manufacturer' => $manufacturer,
             'dosage' => $dosage,
             'form' => $form,
             'quantity' => $stock,
-            'price' => number_format($price, 2, '.', '')
+            'price' => number_format($price, 2, '.', ''),
+            'expiration_date' => $expirationDate,
+            'status' => $status
         ];
         
         // Sync to POS system before sending response

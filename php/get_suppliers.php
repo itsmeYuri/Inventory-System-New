@@ -40,6 +40,7 @@ try {
     $offset = ($page - 1) * $pageSize;
 
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $statusFilter = isset($_GET['status']) ? trim($_GET['status']) : '';
 
     // Build where clause safely for suppliers table
     $where = " WHERE 1=1 ";
@@ -47,6 +48,12 @@ try {
     if ($search !== '') {
         $s = mysqli_real_escape_string($conn, $search);
         $where .= " AND (name LIKE '%{$s}%' OR contact_person LIKE '%{$s}%' OR email LIKE '%{$s}%' OR phone LIKE '%{$s}%' OR address LIKE '%{$s}%') ";
+    }
+    
+    // Filter by status if requested (e.g., for orders form to show only active suppliers)
+    if ($statusFilter !== '' && $hasStatus) {
+        $status = mysqli_real_escape_string($conn, $statusFilter);
+        $where .= " AND status = '{$status}' ";
     }
 
     // Get total count from suppliers table
@@ -59,11 +66,16 @@ try {
     }
 
     // Get total count from users table with supplier role
-    $userWhere = " WHERE role = 'supplier' ";
-    if ($search !== '') {
-        $s = mysqli_real_escape_string($conn, $search);
-        $userWhere .= " AND (full_name LIKE '%{$s}%' OR email LIKE '%{$s}%' OR username LIKE '%{$s}%') ";
-    }
+        $userWhere = " WHERE role = 'supplier' ";
+        if ($search !== '') {
+            $s = mysqli_real_escape_string($conn, $search);
+            $userWhere .= " AND (full_name LIKE '%{$s}%' OR email LIKE '%{$s}%' OR username LIKE '%{$s}%') ";
+        }
+        // Filter users by status if requested
+        if ($statusFilter !== '') {
+            $status = mysqli_real_escape_string($conn, $statusFilter);
+            $userWhere .= " AND status = '{$status}' ";
+        }
     
     // Check if role column exists in users table
     $checkRole = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'role'");

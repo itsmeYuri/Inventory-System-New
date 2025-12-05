@@ -307,41 +307,13 @@ function createUser() {
         
         // Insert new user
         $insertQuery = "INSERT INTO users (full_name, email, username, $passwordColumn, role, status) VALUES (?, ?, ?, ?, ?, 'active')";
-        $insertStmt = mysqli_prepare($conn, $insertQuery);
-        
-        if (!$insertStmt) {
-            throw new Exception('Database query failed: ' . mysqli_error($conn));
-        }
-        
-        mysqli_stmt_bind_param($insertStmt, "sssss", $fullName, $email, $username, $defaultPassword, $role);
-        
-        if (mysqli_stmt_execute($insertStmt)) {
-            $newUserId = mysqli_insert_id($conn);
-            mysqli_stmt_close($insertStmt);
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'User created successfully',
-                'user_id' => $newUserId
-            ], JSON_UNESCAPED_UNICODE);
-        } else {
-            mysqli_stmt_close($insertStmt);
-            throw new Exception('Failed to create user: ' . mysqli_error($conn));
-        }
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], JSON_UNESCAPED_UNICODE);
-    }
 }
 
 /**
  * Update user
  */
 function updateUser() {
-    global $conn;
+        mysqli_stmt_bind_param($insertStmt, "sssss", $fullName, $email, $username, $defaultPassword, $role);
     
     $userId = $_POST['user_id'] ?? null;
     $fullName = $_POST['full_name'] ?? '';
@@ -494,7 +466,7 @@ function updateUserStatus() {
     }
     
     // Validate status
-    $validStatuses = ['active', 'inactive', 'offline', 'locked'];
+    $validStatuses = ['active', 'inactive', 'offline', 'locked', 'archived'];
     if (!in_array($status, $validStatuses)) {
         echo json_encode([
             'success' => false,
@@ -507,8 +479,16 @@ function updateUserStatus() {
         // Check if status column exists, create if not
         $checkStatus = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'status'");
         if (mysqli_num_rows($checkStatus) === 0) {
-            $alterQuery = "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'offline', 'locked') DEFAULT 'active'";
+            $alterQuery = "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'offline', 'locked', 'archived') DEFAULT 'active'";
             mysqli_query($conn, $alterQuery);
+        } else {
+            // Ensure 'archived' exists in ENUM
+            $col = mysqli_fetch_assoc($checkStatus);
+            $type = $col['Type'] ?? '';
+            if (strpos($type, "'archived'") === false) {
+                $alterQuery = "ALTER TABLE users MODIFY COLUMN status ENUM('active', 'inactive', 'offline', 'locked', 'archived') DEFAULT 'active'";
+                mysqli_query($conn, $alterQuery);
+            }
         }
         
         // Check which ID column exists
@@ -787,4 +767,5 @@ function unlockAccount() {
     }
 }
 ?>
+
 

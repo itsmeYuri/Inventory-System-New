@@ -46,14 +46,8 @@
         <!-- Navigation Menu -->
        
 
-        <!-- Theme Toggle & Settings -->
+        <!-- Settings & Logout -->
         <div class="p-4 border-t border-border-light dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-sm font-medium text-text-secondary dark:text-gray-300">Dark Mode</span>
-                <button id="themeToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-border-light dark:bg-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200">
-                    <span id="themeToggleButton" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1 dark:translate-x-6"></span>
-                </button>
-            </div>
             <button id="logoutBtn" class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-error-600 hover:bg-error-50 dark:hover:bg-error-900 rounded-xl transition-all duration-200">
                 <i class="fas fa-sign-out-alt w-5"></i>
                 <span>Logout</span>
@@ -190,46 +184,12 @@
     </main>
 
     <script>
-        // Theme management
+        // Theme management disabled; enforce light mode
         function initializeTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            const isDark = savedTheme === 'dark';
-            document.documentElement.classList.toggle('dark', isDark);
-            
-            const toggles = document.querySelectorAll('#themeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', isDark);
-                toggle.classList.toggle('bg-border-light', !isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', isDark);
-                button.classList.toggle('translate-x-1', !isDark);
-            });
+            try { localStorage.setItem('theme', 'light'); } catch (e) {}
+            document.documentElement.classList.remove('dark');
         }
-
-        function toggleTheme() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            
-            document.documentElement.classList.toggle('dark', !isDark);
-            localStorage.setItem('theme', newTheme);
-            
-            const toggles = document.querySelectorAll('#themeToggle, #headerThemeToggle');
-            const toggleButtons = document.querySelectorAll('#themeToggleButton');
-            
-            toggles.forEach(toggle => {
-                toggle.classList.toggle('bg-primary', !isDark);
-                toggle.classList.toggle('bg-border-light', isDark);
-            });
-            
-            toggleButtons.forEach(button => {
-                button.classList.toggle('translate-x-6', !isDark);
-                button.classList.toggle('translate-x-1', isDark);
-            });
-        }
+        function toggleTheme() { /* removed */ }
 
         // Tab switching
         function switchTab(tabName) {
@@ -398,15 +358,7 @@
             closeSidebarBtn.addEventListener('click', closeSidebar);
             sidebarOverlay.addEventListener('click', closeSidebar);
 
-            // Theme toggle
-            const themeToggle = document.getElementById('themeToggle');
-            const headerThemeToggle = document.getElementById('headerThemeToggle');
-            
-            if (themeToggle) {
-                themeToggle.addEventListener('click', toggleTheme);
-            }
-            
-            // Theme toggle is now initialized by load-topbar.js
+            // Theme toggle removed
 
             // Tab switching
             document.getElementById('tabExpired').addEventListener('click', () => switchTab('Expired'));

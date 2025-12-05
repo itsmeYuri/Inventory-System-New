@@ -105,15 +105,55 @@ try {
         $status = 'pending';
     }
 
-    // Check if tables exist
+    // Detect date column name in orders table
+    $orderDateColumn = 'order_date';
+    $checkDateColumn = mysqli_query($conn, "SHOW COLUMNS FROM orders LIKE 'date'");
+    $hasDateColumn = $checkDateColumn && mysqli_num_rows($checkDateColumn) > 0;
+    $checkOrderDateColumn = mysqli_query($conn, "SHOW COLUMNS FROM orders LIKE 'order_date'");
+    $hasOrderDateColumn = $checkOrderDateColumn && mysqli_num_rows($checkOrderDateColumn) > 0;
+    if ($hasOrderDateColumn) {
+        $orderDateColumn = 'order_date';
+    } elseif ($hasDateColumn) {
+        $orderDateColumn = 'date';
+    }
+
+    // Check if tables exist, create if missing
     $checkOrdersTable = mysqli_query($conn, "SHOW TABLES LIKE 'orders'");
     if (!$checkOrdersTable || mysqli_num_rows($checkOrdersTable) === 0) {
-        sendJsonResponse(false, 'Orders table does not exist. Please create it first.', null, 500);
+        $createOrdersSql = "CREATE TABLE IF NOT EXISTS orders (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            supplier_id INT UNSIGNED NOT NULL,
+            order_date DATE NOT NULL,
+            status ENUM('pending','shipping','completed','cancelled') NOT NULL DEFAULT 'pending',
+            total_amount DECIMAL(12,2) NULL DEFAULT NULL,
+            notes TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_supplier_id (supplier_id),
+            INDEX idx_order_date (order_date),
+            INDEX idx_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        if (!mysqli_query($conn, $createOrdersSql)) {
+            sendJsonResponse(false, 'Failed to create orders table: ' . mysqli_error($conn), null, 500);
+        }
     }
     
     $checkOrderItemsTable = mysqli_query($conn, "SHOW TABLES LIKE 'order_items'");
     if (!$checkOrderItemsTable || mysqli_num_rows($checkOrderItemsTable) === 0) {
-        sendJsonResponse(false, 'Order items table does not exist. Please create it first.', null, 500);
+        $createOrderItemsSql = "CREATE TABLE IF NOT EXISTS order_items (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            order_id INT UNSIGNED NOT NULL,
+            medicine_id INT UNSIGNED NOT NULL,
+            quantity INT UNSIGNED NOT NULL DEFAULT 0,
+            price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_order_id (order_id),
+            INDEX idx_medicine_id (medicine_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        if (!mysqli_query($conn, $createOrderItemsSql)) {
+            sendJsonResponse(false, 'Failed to create order_items table: ' . mysqli_error($conn), null, 500);
+        }
     }
 
     // Fix AUTO_INCREMENT issues in orders table (similar to medicines/suppliers fix)
@@ -173,28 +213,28 @@ try {
 
         // Build INSERT statement based on column existence
         if ($hasTotalAmount && $hasNotes) {
-            $orderSql = "INSERT INTO orders (supplier_id, order_date, status, total_amount, notes) VALUES (?, ?, ?, ?, ?)";
+            $orderSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status, total_amount, notes) VALUES (?, ?, ?, ?, ?)";
             $orderStmt = mysqli_prepare($conn, $orderSql);
             if (!$orderStmt) {
                 throw new Exception('Database preparation error: ' . mysqli_error($conn));
             }
             mysqli_stmt_bind_param($orderStmt, 'issds', $supplier_id, $order_date, $status, $total_amount, $notes);
         } elseif ($hasTotalAmount) {
-            $orderSql = "INSERT INTO orders (supplier_id, order_date, status, total_amount) VALUES (?, ?, ?, ?)";
+            $orderSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status, total_amount) VALUES (?, ?, ?, ?)";
             $orderStmt = mysqli_prepare($conn, $orderSql);
             if (!$orderStmt) {
                 throw new Exception('Database preparation error: ' . mysqli_error($conn));
             }
             mysqli_stmt_bind_param($orderStmt, 'issd', $supplier_id, $order_date, $status, $total_amount);
         } elseif ($hasNotes) {
-            $orderSql = "INSERT INTO orders (supplier_id, order_date, status, notes) VALUES (?, ?, ?, ?)";
+            $orderSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status, notes) VALUES (?, ?, ?, ?)";
             $orderStmt = mysqli_prepare($conn, $orderSql);
             if (!$orderStmt) {
                 throw new Exception('Database preparation error: ' . mysqli_error($conn));
             }
             mysqli_stmt_bind_param($orderStmt, 'isss', $supplier_id, $order_date, $status, $notes);
         } else {
-            $orderSql = "INSERT INTO orders (supplier_id, order_date, status) VALUES (?, ?, ?)";
+            $orderSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status) VALUES (?, ?, ?)";
             $orderStmt = mysqli_prepare($conn, $orderSql);
             if (!$orderStmt) {
                 throw new Exception('Database preparation error: ' . mysqli_error($conn));
@@ -227,15 +267,15 @@ try {
                 if ($hasTotalAmount && $hasNotes) {
                     $notes_escaped = mysqli_real_escape_string($conn, $notes ?? '');
                     $total_amount_escaped = (float)$total_amount;
-                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status, total_amount, notes) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', {$total_amount_escaped}, '{$notes_escaped}')";
+                    $rawSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status, total_amount, notes) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', {$total_amount_escaped}, '{$notes_escaped}')";
                 } elseif ($hasTotalAmount) {
                     $total_amount_escaped = (float)$total_amount;
-                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status, total_amount) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', {$total_amount_escaped})";
+                    $rawSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status, total_amount) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', {$total_amount_escaped})";
                 } elseif ($hasNotes) {
                     $notes_escaped = mysqli_real_escape_string($conn, $notes ?? '');
-                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status, notes) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', '{$notes_escaped}')";
+                    $rawSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status, notes) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}', '{$notes_escaped}')";
                 } else {
-                    $rawSql = "INSERT INTO orders (supplier_id, order_date, status) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}')";
+                    $rawSql = "INSERT INTO orders (supplier_id, {$orderDateColumn}, status) VALUES ({$supplier_id_escaped}, '{$order_date_escaped}', '{$status_escaped}')";
                 }
                 
                 if (!mysqli_query($conn, $rawSql)) {
@@ -353,6 +393,11 @@ try {
             // Update medicine quantity and recalculate status (increment when order is completed)
             // Status: out-of-stock only if quantity = 0, otherwise based on reorder_level
             if ($status === 'completed') {
+                $checkMedicinesTable = mysqli_query($conn, "SHOW TABLES LIKE 'medicines'");
+                if (!$checkMedicinesTable || mysqli_num_rows($checkMedicinesTable) === 0) {
+                    // Skip medicine updates if table does not exist
+                    continue;
+                }
                 // Get current quantity, reorder_level, and expiration_date for status calculation
                 $getMedicineSql = "SELECT quantity, reorder_level, expiration_date FROM medicines WHERE id = ?";
                 $getMedicineStmt = mysqli_prepare($conn, $getMedicineSql);
@@ -436,7 +481,13 @@ try {
         mysqli_commit($conn);
 
         // Fetch the created order with details
-        $selectFields = "o.id, o.supplier_id, s.name as supplier_name, o.order_date, o.status";
+        // Detect suppliers table presence
+        $checkSuppliersTable = mysqli_query($conn, "SHOW TABLES LIKE 'suppliers'");
+        $hasSuppliersTable = $checkSuppliersTable && mysqli_num_rows($checkSuppliersTable) > 0;
+        $dateSelect = $orderDateColumn === 'order_date' ? 'o.order_date' : 'o.date as order_date';
+        $selectFields = $hasSuppliersTable
+            ? "o.id, o.supplier_id, s.name as supplier_name, {$dateSelect}, o.status"
+            : "o.id, o.supplier_id, NULL as supplier_name, {$dateSelect}, o.status";
         
         if ($hasTotalAmount) {
             $selectFields .= ", o.total_amount";
@@ -453,10 +504,9 @@ try {
         
         $selectFields .= ", o.created_at, o.updated_at";
         
-        $selectSql = "SELECT {$selectFields}
-        FROM orders o
-        LEFT JOIN suppliers s ON o.supplier_id = s.id
-        WHERE o.id = ?";
+        $selectSql = $hasSuppliersTable
+            ? "SELECT {$selectFields} FROM orders o LEFT JOIN suppliers s ON o.supplier_id = s.id WHERE o.id = ?"
+            : "SELECT {$selectFields} FROM orders o WHERE o.id = ?";
         
         $selectStmt = mysqli_prepare($conn, $selectSql);
         if ($selectStmt) {

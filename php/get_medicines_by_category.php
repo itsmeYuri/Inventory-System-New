@@ -33,22 +33,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
 
 try {
-    // Fetch ALL medicines (with or without category)
+    $hasNew = hasNewMedicineStructure($conn);
+    
+    // Fetch ALL medicines (with or without category), compatible with both structures
+    // Avoid columns that may not exist in the new structure (e.g., ndc)
     $sql = "SELECT 
-                id, 
-                ndc, 
-                name, 
-                manufacturer, 
-                COALESCE(category, 'Uncategorized') as category, 
-                quantity, 
-                reorder_level,
-                price, 
-                expiration_date, 
-                batch_number, 
-                status, 
-                dosage_form
+                COALESCE(medicine_id, CAST(id AS CHAR)) AS id,
+                medicine_id,
+                COALESCE(medicine_id, CAST(id AS CHAR)) AS medicine_id_display,
+                COALESCE(medicine_name, name) AS name,
+                manufacturer,
+                COALESCE(medicine_group, category, 'Uncategorized') AS category,
+                COALESCE(stock, quantity, 0) AS quantity,
+                COALESCE(reorder_level, 10) AS reorder_level,
+                price,
+                expiration_date,
+                batch_number,
+                status,
+                COALESCE(form, dosage_form) AS dosage_form
             FROM medicines
             ORDER BY category ASC, name ASC";
 

@@ -33,11 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
-
 try {
     $batch_id = isset($_GET['batch_id']) ? (int)$_GET['batch_id'] : 0;
     
-    if ($batch_id <= 0) {
         echo json_encode([
             'success' => false,
             'message' => 'Invalid batch ID'
@@ -58,14 +56,7 @@ try {
 
     // Fetch batch items with medicine details
     $sql = "SELECT 
-                bi.id,
-                bi.batch_id,
-                bi.medicine_id,
-                bi.quantity,
-                bi.expiration_date,
-                bi.received_quantity,
-                bi.is_expired,
-                bi.expired_at,
+    // Fetch batch items with medicine details
                 bi.created_at,
                 bi.updated_at,
                 m.ndc,
@@ -78,14 +69,14 @@ try {
             FROM batch_items bi
             LEFT JOIN medicines m ON bi.medicine_id = m.id
             WHERE bi.batch_id = ?
-            ORDER BY bi.expiration_date ASC, bi.id ASC";
+                m.name as medicine_name,
 
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
+                m.category,
+                m.dosage_form,
         throw new Exception('Database preparation error: ' . mysqli_error($conn));
-    }
+                m.quantity as current_stock
 
-    mysqli_stmt_bind_param($stmt, 'i', $batch_id);
+            LEFT JOIN medicines m ON bi.medicine_id = m.id
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
 
@@ -112,12 +103,3 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
-    error_log("Error in get_batch_items.php: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
-}
-
-?>
-

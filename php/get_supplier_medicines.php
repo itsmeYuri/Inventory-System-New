@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/medicine_structure_helper.php';
 
 try {
     $supplier_id = isset($_GET['supplier_id']) ? (int)$_GET['supplier_id'] : 0;
@@ -58,25 +59,55 @@ try {
         exit;
     }
 
+    // Check which medicine structure is in use
+    $hasNewStructure = hasNewMedicineStructure($conn);
+    
     // Fetch medicines for this supplier using junction table
-    $sql = "SELECT 
-                m.id, 
-                m.ndc, 
-                m.name, 
-                m.manufacturer, 
-                m.category, 
-                m.quantity, 
-                m.reorder_level,
-                m.price, 
-                m.expiration_date, 
-                m.batch_number, 
-                m.status, 
-                m.dosage_form,
-                sm.created_at as linked_at
-            FROM medicines m
-            INNER JOIN supplier_medicines sm ON m.id = sm.medicine_id
-            WHERE sm.supplier_id = ?
-            ORDER BY m.category ASC, m.name ASC";
+    if ($hasNewStructure) {
+        // New POS structure: use medicine_id, medicine_name, stock, etc.
+        // Convert both sides to string for JOIN to handle type mismatches
+        $sql = "SELECT 
+                    m.medicine_id as id,
+                    m.medicine_id,
+                    m.medicine_name as name, 
+                    m.manufacturer, 
+                    COALESCE(m.medicine_group, m.category, 'Uncategorized') as category, 
+                    m.stock as quantity,
+                    COALESCE(m.reorder_level, 10) as reorder_level,
+                    m.price, 
+                    m.expiration_date, 
+                    m.batch_number, 
+                    m.status, 
+                    COALESCE(m.form, m.dosage, m.dosage_form) as dosage_form,
+                    m.generic_name,
+                    m.dosage,
+                    m.form,
+                    sm.created_at as linked_at
+                FROM medicines m
+                INNER JOIN supplier_medicines sm ON CAST(m.medicine_id AS CHAR) = CAST(sm.medicine_id AS CHAR)
+                WHERE sm.supplier_id = ?
+                ORDER BY m.medicine_group ASC, m.medicine_name ASC";
+    } else {
+        // Old structure: use id, name, quantity, etc.
+        $sql = "SELECT 
+                    m.id, 
+                    m.ndc, 
+                    m.name, 
+                    m.manufacturer, 
+                    m.category, 
+                    m.quantity, 
+                    m.reorder_level,
+                    m.price, 
+                    m.expiration_date, 
+                    m.batch_number, 
+                    m.status, 
+                    m.dosage_form,
+                    sm.created_at as linked_at
+                FROM medicines m
+                INNER JOIN supplier_medicines sm ON m.id = sm.medicine_id
+                WHERE sm.supplier_id = ?
+                ORDER BY m.category ASC, m.name ASC";
+    }
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {

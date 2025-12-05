@@ -66,11 +66,14 @@ function normalizePosMedicinesResponse($response) {
             'category' => $group,
             'medicine_group' => $group,
             'generic_name' => $item['generic_name'] ?? '',
+            'manufacturer' => $item['manufacturer'] ?? '',
             'dosage' => $item['dosage'] ?? $item['unit'] ?? '',
             'form' => $item['form'] ?? $item['dosage'] ?? '',
             'quantity' => $stock,
             'stock' => $stock,
-            'price' => number_format($price, 2, '.', '')
+            'price' => number_format($price, 2, '.', ''),
+            'expiration_date' => $item['expiration_date'] ?? null,
+            'status' => $item['status'] ?? ''
         ];
     }
 
@@ -179,7 +182,7 @@ try {
     if ($hasNewStructure) {
         // New POS structure
         $sql = "SELECT medicine_id as id, medicine_name as name, medicine_group as category, 
-                generic_name, dosage, form, stock as quantity, price
+                generic_name, manufacturer, dosage, form, stock as quantity, price, expiration_date, status
                 FROM medicines
                 {$where}
                 ORDER BY medicine_name ASC

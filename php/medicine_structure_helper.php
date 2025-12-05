@@ -51,7 +51,7 @@ function getMedicineSelectFields($conn) {
     
     if ($hasNew) {
         return "medicine_id as id, medicine_name as name, medicine_group as category, 
-                generic_name, dosage, form, stock as quantity, price";
+                generic_name, manufacturer, dosage, form, stock as quantity, price, expiration_date, status";
     } else {
         // Check for optional columns
         $hasUnit = false;

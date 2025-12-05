@@ -33,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conn.php';
-
 try {
     $action = $_GET['action'] ?? 'dashboard';
     $dateRange = $_GET['dateRange'] ?? 'monthly';
@@ -79,24 +78,18 @@ try {
 }
 
 function getDashboardData($conn, $dateRange, $category) {
-    // Build category filter
     $categoryFilter = '';
     if (!empty($category)) {
         $cat = mysqli_real_escape_string($conn, $category);
-        $categoryFilter = " AND category = '{$cat}'";
+        $categoryFilter = " AND COALESCE(medicine_group, category) = '{$cat}'";
     }
 
-    // Get date filter for medicines (using created_at)
     $medicineDateFilter = getDateFilterForColumn($dateRange, 'created_at', $conn);
-    
-    // Get date filter for orders (using order_date)
     $orderDateFilter = getDateFilterForColumn($dateRange, 'order_date', $conn);
 
-    // Total Stocked (total quantity of items in stock within date range)
-    $stockedSql = "SELECT SUM(quantity) as total_stocked 
-                   FROM medicines 
-                   WHERE status IN ('in-stock', 'low-stock') 
-                   AND {$medicineDateFilter} {$categoryFilter}";
+    $stockedSql = "SELECT COALESCE(SUM(stock), 0) AS total_stocked
+                   FROM medicines
+                   WHERE status != 'deleted' {$categoryFilter} AND {$medicineDateFilter}";
     $stockedResult = mysqli_query($conn, $stockedSql);
     $totalStocked = 0;
     if ($stockedResult) {
@@ -104,11 +97,9 @@ function getDashboardData($conn, $dateRange, $category) {
         $totalStocked = (int)($row['total_stocked'] ?? 0);
     }
 
-    // Medicine Turnover (total quantity of in-stock items within date range)
-    $turnoverSql = "SELECT SUM(quantity) as total_quantity 
-                    FROM medicines 
-                    WHERE status IN ('in-stock', 'low-stock') 
-                    AND {$medicineDateFilter} {$categoryFilter}";
+    $turnoverSql = "SELECT COALESCE(SUM(stock), 0) AS total_quantity
+                    FROM medicines
+                    WHERE status IN ('in-stock', 'low-stock') {$categoryFilter} AND {$medicineDateFilter}";
     $turnoverResult = mysqli_query($conn, $turnoverSql);
     $turnover = 0;
     if ($turnoverResult) {
@@ -116,11 +107,9 @@ function getDashboardData($conn, $dateRange, $category) {
         $turnover = (int)($row['total_quantity'] ?? 0);
     }
 
-    // Order Completed (count of completed orders within date range)
-    $completedOrdersSql = "SELECT COUNT(*) as completed_count 
-                          FROM orders 
-                          WHERE status = 'completed' 
-                          AND {$orderDateFilter}";
+    $completedOrdersSql = "SELECT COUNT(*) AS completed_count
+                           FROM orders
+                           WHERE status = 'completed' AND {$orderDateFilter}";
     $completedOrdersResult = mysqli_query($conn, $completedOrdersSql);
     $completedOrders = 0;
     if ($completedOrdersResult) {
@@ -128,11 +117,9 @@ function getDashboardData($conn, $dateRange, $category) {
         $completedOrders = (int)($row['completed_count'] ?? 0);
     }
 
-    // Top Selling Items (medicines with highest quantity within date range)
-    $topSellingSql = "SELECT COUNT(*) as count 
-                      FROM medicines 
-                      WHERE quantity > 0 
-                      AND {$medicineDateFilter} {$categoryFilter}";
+    $topSellingSql = "SELECT COUNT(*) AS count
+                      FROM medicines
+                      WHERE stock > 0 {$categoryFilter} AND {$medicineDateFilter}";
     $topSellingResult = mysqli_query($conn, $topSellingSql);
     $topSellingCount = 0;
     if ($topSellingResult) {
@@ -143,65 +130,34 @@ function getDashboardData($conn, $dateRange, $category) {
     echo json_encode([
         'success' => true,
         'data' => [
-            'totalStocked' => number_format($totalStocked),
-            'medicineTurnover' => number_format($turnover),
-            'completedOrders' => number_format($completedOrders),
+            'totalStocked' => $totalStocked,
+            'medicineTurnover' => $turnover,
+            'completedOrders' => $completedOrders,
             'topSellingItems' => $topSellingCount
         ]
     ], JSON_UNESCAPED_UNICODE);
 }
 
-function getTopSellingMedicines($conn, $dateRange, $category) {
-    $categoryFilter = '';
-    if (!empty($category)) {
-        $cat = mysqli_real_escape_string($conn, $category);
-        $categoryFilter = " AND category = '{$cat}'";
-    }
-
-    // Get top medicines by quantity (as proxy for sales)
-    $sql = "SELECT name, quantity, price, category, 
-                   (quantity * price) as total_value
-            FROM medicines 
-            WHERE quantity > 0 {$categoryFilter}
-            ORDER BY quantity DESC, total_value DESC
-            LIMIT 10";
-
-    $result = mysqli_query($conn, $sql);
-    $medicines = [];
-    
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $medicines[] = [
-                'name' => $row['name'],
-                'quantity' => (int)$row['quantity'],
-                'price' => (float)$row['price'],
-                'category' => $row['category'],
-                'totalValue' => (float)$row['total_value']
-            ];
-        }
-    }
-
-    echo json_encode([
-        'success' => true,
-        'data' => $medicines
-    ], JSON_UNESCAPED_UNICODE);
-}
-
 function getLowStockMedicines($conn) {
-    // Get medicines where quantity is below reorder_level
-    // Handle NULL reorder_level by using COALESCE with default value of 10
-    $sql = "SELECT id, name, quantity, COALESCE(reorder_level, 10) as reorder_level, status
+    $sql = "SELECT 
+                COALESCE(medicine_id, id) AS id,
+                COALESCE(medicine_name, name) AS name,
+                COALESCE(stock, quantity) AS quantity,
+                COALESCE(reorder_level, 10) AS reorder_level,
+                status
             FROM medicines 
-            WHERE quantity <= COALESCE(reorder_level, 10) OR status IN ('low-stock', 'out-of-stock')
-            ORDER BY quantity ASC, name ASC";
+            WHERE COALESCE(stock, quantity) <= COALESCE(reorder_level, 10)
+               OR status IN ('low-stock', 'out-of-stock')
+            ORDER BY COALESCE(stock, quantity) ASC, COALESCE(medicine_name, name) ASC
+            LIMIT 50";
 
     $result = mysqli_query($conn, $sql);
     $medicines = [];
-    
+
     if ($result) {
         while ($row = mysqli_fetch_assoc($result)) {
             $medicines[] = [
-                'id' => (int)$row['id'],
+                'id' => $row['id'],
                 'name' => $row['name'],
                 'quantity' => (int)$row['quantity'],
                 'reorderLevel' => (int)$row['reorder_level'],
@@ -209,7 +165,6 @@ function getLowStockMedicines($conn) {
             ];
         }
     } else {
-        // Log SQL error
         error_log("SQL Error in getLowStockMedicines: " . mysqli_error($conn));
         echo json_encode([
             'success' => false,
@@ -227,9 +182,10 @@ function getLowStockMedicines($conn) {
 
 function getStockAvailability($conn) {
     // Dynamically get all categories from the database
-    $categorySql = "SELECT DISTINCT category 
+    $categorySql = "SELECT DISTINCT COALESCE(medicine_group, category) as category
                     FROM medicines 
-                    WHERE category IS NOT NULL AND category != '' 
+                    WHERE COALESCE(medicine_group, category) IS NOT NULL 
+                      AND COALESCE(medicine_group, category) != '' 
                     ORDER BY category ASC";
     
     $categoryResult = mysqli_query($conn, $categorySql);
@@ -259,11 +215,11 @@ function getStockAvailability($conn) {
         
         // Get total quantity and count for this category
         $sql = "SELECT 
-                    SUM(quantity) as total_quantity,
+                    SUM(stock) as total_quantity,
                     COUNT(*) as total_items,
-                    SUM(CASE WHEN quantity > 0 THEN 1 ELSE 0 END) as in_stock_items
+                    SUM(CASE WHEN stock > 0 THEN 1 ELSE 0 END) as in_stock_items
                 FROM medicines 
-                WHERE category = '{$cat}'";
+                WHERE COALESCE(medicine_group, category) = '{$cat}'";
         
         $result = mysqli_query($conn, $sql);
         if ($result) {
@@ -293,13 +249,13 @@ function getStockAvailability($conn) {
 
 function getCategoryDistribution($conn) {
     $sql = "SELECT 
-                category,
+                COALESCE(medicine_group, category) as category,
                 COUNT(*) as count,
-                SUM(quantity) as total_quantity,
-                SUM(quantity * price) as total_value
+                SUM(stock) as total_quantity,
+                SUM(stock * price) as total_value
             FROM medicines 
-            WHERE category IS NOT NULL AND category != ''
-            GROUP BY category
+            WHERE COALESCE(medicine_group, category) IS NOT NULL AND COALESCE(medicine_group, category) != ''
+            GROUP BY COALESCE(medicine_group, category)
             ORDER BY total_value DESC";
 
     $result = mysqli_query($conn, $sql);
@@ -388,31 +344,28 @@ function getSeasonalTrends($conn, $dateRange) {
 }
 
 function getTopMedicines($conn, $dateRange, $category) {
-    // Build category filter
     $categoryFilter = '';
     if (!empty($category)) {
         $cat = mysqli_real_escape_string($conn, $category);
-        $categoryFilter = " AND m.category = '{$cat}'";
+        $categoryFilter = " AND COALESCE(m.medicine_group, m.category) = '{$cat}'";
     }
-    
-    // Get date filter for orders
+
     $orderDateFilter = getDateFilterForColumn($dateRange, 'o.order_date', $conn);
-    
-    // Get top medicines by order frequency and total quantity ordered
+
     $sql = "SELECT 
-                m.id,
-                m.name,
-                m.category,
+                COALESCE(m.medicine_id, m.id) AS id,
+                COALESCE(m.medicine_name, m.name) AS name,
+                COALESCE(m.medicine_group, m.category) AS category,
                 m.price,
-                m.quantity as current_stock,
-                COUNT(DISTINCT o.id) as order_count,
-                COALESCE(SUM(oi.quantity), 0) as total_ordered,
-                COALESCE(SUM(oi.quantity * oi.price), 0) as total_value
+                COALESCE(m.stock, m.quantity) AS current_stock,
+                COUNT(DISTINCT o.id) AS order_count,
+                COALESCE(SUM(oi.quantity), 0) AS total_ordered,
+                COALESCE(SUM(oi.quantity * oi.price), 0) AS total_value
             FROM medicines m
-            LEFT JOIN order_items oi ON m.id = oi.medicine_id
+            LEFT JOIN order_items oi ON (oi.medicine_id = m.medicine_id OR oi.medicine_id = m.id)
             LEFT JOIN orders o ON oi.order_id = o.id AND o.status != 'cancelled' AND {$orderDateFilter}
             WHERE m.status != 'deleted' {$categoryFilter}
-            GROUP BY m.id, m.name, m.category, m.price, m.quantity
+            GROUP BY COALESCE(m.medicine_id, m.id), COALESCE(m.medicine_name, m.name), category, m.price, COALESCE(m.stock, m.quantity)
             HAVING order_count > 0 OR total_ordered > 0
             ORDER BY total_ordered DESC, order_count DESC, total_value DESC
             LIMIT 10";
@@ -440,22 +393,26 @@ function getTopMedicines($conn, $dateRange, $category) {
     // If no medicines with orders found, fall back to top medicines by current stock value
     if (empty($medicines)) {
         $fallbackSql = "SELECT 
-                    id, name, category, price, quantity,
-                    (quantity * price) as total_value
+                    COALESCE(medicine_id, id) AS id,
+                    COALESCE(medicine_name, name) AS name,
+                    COALESCE(medicine_group, category) AS category,
+                    price,
+                    COALESCE(stock, quantity) AS current_stock,
+                    (COALESCE(stock, quantity) * price) AS total_value
                 FROM medicines 
-                WHERE status != 'deleted' AND status != 'expired' AND quantity > 0 {$categoryFilter}
-                ORDER BY total_value DESC, quantity DESC
+                WHERE status != 'deleted' AND status != 'expired' AND COALESCE(stock, quantity) > 0 {$categoryFilter}
+                ORDER BY total_value DESC, current_stock DESC
                 LIMIT 10";
         
         $fallbackResult = mysqli_query($conn, $fallbackSql);
         if ($fallbackResult) {
             while ($row = mysqli_fetch_assoc($fallbackResult)) {
                 $medicines[] = [
-                    'id' => (int)$row['id'],
+                    'id' => $row['id'],
                     'name' => $row['name'],
                     'category' => $row['category'] ?? 'N/A',
                     'price' => (float)$row['price'],
-                    'currentStock' => (int)$row['quantity'],
+                    'currentStock' => (int)$row['current_stock'],
                     'orderCount' => 0,
                     'totalOrdered' => 0,
                     'totalValue' => (float)$row['total_value']
