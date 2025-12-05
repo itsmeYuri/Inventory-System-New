@@ -121,8 +121,7 @@
     <script src="../js/load-topbar.js" data-title="Inventory List" data-description="Manage your pharmaceutical inventory and stock levels"></script>
     <!-- Archive Modal will be loaded here -->
     <script src="../js/load-archive-modal.js" defer></script>
-    <!-- User Management Modal will be loaded here -->
-    <script src="../js/load-user-management-modal.js" defer></script>
+    
 
     <!-- Main Content -->
     <div class="main-content-wrapper min-h-screen bg-background dark:bg-gray-900">
@@ -641,7 +640,7 @@
         </div>
     </div>
 
-    <!-- User Management Modal will be loaded by load-user-management-modal.js -->
+    
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
@@ -653,16 +652,7 @@
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <button onclick="openUserManagementModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
-                    <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors duration-200">
-                        <i class="fas fa-users text-primary-600 dark:text-primary-400 text-xl"></i>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <h3 class="text-base font-semibold text-text-primary dark:text-gray-100">User Management</h3>
-                        <p class="text-sm text-text-secondary dark:text-gray-400">Manage system users and permissions</p>
-                    </div>
-                    <i class="fas fa-chevron-right text-text-tertiary dark:text-gray-400"></i>
-                </button>
+                
                 <button onclick="openArchiveModal()" class="w-full flex items-center space-x-4 p-4 bg-surface-hover dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group">
                     <div class="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-xl flex items-center justify-center group-hover:bg-warning-200 dark:group-hover:bg-warning-800 transition-colors duration-200">
                         <i class="fas fa-archive text-warning-600 dark:text-warning-400 text-xl"></i>
@@ -2489,31 +2479,7 @@
         window.loadUsersModal = loadUsersModal;
         window.updateSelectedCountModal = updateSelectedCountModal;
 
-        // Open User Management Modal
-        function openUserManagementModal() {
-            document.getElementById('settingsModal').classList.add('hidden');
-            
-            // Open User Management modal with smooth transition
-            setTimeout(() => {
-                document.getElementById('userManagementModal').classList.remove('hidden');
-                // Load users when modal opens
-                if (typeof loadUsersModal === 'function') {
-                    loadUsersModal();
-                }
-            }, 150); // Small delay for smooth transition
-        }
-        window.openUserManagementModal = openUserManagementModal;
-
-        document.getElementById('closeUserManagementModal')?.addEventListener('click', () => {
-            document.getElementById('userManagementModal').classList.add('hidden');
-        });
-
-        // Close User Management modal on backdrop click
-        document.getElementById('userManagementModal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'userManagementModal') {
-                document.getElementById('userManagementModal').classList.add('hidden');
-            }
-        });
+        
 
         // Create user form
         document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {

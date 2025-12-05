@@ -105,12 +105,7 @@ function render_navigation() {
                     </a>
                 </li>
 
-                <li>
-                    <a href="user_management.html" class="flex items-center space-x-3 px-4 py-3 text-sm font-medium <?php echo get_active_class('user_management.html'); ?> rounded-xl transition-all duration-200">
-                        <i class="fas fa-users w-5"></i>
-                        <span>User Management</span>
-                    </a>
-                </li>
+                
 
                 <li>
                     <a href="medicine.php" class="flex items-center space-x-3 px-4 py-3 text-sm font-medium <?php echo get_active_class('medicine.php'); ?> rounded-xl transition-all duration-200">

@@ -45,7 +45,7 @@ $user_email = $_SESSION['user_email'] ?? $_SESSION['email'] ?? 'user@example.com
             $main_content = str_replace('orders_management.html', 'order.php', $main_content);
             $main_content = str_replace('reports_analytics.html', 'report.php', $main_content);
             $main_content = str_replace('suppliers_management.html', 'suppliers_management.php', $main_content);
-            $main_content = str_replace('user_management.html', 'user_management.php', $main_content);
+            
             echo $main_content;
         }
     }
