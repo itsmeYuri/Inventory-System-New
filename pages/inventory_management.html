@@ -26,8 +26,97 @@
 <script type="module" src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Finventory6919back.builtwithrocket.new&_be=https%3A%2F%2Fapplication.rocket.new&_v=0.1.8"></script>
 </head>
 <body class="min-h-screen bg-background transition-colors duration-300">
-    <!-- Sidebar will be loaded here -->
-    <script src="../js/load-sidebar.js"></script>
+    <!-- Sidebar -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+    <aside id="sidebar" class="sidebar-overlay fixed left-0 top-0 h-full z-50 transform -translate-x-full lg:translate-x-0 transition-all duration-300" style="background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 50%, #1e3a8a 100%); box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15), inset -1px 0 0 rgba(255, 255, 255, 0.1);">
+        <div class="sidebar-container">
+            <div class="sidebar-top">
+                <div class="sidebar-header">
+                    <div class="sidebar-logo">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg" style="box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
+                            <i class="fas fa-pills text-white text-xl"></i>
+                        </div>
+                        <div class="sidebar-logo-text">
+                            <h2 class="text-lg font-semibold text-white whitespace-nowrap">PHARMACY</h2>
+                            <p class="text-xs text-blue-200 whitespace-nowrap">Inventory System</p>
+                        </div>
+                    </div>
+                    <button id="closeSidebar" class="sidebar-close-btn lg:hidden text-blue-200 hover:text-white transition-all duration-300 rounded-lg p-2 hover:bg-blue-500/20">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                <div class="sidebar-user">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="User Avatar" class="sidebar-avatar" onerror="this.src='https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'; this.onerror=null;" />
+                    <div class="sidebar-user-info">
+                        <p class="text-sm font-medium text-white truncate" id="userDisplayName">User</p>
+                        <p class="text-xs text-blue-200 truncate" id="userDisplayEmail">user@example.com</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="sidebar-menu">
+                    <li><a href="dashboard.html" class="sidebar-menu-item" data-page="dashboard"><i class="fas fa-chart-pie sidebar-icon"></i><span class="sidebar-menu-text">Dashboard</span></a></li>
+                    <li><a href="orders_management.html" class="sidebar-menu-item" data-page="orders"><i class="fas fa-prescription-bottle sidebar-icon"></i><span class="sidebar-menu-text">Orders</span></a></li>
+                    <li><a href="batches_management.html" class="sidebar-menu-item" data-page="batches"><i class="fas fa-boxes sidebar-icon"></i><span class="sidebar-menu-text">Batches</span></a></li>
+                    <li><a href="inventory_management.html" class="sidebar-menu-item" data-page="inventory"><i class="fas fa-capsules sidebar-icon"></i><span class="sidebar-menu-text">Inventory List</span></a></li>
+                    <li><a href="reports_analytics.html" class="sidebar-menu-item" data-page="reports"><i class="fas fa-chart-bar sidebar-icon"></i><span class="sidebar-menu-text">Reports</span></a></li>
+                    <li><a href="suppliers_management.html" class="sidebar-menu-item" data-page="suppliers"><i class="fas fa-truck-medical sidebar-icon"></i><span class="sidebar-menu-text">Suppliers</span></a></li>
+                    <li><a href="javascript:void(0)" onclick="openSettings()" class="sidebar-menu-item"><i class="fas fa-cog sidebar-icon"></i><span class="sidebar-menu-text">Settings</span></a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-bottom">
+                <button id="logoutBtn" class="sidebar-logout-btn"><i class="fas fa-sign-out-alt sidebar-icon"></i><span class="sidebar-menu-text">Logout</span></button>
+            </div>
+        </div>
+    </aside>
+    <style>
+        .sidebar-overlay { width: 250px; overflow: hidden; }
+        .sidebar-container { display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 0; }
+        .sidebar-top { flex-shrink: 0; border-bottom: 1px solid rgba(147, 197, 253, 0.2); background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%); padding-bottom: 8px; }
+        .dark .sidebar-top { border-bottom-color: rgba(147, 197, 253, 0.2); }
+        .sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px; }
+        .sidebar-logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .sidebar-logo-text { opacity: 1; visibility: visible; transition: opacity 0.3s ease, visibility 0.3s ease; white-space: nowrap; overflow: hidden; }
+        .sidebar-close-btn { opacity: 1; visibility: visible; transition: opacity 0.2s ease, visibility 0.2s ease; }
+        .sidebar-user { display: flex; align-items: center; gap: 12px; padding: 16px 16px; border-bottom: 1px solid rgba(147, 197, 253, 0.2); margin: 0 8px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); transition: all 0.3s ease; }
+        .sidebar-user:hover { background: rgba(59, 130, 246, 0.15); transform: translateX(2px); }
+        .dark .sidebar-user { border-bottom-color: rgba(147, 197, 253, 0.2); }
+        .sidebar-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(147, 197, 253, 0.6); flex-shrink: 0; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); transition: all 0.3s ease; }
+        .sidebar-avatar:hover { border-color: rgba(147, 197, 253, 0.9); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5); transform: scale(1.05); }
+        .dark .sidebar-avatar { border-color: rgba(147, 197, 253, 0.6); }
+        .sidebar-user-info { opacity: 1; visibility: visible; transition: opacity 0.3s ease, visibility 0.3s ease; min-width: 0; flex: 1; }
+        .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 0; min-height: 0; }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(147, 197, 253, 0.4); border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(147, 197, 253, 0.6); }
+        .dark .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(147, 197, 253, 0.4); }
+        .dark .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(147, 197, 253, 0.6); }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; padding: 12px 8px; }
+        .sidebar-menu-item { display: flex; align-items: center; gap: 14px; padding: 14px 12px; text-decoration: none; font-size: 14px; font-weight: 500; color: #e0e7ff; border-radius: 12px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap; min-width: 0; position: relative; margin: 0 4px; }
+        .sidebar-menu-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 0; background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%); border-radius: 0 4px 4px 0; transition: height 0.3s ease; }
+        .dark .sidebar-menu-item { color: #e0e7ff; }
+        .sidebar-menu-item:hover { background: linear-gradient(90deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.15) 100%); color: #ffffff; transform: translateX(4px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+        .sidebar-menu-item:hover::before { height: 60%; }
+        .dark .sidebar-menu-item:hover { background: linear-gradient(90deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.15) 100%); color: #ffffff; }
+        .sidebar-menu-item-active { background: linear-gradient(90deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.3) 100%); color: #ffffff; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); font-weight: 600; }
+        .sidebar-menu-item-active::before { height: 70%; background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%); box-shadow: 0 0 8px rgba(96, 165, 250, 0.6); }
+        .dark .sidebar-menu-item-active { background: linear-gradient(90deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.3) 100%); }
+        .sidebar-icon { width: 22px; flex-shrink: 0; text-align: center; font-size: 18px; transition: all 0.3s ease; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)); }
+        .sidebar-menu-item:hover .sidebar-icon { transform: scale(1.1); filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4)); }
+        .sidebar-menu-item-active .sidebar-icon { filter: drop-shadow(0 2px 6px rgba(96, 165, 250, 0.5)); }
+        .sidebar-menu-text { opacity: 1; visibility: visible; transition: opacity 0.3s ease, visibility 0.3s ease; white-space: nowrap; overflow: hidden; }
+        .sidebar-bottom { flex-shrink: 0; padding: 20px 16px; border-top: 1px solid rgba(147, 197, 253, 0.2); display: flex; flex-direction: column; gap: 12px; background: linear-gradient(180deg, transparent 0%, rgba(59, 130, 246, 0.08) 100%); }
+        .dark .sidebar-bottom { border-top-color: rgba(147, 197, 253, 0.2); }
+        .sidebar-logout-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 12px; text-align: left; font-size: 14px; font-weight: 500; color: #fca5a5; background: transparent; border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap; margin: 0 4px; position: relative; }
+        .sidebar-logout-btn::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 0; background: linear-gradient(180deg, #f87171 0%, #ef4444 100%); border-radius: 0 4px 4px 0; transition: height 0.3s ease; }
+        .sidebar-logout-btn:hover { background: linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(239, 68, 68, 0.15) 100%); color: #ffffff; transform: translateX(4px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+        .sidebar-logout-btn:hover::before { height: 60%; }
+        .dark .sidebar-logout-btn:hover { background: linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(239, 68, 68, 0.15) 100%); color: #ffffff; }
+        @media (max-width: 1023px) { .sidebar-overlay { width: 250px; } .main-content-wrapper { padding-left: 0; } }
+        @media (hover: none) { .sidebar-overlay { width: 250px; } .main-content-wrapper { padding-left: 250px; } }
+    </style>
+    <script src="../js/sidebar.js"></script>
     <!-- Top Bar will be loaded here -->
     <script src="../js/load-topbar.js" data-title="Inventory List" data-description="Manage your pharmaceutical inventory and stock levels"></script>
     <!-- Archive Modal will be loaded here -->
